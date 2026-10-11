@@ -1,0 +1,60 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Hikkoshi CLI — runs without Kirby.
+ *
+ *   vendor/bin/hikkoshi check [site/config/hikkoshi.php] [--lang=de] [--resolve-chains] [--allow-host=example.org]
+ *   vendor/bin/hikkoshi convert public/.htaccess > site/config/hikkoshi.php
+ *
+ * Run it from the project root: a relative FILE is taken from the current
+ * directory. It never edits files: `convert` prints to stdout, skipped lines
+ * go to stderr. Exit codes: 0 done, 1 findings/skipped lines, 2 usage.
+ * Shared file — owned by the architect (SPEC.md §2); the commands live in
+ * src/CheckCommand.php and src/ConvertCommand.php.
+ */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
+require_once dirname(__DIR__) . '/src/I18n.php';
+require_once dirname(__DIR__) . '/src/Options.php';   // only DEFAULTS and FILES are used here (no Kirby)
+require_once dirname(__DIR__) . '/src/Path.php';
+require_once dirname(__DIR__) . '/src/ConfigException.php';
+require_once dirname(__DIR__) . '/src/Validator.php';
+require_once dirname(__DIR__) . '/src/Htaccess.php';
+require_once dirname(__DIR__) . '/src/CheckCommand.php';
+require_once dirname(__DIR__) . '/src/ConvertCommand.php';
+
+use Hikkoshi\CheckCommand;
+use Hikkoshi\ConvertCommand;
+use Hikkoshi\I18n;
+
+// --lang=xx may stand anywhere; it is applied here and removed, so the first
+// remaining argument is the command.
+$args = [];
+foreach (array_slice($argv, 1) as $arg) {
+    if (str_starts_with($arg, '--lang=')) {
+        I18n::setLanguage(substr($arg, 7));
+    } else {
+        $args[] = $arg;
+    }
+}
+$command = $args[0] ?? null;
+$rest = array_slice($args, 1);
+
+switch ($command) {
+    case 'check':
+        exit(CheckCommand::run($rest, STDOUT, STDERR, (string) getcwd()));
+    case 'convert':
+        exit(ConvertCommand::run($rest, STDOUT, STDERR, (string) getcwd()));
+    case null:
+    case '-h':
+    case '--help':
+    case 'help':
+        fwrite($command === null ? STDERR : STDOUT, I18n::t('cli.usage') . "\n");
+        exit($command === null ? 2 : 0);
+    default:
+        fwrite(STDERR, I18n::printable(I18n::t('cli.unknownCommand', ['command' => $command])) . "\n" . I18n::t('cli.usage') . "\n");
+        exit(2);
+}

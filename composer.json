@@ -1,0 +1,46 @@
+{
+    "name": "sayamaapps/kirby-hikkoshi",
+    "description": "Redirects for Kirby CMS after moving house from Jimdo, Wix or WordPress: a checked list of old paths (loops, chains, foreign domains, duplicates), tolerant matching (case, trailing slash, umlauts, .html/index.php suffixes, query strings), a converter for Apache .htaccess rules and a test helper for sites. No outbound HTTP.",
+    "type": "kirby-plugin",
+    "license": "MIT",
+    "keywords": ["kirby", "kirby-plugin", "kirby-5", "redirects", "301", "migration", "jimdo", "wix", "wordpress", "htaccess"],
+    "homepage": "https://github.com/simsimmal/kirby-hikkoshi",
+    "authors": [
+        {
+            "name": "Simon Räder",
+            "homepage": "https://sayamaapps.de"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/simsimmal/kirby-hikkoshi/issues",
+        "source": "https://github.com/simsimmal/kirby-hikkoshi"
+    },
+    "require": {
+        "php": "^8.2",
+        "ext-mbstring": "*",
+        "getkirby/composer-installer": "^1.2"
+    },
+    "require-dev": {
+        "getkirby/cms": "^5.0"
+    },
+    "bin": ["bin/hikkoshi"],
+    "scripts": {
+        "test": "sh tests/run.sh"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "getkirby/composer-installer": true
+        },
+        "platform": {
+            "php": "8.2.0"
+        }
+    },
+    "extra": {
+        "installer-name": "hikkoshi",
+        "kirby-cms-path": false,
+        "kirby": {
+            "compatible": "^5.0"
+        }
+    }
+}
