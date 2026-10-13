@@ -22,7 +22,7 @@ final class Path
 
     /**
      * One path segment: letters, digits, `_`, `-`, with at most one dot
-     * (`impressum.html`, `hofcafe-25-04.pdf`). No `..`, no dot files, no
+     * (`impressum.html`, `karte-1.pdf`). No `..`, no dot files, no
      * pattern characters such as `(:all)`, no spaces, no percent signs.
      */
     private const SEGMENT = '[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)?';
@@ -30,7 +30,7 @@ final class Path
     /**
      * A Kirby page id: lowercase segments without dots (`home`,
      * `leistungen/beratung`). Lowercase only, as the pre-1.0 copy demanded:
-     * Kirby slugs are lowercase, and `Hofladen` would never be found.
+     * Kirby slugs are lowercase, and `Produkte` would never be found.
      */
     private const ID_SEGMENT = '[a-z0-9_-]+';
 
@@ -145,7 +145,7 @@ final class Path
         return preg_match('~^' . self::SEGMENT . '(?:/' . self::SEGMENT . ')*$~D', $path) === 1;
     }
 
-    /** A Kirby page id as a target: `home`, `hofladen`, `leistungen/beratung`. */
+    /** A Kirby page id as a target: `home`, `produkte`, `leistungen/beratung`. */
     public static function isValidTarget(string $target): bool
     {
         return preg_match('~^' . self::ID_SEGMENT . '(?:/' . self::ID_SEGMENT . ')*$~D', $target) === 1;
@@ -159,7 +159,7 @@ final class Path
      *
      *   externalHost('https://example.org/x') → 'example.org'
      *   externalHost('//Example.org')         → 'example.org'
-     *   externalHost('hofladen')              → null
+     *   externalHost('produkte')              → null
      */
     public static function externalHost(string $target): ?string
     {

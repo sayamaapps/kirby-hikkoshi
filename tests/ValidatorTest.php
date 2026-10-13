@@ -5,7 +5,7 @@
  * (kirby-starter/tests/WeiterleitungenTest.php, rules of Liste.php) with the
  * adaptations of §8.1 (normalised keys accepted, chains are warnings, 410 and
  * array forms, external hosts, duplicates, query conditions), plus the two
- * real lists of mustergasthaus and gasthaus-muster and config/hikkoshi.example.php.
+ * real site lists (Jimdo, Wix) and config/hikkoshi.example.php.
  *
  *   ASDF_PHP_VERSION=8.5.3 php tests/ValidatorTest.php
  *
@@ -40,8 +40,8 @@ function vEntry(array $entries, string $key): ?array
 // "valid list unchanged" (§8.1): keys, sources and targets come back as written.
 $gueltig = [
     'menue' => 'speisekarte',
-    'hofladen-bio-gaertnerei.html' => 'hofladen',
-    'mittagskarte-musterhof/hofcafe-25-04.pdf' => 'speisekarte',
+    'produkt-c.html' => 'produkte',
+    'speisekarte/karte-1.pdf' => 'speisekarte',
     'index.html' => 'home',
     'alt/tief/seite' => 'leistungen/beratung',
 ];
@@ -59,31 +59,31 @@ expect([], Validator::assert([]), 'assert([]) returns []');
 expect([], Validator::validate([])['findings'], 'empty list: no findings');
 
 // ── Real lists, copied verbatim (§8.1, §0) ──────────────────────────────
-// mustergasthaus/site/config/weiterleitungen.php (Jimdo, 14 entries)
-$mustergasthaus = [
+// A Jimdo site's list (14 entries)
+$jimdo_list = [
     'menue' => 'speisekarte',
     'cookie-einstellungen' => 'cookie-hinweise',
-    'team' => 'familie-und-hof',
-    'produkte' => 'hofladen',
-    'shop' => 'hofladen',
-    'hofladen-bio-gaertnerei.html' => 'hofladen',
-    'bio-gaertnerei-musterstadt.html' => 'biogaertnerei',
-    'bio-eier-zweinutzungshuhn-musterstadt.html' => 'hofladen',
-    'impressionen-biogaertnerei-musterdorf.html' => 'familie-und-hof',
-    // Destillerie ist seit 28.09.2026 offline (Entwurf im Panel); zurück auf
-    // 'destillerie', sobald sie wieder online geht.
-    'brennerei-schnaps.html' => 'hofladen',
+    'ueber-uns' => 'team',
+    'produkte-alt' => 'produkte',
+    'shop' => 'produkte',
+    'produkt-e.html' => 'produkte',
+    'produkt-c.html' => 'produkt-c',
+    'produkt-d.html' => 'produkte',
+    'galerie-1.html' => 'team',
+    // Seite ist offline (Entwurf im Panel); zurück auf 'produkt-b',
+    // sobald sie wieder online geht.
+    'produkt-b.html' => 'produkte',
     'impressum.html' => 'impressum',
-    'mittagskarte-musterhof/hofcafe-25-04.pdf' => 'speisekarte',
-    'mittagskarte-musterhof/hofcafe-karte-02-24.pdf' => 'speisekarte',
+    'speisekarte/karte-1.pdf' => 'speisekarte',
+    'speisekarte/karte-2.pdf' => 'speisekarte',
     'index.html' => 'home',
 ];
-$result = Validator::validate($mustergasthaus);
-expect([], $result['findings'], 'mustergasthaus list (14 entries): zero findings');
-expect(14, count($result['entries']), 'mustergasthaus list: 14 entries');
+$result = Validator::validate($jimdo_list);
+expect([], $result['findings'], 'Jimdo list (14 entries): zero findings');
+expect(14, count($result['entries']), 'Jimdo list: 14 entries');
 
-// gasthaus-muster/site/config/weiterleitungen.php (Wix, 12 entries)
-$gasthaus = [
+// A Wix site's list (12 entries)
+$wix_list = [
     'menus'                   => 'home',
     'online-ordering'         => 'home',
     'experiences'             => 'home',
@@ -97,9 +97,9 @@ $gasthaus = [
     'refund-policy'           => 'impressum',
     'accessibility-statement' => 'home',
 ];
-$result = Validator::validate($gasthaus);
-expect([], $result['findings'], 'gasthaus list (12 entries): zero findings');
-expect(12, count($result['entries']), 'gasthaus list: 12 entries');
+$result = Validator::validate($wix_list);
+expect([], $result['findings'], 'Wix list (12 entries): zero findings');
+expect(12, count($result['entries']), 'Wix list: 12 entries');
 
 // config/hikkoshi.example.php must be valid (§6, §0).
 $example = require __DIR__ . '/../config/hikkoshi.example.php';
@@ -115,8 +115,8 @@ expect('error', $result['findings'][0]['level'], "'2024': level error");
 holds(str_contains($result['findings'][0]['message'], 'rein numerisch'), "'2024': message contains 'rein numerisch'");
 expect([], $result['entries'], "'2024': entry dropped");
 
-$result = Validator::validate(['hofladen']);
-expect(['source.numeric'], codes($result['findings']), "['hofladen'] (missing key): source.numeric");
+$result = Validator::validate(['produkte']);
+expect(['source.numeric'], codes($result['findings']), "['produkte'] (missing key): source.numeric");
 
 $result = Validator::validate(['archiv/2024' => 'archiv']);
 expect([], $result['findings'], "'archiv/2024' => 'archiv' is accepted");
@@ -138,13 +138,13 @@ $rejected = [
     '' => 'source.empty',
 ];
 foreach ($rejected as $key => $code) {
-    $result = Validator::validate([$key => 'hofladen']);
+    $result = Validator::validate([$key => 'produkte']);
     expect([$code], codes($result['findings']), 'rejected source ' . var_export($key, true) . ': ' . $code);
     expect([], $result['entries'], 'rejected source ' . var_export($key, true) . ': entry dropped');
 }
 // The message of an invalid old path names the entry (§5: Ungültiger alter Pfad).
-$result = Validator::validate(['../secret' => 'hofladen']);
-expect("Ungültiger alter Pfad: '../secret' => 'hofladen'", $result['findings'][0]['message'], "German message of source.invalid");
+$result = Validator::validate(['../secret' => 'produkte']);
+expect("Ungültiger alter Pfad: '../secret' => 'produkte'", $result['findings'][0]['message'], "German message of source.invalid");
 
 // ── Now accepted with their normalised source (§8.1 b) ──────────────────
 $normalised = [
@@ -159,27 +159,27 @@ $normalised = [
     'a?b=1' => ['a', ['b' => '1']],
 ];
 foreach ($normalised as $key => [$source, $conditions]) {
-    $result = Validator::validate([$key => 'hofladen']);
+    $result = Validator::validate([$key => 'produkte']);
     expect([], $result['findings'], 'accepted key ' . var_export($key, true) . ': no findings');
     expect($source, $result['entries'][0]['source'] ?? null, 'accepted key ' . var_export($key, true) . ': source ' . $source);
     expect($conditions, $result['entries'][0]['conditions'] ?? null, 'accepted key ' . var_export($key, true) . ': conditions');
     expect($key, $result['entries'][0]['key'] ?? null, 'accepted key ' . var_export($key, true) . ': key as written');
 }
 // Lowercase off: the case is kept (pre-1.0 behaviour).
-$result = Validator::validate(['Menue' => 'hofladen'], ['lowercase' => false]);
+$result = Validator::validate(['Menue' => 'produkte'], ['lowercase' => false]);
 expect('Menue', $result['entries'][0]['source'] ?? null, 'lowercase false: Menue keeps its case');
 // Transliterate off: an umlaut is no valid segment.
-$result = Validator::validate(['über-uns' => 'hofladen'], ['transliterate' => false]);
+$result = Validator::validate(['über-uns' => 'produkte'], ['transliterate' => false]);
 expect(['source.invalid'], codes($result['findings']), 'transliterate false: über-uns rejected');
 
 // ── Invalid targets (§8.1) ──────────────────────────────────────────────
-foreach (['/hofladen', 'hofladen/', 'hofladen.html', '../hofladen', 'Hofladen', 'hofladen?x=1', '', '(:all)', null] as $target) {
+foreach (['/produkte', 'produkte/', 'produkte.html', '../produkte', 'Produkte', 'produkte?x=1', '', '(:all)', null] as $target) {
     $result = Validator::validate(['menue' => $target]);
     expect(['target.invalid'], codes($result['findings']), 'invalid target ' . var_export($target, true) . ': target.invalid');
     expect([], $result['entries'], 'invalid target ' . var_export($target, true) . ': entry dropped');
 }
-$result = Validator::validate(['menue' => ['hofladen']]);
-expect(['entry.invalid'], codes($result['findings']), "target ['hofladen'] (list value): entry.invalid");
+$result = Validator::validate(['menue' => ['produkte']]);
+expect(['entry.invalid'], codes($result['findings']), "target ['produkte'] (list value): entry.invalid");
 $result = Validator::validate(['menue' => 301]);
 expect(['entry.invalid'], codes($result['findings']), 'target 301 (int, not 410): entry.invalid');
 holds(str_starts_with($result['findings'][0]['message'], 'Ungültiger Eintrag: '), 'entry.invalid message is translated (de)');
@@ -192,13 +192,13 @@ foreach (['https://example.org', '//example.org'] as $target) {
 }
 
 // A config that is not an array (§8.1).
-foreach (['hofladen', 1] as $config) {
+foreach (['produkte', 1] as $config) {
     $result = Validator::validate($config);
     expect(['config.notArray'], codes($result['findings']), 'config ' . var_export($config, true) . ': config.notArray');
     expect([], $result['entries'], 'config ' . var_export($config, true) . ': no entries');
     expect(null, $result['findings'][0]['key'], 'config.notArray has no key');
 }
-expect('Die Weiterleitungsliste muss ein Array alt => neu sein.', Validator::validate('hofladen')['findings'][0]['message'], 'config.notArray message (de)');
+expect('Die Weiterleitungsliste muss ein Array alt => neu sein.', Validator::validate('produkte')['findings'][0]['message'], 'config.notArray message (de)');
 expect(['config.notArray'], codes(Validator::validate(null)['findings']), 'config null: config.notArray');
 
 // ── Self redirect (§8.1) ────────────────────────────────────────────────
@@ -225,7 +225,7 @@ try {
     $threw = $e;
 }
 holds($threw instanceof ConfigException, 'assert(loop) throws ConfigException');
-holds($threw instanceof LogicException, 'ConfigException is a LogicException (mustergasthaus catches that type)');
+holds($threw instanceof LogicException, 'ConfigException is a LogicException (a site test catches that type)');
 expect('Weiterleitungsschleife: a → b → a', $threw?->getMessage(), 'ConfigException message is the loop line');
 expect(1, count($threw?->errors() ?? []), 'ConfigException errors(): one');
 expect(1, count($threw?->findings() ?? []), 'ConfigException findings(): one');
@@ -256,9 +256,9 @@ expect('a → b → c → d', $three['findings'][0]['values']['chain'], 'three h
 expect('b → c → d', $three['findings'][1]['values']['chain'], 'three hops: b → c → d');
 expect(['a', 'b', 'c'], array_column($three['entries'], 'key'), 'three hops: all entries kept');
 
-$conditional = Validator::validate(['?page_id=1' => 'start', 'start' => 'hofladen']);
+$conditional = Validator::validate(['?page_id=1' => 'start', 'start' => 'produkte']);
 expect(['chain'], codes($conditional['findings']), 'query-condition entry into a chain: warning');
-expect('?page_id=1 → start → hofladen', $conditional['findings'][0]['values']['chain'], 'query-condition chain text');
+expect('?page_id=1 → start → produkte', $conditional['findings'][0]['values']['chain'], 'query-condition chain text');
 expect('?page_id=1', $conditional['findings'][0]['key'], 'query-condition chain key is the key as written');
 
 // A redirect to `home` lands on `/`, which the source `home` (`/home`) never matches.
@@ -270,7 +270,7 @@ I18n::setLanguage('en');
 expect('Redirect chain: a → b → c. Enter the final target directly.', Validator::validate(['a' => 'b', 'b' => 'c'])['findings'][0]['message'], 'chain message (en)');
 
 // No chain (§8.1).
-expect([], Validator::validate(['produkte' => 'hofladen', 'shop' => 'hofladen'])['findings'], 'two sources, one target: no chain');
+expect([], Validator::validate(['produkte-alt' => 'produkte', 'shop' => 'produkte'])['findings'], 'two sources, one target: no chain');
 expect([], Validator::validate(['impressum.html' => 'impressum'])['findings'], 'impressum.html → impressum: no chain');
 expect([], Validator::validate(['a' => 'b', 'b.html' => 'c'])['findings'], "'b.html' is not the source 'b': no chain");
 expect([], Validator::validate(['a' => 'index', 'index?p=1' => 'b'])['findings'], 'a conditional entry never captures a target: no chain');
@@ -397,7 +397,7 @@ expect('', $result['entries'][0]['source'] ?? null, "'?page_id=82': source is th
 expect(['page_id' => '82'], $result['entries'][0]['conditions'] ?? null, "'?page_id=82': condition page_id = 82");
 
 // ── Messages in English (§5 defaults) ───────────────────────────────────
-expect("Invalid redirect: 'menue' => '/hofladen'", Validator::validate(['menue' => '/hofladen'])['findings'][0]['message'], 'English target.invalid message');
+expect("Invalid redirect: 'menue' => '/produkte'", Validator::validate(['menue' => '/produkte'])['findings'][0]['message'], 'English target.invalid message');
 
 // ── identity() (§3.2) ───────────────────────────────────────────────────
 expect('a', Validator::identity('a', []), "identity('a', []) = a");

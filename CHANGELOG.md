@@ -16,7 +16,7 @@ All notable changes to this project are documented here. Versions follow
 First release as a Composer package. Before 1.0.0 the redirects lived as a copy
 in each site: `site/plugins/weiterleitungen` (plugin id `weiterleitungen/kern`,
 class `Weiterleitungen\Liste`), byte-identical in kirby-starter and the sites
-built from it, and the WordPress redirects of radladen as Apache rules. The
+built from it, and the WordPress redirects of a migrated site as Apache rules. The
 changes below are measured against that copy.
 
 ### Added

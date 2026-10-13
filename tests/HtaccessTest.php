@@ -18,18 +18,18 @@ use Hikkoshi\I18n;
 I18n::setLanguage('en');
 
 /**
- * The rewrite section of radladen/public/.htaccess (lines 11–90), copied
+ * The rewrite section of wp-site/public/.htaccess (lines 11–90), copied
  * verbatim so the test runs without the sibling repository.
  */
-const RADLADEN_FIXTURE = <<<'HTACCESS'
+const WPSITE_FIXTURE = <<<'HTACCESS'
 RewriteEngine on
 
-# www.radladen.com ist dieselbe Seite, nur mit Vorsilbe. Ohne diese Regel
+# www.example.com ist dieselbe Seite, nur mit Vorsilbe. Ohne diese Regel
 # liefert der Server beide Adressen als eigene Kopie aus (doppelte Inhalte für
 # Suchmaschinen). Deshalb 301 auf die Hauptdomain — vor allen anderen Regeln,
 # damit die Weiterleitungen der alten WordPress-Seite auch unter www greifen.
-RewriteCond %{HTTP_HOST} ^www\.radladen\.com$ [NC]
-RewriteRule ^(.*)$ https://radladen.com/$1 [R=301,L]
+RewriteCond %{HTTP_HOST} ^www\.example\.com$ [NC]
+RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]
 
 # Die Standardseite des Hosters mit ausliefern zu lassen wäre unsauber:
 # Sie steht nicht unter unserem Zugangsschutz und zeigt Fremdes an.
@@ -105,10 +105,10 @@ RewriteRule ^(.*) index.php [L]
 HTACCESS;
 
 /**
- * The 14 entries the converter must produce for the radladen file, in file
+ * The 14 entries the converter must produce for the WordPress file, in file
  * order (SPEC §3.7). The spec text says "15" but lists these 14 keys.
  */
-const RADLADEN_EXPECTED = [
+const WPSITE_EXPECTED = [
     '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],
     '?page_id=36' => ['to' => 'bilder', 'query' => 'drop'],
     '?page_id=14' => ['to' => 'kontakt', 'query' => 'drop'],
@@ -126,7 +126,7 @@ const RADLADEN_EXPECTED = [
 ];
 
 /** Line of the www→apex rule inside a text (the one skipped line). */
-function radladen_www_line(string $text): int
+function wpsite_www_line(string $text): int
 {
     foreach (explode("\n", $text) as $i => $line) {
         if (str_starts_with(trim($line), 'RewriteRule ^(.*)$')) {
@@ -136,26 +136,26 @@ function radladen_www_line(string $text): int
     return -1;
 }
 
-/** Checks one converted radladen result (fixture or real file). */
-function check_radladen(string $label, string $text): void
+/** Checks one converted wp-site result (fixture or real file). */
+function check_wpsite(string $label, string $text): void
 {
     $result = Htaccess::convert($text);
-    expect(RADLADEN_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
+    expect(WPSITE_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
     expect(1, count($result['skipped']), "$label: exactly one skipped line");
     $skip = $result['skipped'][0] ?? ['line' => -1, 'text' => '', 'reason' => ''];
     expect('condition', $skip['reason'], "$label: skipped reason is condition");
     holds(str_starts_with($skip['text'], 'RewriteRule ^(.*)$'), "$label: skipped text starts with RewriteRule ^(.*)\$");
-    expect('RewriteRule ^(.*)$ https://radladen.com/$1 [R=301,L]', $skip['text'], "$label: skipped text is the www rule");
-    expect(radladen_www_line($text), $skip['line'], "$label: skipped line number");
+    expect('RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]', $skip['text'], "$label: skipped text is the www rule");
+    expect(wpsite_www_line($text), $skip['line'], "$label: skipped line number");
 }
 
-check_radladen('fixture', RADLADEN_FIXTURE);
+check_wpsite('fixture', WPSITE_FIXTURE);
 
-$realRadladen = dirname(__DIR__, 2) . '/radladen/public/.htaccess';
-if (is_file($realRadladen)) {
-    check_radladen('real file', (string) file_get_contents($realRadladen));
+$realWpsite = dirname(__DIR__, 2) . '/wp-site/public/.htaccess';
+if (is_file($realWpsite)) {
+    check_wpsite('real file', (string) file_get_contents($realWpsite));
 } else {
-    holds(true, 'radladen fixture not present (real file check skipped)');
+    holds(true, 'real WordPress file not present (real file check skipped)');
 }
 
 /* ------------------------------------------------------------------------
@@ -331,13 +331,13 @@ expect([[], []], [$r['entries'], $r['skipped']], 'unrelated directives are ignor
 $entries = [
     '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],
     'alt' => 410,
-    'produkte' => 'hofladen',
+    'produkte' => 'produkte',
     'x' => ['to' => 'y', 'status' => 302],
 ];
 expect("<?php\n/**\n * Header\n */\nreturn [\n"
     . "    '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],\n"
     . "    'alt' => 410,\n"
-    . "    'produkte' => 'hofladen',\n"
+    . "    'produkte' => 'produkte',\n"
     . "    'x' => ['to' => 'y', 'status' => 302],\n"
     . "];\n", Htaccess::render($entries, 'Header'), 'render with header, exact text');
 
@@ -363,7 +363,7 @@ expect(['a' => 'b'], eval(substr($php, strlen('<?php'))), 'render: the hostile h
 holds(!isset($GLOBALS['hikkoshiInjected']), 'render: nothing from the header ran');
 expect("<?php\n/**\n * a\n * b\n */\nreturn [\n];\n", Htaccess::render([], "a\r\nb"), 'render: CR of a CRLF header is dropped');
 
-$converted = Htaccess::convert(RADLADEN_FIXTURE)['entries'];
-expect($converted, eval(substr(Htaccess::render($converted, 'x'), strlen('<?php'))), 'radladen entries round-trip through render');
+$converted = Htaccess::convert(WPSITE_FIXTURE)['entries'];
+expect($converted, eval(substr(Htaccess::render($converted, 'x'), strlen('<?php'))), 'WordPress entries round-trip through render');
 
 finish('HtaccessTest');

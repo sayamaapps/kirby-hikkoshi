@@ -181,7 +181,7 @@ try {
 }
 
 /* ------------------------------------------------------------------------
- * The radladen file, through the real binary
+ * The WordPress file, through the real binary
  * --------------------------------------------------------------------- */
 
 $expected = [
@@ -191,16 +191,16 @@ $expected = [
 
 $dir = cv_tmp();
 try {
-    // The rewrite section of radladen/public/.htaccess (lines 11-90), copied verbatim.
+    // The rewrite section of wp-site/public/.htaccess (lines 11-90), copied verbatim.
     $block = <<<'HTACCESS'
 RewriteEngine on
 
-# www.radladen.com ist dieselbe Seite, nur mit Vorsilbe. Ohne diese Regel
+# www.example.com ist dieselbe Seite, nur mit Vorsilbe. Ohne diese Regel
 # liefert der Server beide Adressen als eigene Kopie aus (doppelte Inhalte für
 # Suchmaschinen). Deshalb 301 auf die Hauptdomain — vor allen anderen Regeln,
 # damit die Weiterleitungen der alten WordPress-Seite auch unter www greifen.
-RewriteCond %{HTTP_HOST} ^www\.radladen\.com$ [NC]
-RewriteRule ^(.*)$ https://radladen.com/$1 [R=301,L]
+RewriteCond %{HTTP_HOST} ^www\.example\.com$ [NC]
+RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]
 
 # Die Standardseite des Hosters mit ausliefern zu lassen wäre unsauber:
 # Sie steht nicht unter unserem Zugangsschutz und zeigt Fremdes an.
@@ -274,32 +274,32 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*) index.php [L]
 </IfModule>
 HTACCESS;
-    file_put_contents($dir . '/radladen.htaccess', $block);
+    file_put_contents($dir . '/wpsite.htaccess', $block);
 
-    [$code, $out, $err] = cv_binary(['convert', $dir . '/radladen.htaccess']);
-    expect(1, $code, 'radladen block via the binary → exit 1 (one skipped line)');
-    expect($expected, array_keys(cv_eval($out)), 'radladen block via the binary → the 14 keys in file order');
-    expect(14, count(cv_eval($out)), 'radladen block → 14 entries');
-    expect(1, substr_count($err, 'Skipped line'), 'radladen block → exactly one Skipped line on stderr');
+    [$code, $out, $err] = cv_binary(['convert', $dir . '/wpsite.htaccess']);
+    expect(1, $code, 'WordPress block via the binary → exit 1 (one skipped line)');
+    expect($expected, array_keys(cv_eval($out)), 'WordPress block via the binary → the 14 keys in file order');
+    expect(14, count(cv_eval($out)), 'wp-site block → 14 entries');
+    expect(1, substr_count($err, 'Skipped line'), 'wp-site block → exactly one Skipped line on stderr');
     $wwwLine = 0;
     foreach (explode("\n", $block) as $i => $blockLine) {
         if (str_starts_with($blockLine, 'RewriteRule ^(.*)$')) {
             $wwwLine = $i + 1;
         }
     }
-    holds(str_contains($err, 'Skipped line ' . $wwwLine . ' (' . I18n::t('reason.condition') . '): RewriteRule ^(.*)$ https://radladen.com/$1 [R=301,L]'), 'radladen block → the www rule is the skipped line');
+    holds(str_contains($err, 'Skipped line ' . $wwwLine . ' (' . I18n::t('reason.condition') . '): RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]'), 'wp-site block → the www rule is the skipped line');
 } finally {
     cv_remove($dir);
 }
 
-$real = dirname(__DIR__, 2) . '/radladen/public/.htaccess';
+$real = dirname(__DIR__, 2) . '/wp-site/public/.htaccess';
 if (is_file($real)) {
     [$code, $out, $err] = cv_binary(['convert', $real]);
-    expect(1, $code, 'real radladen file via the binary → exit 1');
-    expect(14, count(cv_eval($out)), 'real radladen file → 14 entries');
-    expect(1, substr_count($err, 'Skipped line'), 'real radladen file → exactly one Skipped line');
+    expect(1, $code, 'real WordPress file via the binary → exit 1');
+    expect(14, count(cv_eval($out)), 'real WordPress file → 14 entries');
+    expect(1, substr_count($err, 'Skipped line'), 'real WordPress file → exactly one Skipped line');
 } else {
-    holds(true, 'radladen fixture not present (real file check skipped)');
+    holds(true, 'real WordPress file not present (real file check skipped)');
 }
 
 finish('ConvertCommandTest');

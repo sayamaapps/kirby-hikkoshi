@@ -61,7 +61,7 @@ expect('impressum', Path::stripSuffix('impressum.html', ['.html'], []), 'suffix 
 expect('index', Path::stripSuffix('index.html', $suffixes, []), 'no index files: index.html is an ordinary .html file, stripped to index');
 
 // ── isValidSource (after normalisation) ─────────────────────────────────
-foreach (['menue', 'hofladen-bio-gaertnerei.html', 'mittagskarte-musterhof/hofcafe-25-04.pdf', 'index.html',
+foreach (['menue', 'produkt-c.html', 'speisekarte/karte-1.pdf', 'index.html',
           'alt/tief/seite', 'archiv/2024', 'wp_content', 'Menue', 'a.b'] as $ok) {
     holds(Path::isValidSource($ok), "valid source: $ok");
 }
@@ -71,11 +71,11 @@ foreach (['../secret', 'a/../secret', '.hidden', 'a..html', 'a.b.c', 'a%2ehtml',
 }
 
 // ── isValidTarget ───────────────────────────────────────────────────────
-foreach (['home', 'hofladen', 'leistungen/beratung', 'archiv/2024', 'in-erinnerung'] as $ok) {
+foreach (['home', 'produkte', 'leistungen/beratung', 'archiv/2024', 'in-erinnerung'] as $ok) {
     holds(Path::isValidTarget($ok), "valid target: $ok");
 }
-foreach (['https://example.org', '//example.org', '/hofladen', 'hofladen/', 'hofladen.html', '../hofladen',
-          'hofladen?x=1', '', '(:all)', 'javascript:alert(1)', 'mailto:a@b.c', 'tel:+49', 'Hofladen'] as $bad) {
+foreach (['https://example.org', '//example.org', '/produkte', 'produkte/', 'produkte.html', '../produkte',
+          'produkte?x=1', '', '(:all)', 'javascript:alert(1)', 'mailto:a@b.c', 'tel:+49', 'Produkte'] as $bad) {
     holds(!Path::isValidTarget($bad), 'invalid target: ' . var_export($bad, true));
 }
 
@@ -84,8 +84,8 @@ expect('example.org', Path::externalHost('https://example.org/x?y=1'), 'https ho
 expect('example.org', Path::externalHost('http://Example.ORG'), 'http host lowercased');
 expect('example.org', Path::externalHost('//example.org'), 'protocol-relative is external');
 expect('example.org:8080', Path::externalHost('https://example.org:8080/'), 'port kept');
-expect(null, Path::externalHost('hofladen'), 'page id is not external');
-expect(null, Path::externalHost('/hofladen'), 'absolute path is not external');
+expect(null, Path::externalHost('produkte'), 'page id is not external');
+expect(null, Path::externalHost('/produkte'), 'absolute path is not external');
 expect(null, Path::externalHost('javascript:alert(1)'), 'javascript: is not external (and invalid)');
 expect(null, Path::externalHost('mailto:a@b.c'), 'mailto: is not external');
 

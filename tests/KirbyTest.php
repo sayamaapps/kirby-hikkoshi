@@ -68,17 +68,17 @@ function ktPreList(): array
 {
     return [
         'menue' => 'speisekarte',
-        'hofladen-bio-gaertnerei.html' => 'hofladen',
-        'mittagskarte/hofcafe-25-04.pdf' => 'speisekarte',
+        'produkt-c.html' => 'produkte',
+        'tageskarte/karte-1.pdf' => 'speisekarte',
         'alt/tief/seite' => 'leistungen/beratung',
         'index.html' => 'home',
-        'brennerei-schnaps.html' => 'destillerie',   // target is a draft
-        'team' => 'hofladen',                        // a real page sits under the old path
+        'produkt-b.html' => 'produkt-b',   // target is a draft
+        'team' => 'produkte',                        // a real page sits under the old path
     ];
 }
 
 /** Target paths of the pre-1.0 list render 200. */
-const KT_TARGET_PATHS = ['/speisekarte', '/hofladen', '/leistungen/beratung', '/'];
+const KT_TARGET_PATHS = ['/speisekarte', '/produkte', '/leistungen/beratung', '/'];
 
 /* --- 1. registered, off by default, translations, option helper ----------- */
 
@@ -89,7 +89,7 @@ withSite(function (string $tmp): void {
     holds(array_key_exists('sayamaapps/hikkoshi', $off->plugins()), 'plugin sayamaapps/hikkoshi is registered');
     expect([], $off->site()->hikkoshiRedirects(), 'off by default: hikkoshiRedirects() is []');
     expect(null, $off->site()->hikkoshiResolve('/menue'), 'off by default: hikkoshiResolve() is null');
-    expect([], $off->page('hofladen')->hikkoshiSources(), 'off by default: page hikkoshiSources() is []');
+    expect([], $off->page('produkte')->hikkoshiSources(), 'off by default: page hikkoshiSources() is []');
     [$status, , $location] = hikkoshi_render($off, '/menue');
     expect(404, $status, 'off by default: /menue is 404 even with a list file');
     expect(null, $location, 'off by default: /menue has no Location');
@@ -115,8 +115,8 @@ withSite(function (string $tmp): void {
 
     $expected = [
         '/menue' => 'http://example.invalid/speisekarte',
-        '/hofladen-bio-gaertnerei.html' => 'http://example.invalid/hofladen',
-        '/mittagskarte/hofcafe-25-04.pdf' => 'http://example.invalid/speisekarte',
+        '/produkt-c.html' => 'http://example.invalid/produkte',
+        '/tageskarte/karte-1.pdf' => 'http://example.invalid/speisekarte',
         '/alt/tief/seite' => 'http://example.invalid/leistungen/beratung',
         '/index.html' => 'http://example.invalid',
     ];
@@ -149,21 +149,21 @@ withSite(function (string $tmp): void {
     // CHANGED: Kirby compared routes case-sensitively and answered 404 for
     // uppercase; the normalised match redirects now (pre-1.0: 404).
     foreach (['/MENUE' => 'http://example.invalid/speisekarte', '/Menue' => 'http://example.invalid/speisekarte',
-              '/Hofladen-Bio-Gaertnerei.html' => 'http://example.invalid/hofladen'] as $old => $location) {
+              '/Produkt-c.html' => 'http://example.invalid/produkte'] as $old => $location) {
         [$status, , $actual] = hikkoshi_render($kirby, $old);
         expect(301, $status, "$old is 301 now (pre-1.0: 404)");
         expect($location, $actual, "$old location");
     }
 
     // A draft as target: no redirect, the normal treatment (404).
-    [$status, , $location] = hikkoshi_render($kirby, '/brennerei-schnaps.html');
+    [$status, , $location] = hikkoshi_render($kirby, '/produkt-b.html');
     expect(404, $status, 'draft target: 404');
     expect(null, $location, 'draft target: no Location');
 
     // Plugin routes come before the page lookup: the page team is hidden.
     [$status, , $location] = hikkoshi_render($kirby, '/team');
     expect(301, $status, 'old path under a real page: 301');
-    expect('http://example.invalid/hofladen', $location, 'old path under a real page: location');
+    expect('http://example.invalid/produkte', $location, 'old path under a real page: location');
 
     // Other methods are untouched: a POST to an old form address stays a POST.
     holds(hikkoshi_render($kirby, '/menue', 'POST')[0] !== 301, 'POST /menue is not redirected');
@@ -193,7 +193,7 @@ withSite(function (string $tmp): void {
 withSite(function (string $tmp): void {
     $broken = [
         'loop' => ['a' => 'b', 'b' => 'a'],
-        'pattern' => ['(:all)' => 'hofladen'],
+        'pattern' => ['(:all)' => 'produkte'],
         'foreign domain' => ['menue' => 'https://example.org'],
         'duplicate' => ['menue' => 'a', 'Menue' => 'b'],
     ];
@@ -212,13 +212,13 @@ withSite(function (string $tmp): void {
 
     // CHANGED: a chain no longer breaks the site. Two hops work, the warning
     // goes to the error log (pre-1.0: every request 500).
-    hikkoshi_write_config($tmp, ['menue' => 'speisekarte', 'speisekarte' => 'hofladen']);
+    hikkoshi_write_config($tmp, ['menue' => 'speisekarte', 'speisekarte' => 'produkte']);
     $chain = null;
     $logged = withErrorLog($tmp, function () use ($tmp, &$chain): void {
         $chain = hikkoshi_kirby($tmp, ktOn());
     });
     holds(str_contains($logged, 'Redirect chain'), 'chain: the warning is in the error log');
-    holds(str_contains($logged, 'menue → speisekarte → hofladen'), 'chain: the warning names the chain');
+    holds(str_contains($logged, 'menue → speisekarte → produkte'), 'chain: the warning names the chain');
     expect(200, hikkoshi_render($chain, '/')[0], 'chain: the home page is 200 now');
     expect(301, hikkoshi_render($chain, '/menue')[0], 'chain: /menue is 301');
     expect('http://example.invalid/speisekarte', hikkoshi_render($chain, '/menue')[2], 'chain: /menue goes to speisekarte (two hops)');
@@ -232,12 +232,12 @@ withSite(function (string $tmp): void {
 
 withSite(function (string $tmp): void {
     // hikkoshi.php beats weiterleitungen.php when both exist.
-    hikkoshi_write_config($tmp, ['menue' => 'hofladen'], 'weiterleitungen.php');
+    hikkoshi_write_config($tmp, ['menue' => 'produkte'], 'weiterleitungen.php');
     hikkoshi_write_config($tmp, ['menue' => 'speisekarte']);
     expect('http://example.invalid/speisekarte', hikkoshi_render(hikkoshi_kirby($tmp, ktOn()), '/menue')[2],
         'hikkoshi.php beats weiterleitungen.php');
     hikkoshi_write_config($tmp, null);
-    expect('http://example.invalid/hofladen', hikkoshi_render(hikkoshi_kirby($tmp, ktOn()), '/menue')[2],
+    expect('http://example.invalid/produkte', hikkoshi_render(hikkoshi_kirby($tmp, ktOn()), '/menue')[2],
         'without hikkoshi.php the legacy file is used');
 
     // The option hikkoshi.redirects, as an array and as a Closure, beats the files.
@@ -254,8 +254,8 @@ withSite(function (string $tmp): void {
         hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.file' => 'liste.php'])), '/menue')[2],
         'hikkoshi.file relative to site/config');
     @mkdir($tmp . '/elsewhere', 0700, true);
-    file_put_contents($tmp . '/elsewhere/absolut.php', '<?php return ' . var_export(['menue' => 'hofladen'], true) . ';');
-    expect('http://example.invalid/hofladen',
+    file_put_contents($tmp . '/elsewhere/absolut.php', '<?php return ' . var_export(['menue' => 'produkte'], true) . ';');
+    expect('http://example.invalid/produkte',
         hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.file' => $tmp . '/elsewhere/absolut.php'])), '/menue')[2],
         'hikkoshi.file absolute');
 
@@ -280,8 +280,8 @@ withSite(function (string $tmp): void {
 
     // Per-entry status 302 and 308.
     hikkoshi_write_config($tmp, [
-        'alt-302' => ['to' => 'hofladen', 'status' => 302],
-        'alt-308' => ['to' => 'hofladen', 'status' => 308],
+        'alt-302' => ['to' => 'produkte', 'status' => 302],
+        'alt-308' => ['to' => 'produkte', 'status' => 308],
     ]);
     $statusKirby = hikkoshi_kirby($tmp, ktOn());
     expect(302, hikkoshi_render($statusKirby, '/alt-302')[0], 'per-entry status 302');
@@ -353,11 +353,11 @@ withSite(function (string $tmp): void {
 /* --- 7. suffix and umlaut on real requests ------------------------------- */
 
 withSite(function (string $tmp): void {
-    hikkoshi_write_config($tmp, ['impressum' => 'speisekarte', 'ueber-uns' => 'hofladen']);
+    hikkoshi_write_config($tmp, ['impressum' => 'speisekarte', 'ueber-uns' => 'produkte']);
     $kirby = hikkoshi_kirby($tmp, ktOn());
 
     foreach (['/impressum.html' => 'http://example.invalid/speisekarte', '/Impressum.php' => 'http://example.invalid/speisekarte',
-              '/über-uns' => 'http://example.invalid/hofladen', '/%C3%BCber-uns' => 'http://example.invalid/hofladen'] as $old => $location) {
+              '/über-uns' => 'http://example.invalid/produkte', '/%C3%BCber-uns' => 'http://example.invalid/produkte'] as $old => $location) {
         [$status, , $actual] = hikkoshi_render($kirby, $old);
         expect(301, $status, "$old: 301");
         expect($location, $actual, "$old: location");
@@ -383,14 +383,14 @@ withSite(function (string $tmp): void {
     expect('exact', $resolved['pass'] ?? null, 'hikkoshiResolve() pass');
     expect(null, $kirby->site()->hikkoshiResolve('/nope'), 'hikkoshiResolve() of an unknown path is null');
 
-    expect(['hofladen-bio-gaertnerei.html', 'team'], $kirby->page('hofladen')->hikkoshiSources(),
+    expect(['produkt-c.html', 'team'], $kirby->page('produkte')->hikkoshiSources(),
         'page hikkoshiSources() in config order');
     expect(['index.html'], $kirby->site()->homePage()->hikkoshiSources(), 'home page hikkoshiSources()');
 
     $off = hikkoshi_kirby($tmp);
     expect([], $off->site()->hikkoshiRedirects(), 'off: hikkoshiRedirects() is []');
     expect(null, $off->site()->hikkoshiResolve('/menue'), 'off: hikkoshiResolve() is null');
-    expect([], $off->page('hofladen')->hikkoshiSources(), 'off: page hikkoshiSources() is []');
+    expect([], $off->page('produkte')->hikkoshiSources(), 'off: page hikkoshiSources() is []');
     expect([], $off->site()->homePage()->hikkoshiSources(), 'off: home page hikkoshiSources() is []');
 });
 

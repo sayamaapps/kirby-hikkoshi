@@ -59,7 +59,7 @@ expect('a?[2J', I18n::printable("a\x9b[2J"), 'printable() turns a raw C1 byte (C
 expect("'a' => 'b'", I18n::entry('a', 'b'), 'entry() prints like var_export');
 expect("'a' => 410", I18n::entry('a', 410), 'entry() with an int value');
 expect("'a' => ['to' => 'x', 'status' => 302]", I18n::entry('a', ['to' => 'x', 'status' => 302]), 'entry() prints arrays on one line in short syntax');
-expect("0 => ['hofladen']", I18n::entry(0, ['hofladen']), 'entry() prints lists without keys');
+expect("0 => ['produkte']", I18n::entry(0, ['produkte']), 'entry() prints lists without keys');
 expect("'a' => NULL", I18n::entry('a', null), 'entry() prints null like var_export');
 expect('No redirect list found (tried a, b).', I18n::t('cli.noFile', ['files' => ['a', 'b']]), 'array values are joined');
 
@@ -67,7 +67,7 @@ I18n::setLanguage('de');
 expect('de', I18n::language(), 'German selected');
 expect('Weiterleitungskette: a → b → c. Das Ziel direkt eintragen.', I18n::t('finding.chain', ['chain' => 'a → b → c']), 'German chain message matches the pre-1.0 wording');
 expect("Weiterleitung auf sich selbst: 'menue' => 'menue'", I18n::t('finding.target.self', ['entry' => I18n::entry('menue', 'menue')]), 'German self message');
-expect("Ungültige Weiterleitung: '../secret' => 'hofladen'", I18n::t('finding.target.invalid', ['entry' => I18n::entry('../secret', 'hofladen')]), 'German invalid message matches the pre-1.0 wording');
+expect("Ungültige Weiterleitung: '../secret' => 'produkte'", I18n::t('finding.target.invalid', ['entry' => I18n::entry('../secret', 'produkte')]), 'German invalid message matches the pre-1.0 wording');
 I18n::setLanguage('en');
 
 finish('Hikkoshi I18n');

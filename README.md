@@ -60,7 +60,7 @@ If the site still has the pre-1.0 copy `site/plugins/weiterleitungen/`, remove i
    <?php
 
    return [
-       'ueber-uns'      => 'familie-und-hof',
+       'ueber-uns'      => 'team',
        'impressum.html' => 'impressum',
        '?page_id=82'    => 'impressum',
        'gewinnspiel-2019' => 410,
@@ -112,11 +112,11 @@ A key with a numeric name, such as `2024 => 'archiv'`, is an error, because PHP 
 
 | Value | Meaning |
 |---|---|
-| `'hofladen'` | the page with that id; status and query come from the options |
+| `'produkte'` | the page with that id; status and query come from the options |
 | `'leistungen/beratung'` | a page id with slashes inside, no slash at the ends |
 | `'home'` | the home page |
 | `410` | gone: answered with status 410 and the `hikkoshi/gone` snippet |
-| `['to' => 'hofladen', 'status' => 302, 'query' => 'drop']` | a per-entry status (301, 302, 307 or 308) and query mode (`keep` or `drop`) |
+| `['to' => 'produkte', 'status' => 302, 'query' => 'drop']` | a per-entry status (301, 302, 307 or 308) and query mode (`keep` or `drop`) |
 | `['status' => 410]` | gone, the same as the value `410` |
 | `'https://other.example/x'` or `['to' => 'https://other.example/x']` | an external target; only when the host is in `hikkoshi.allowedHosts` |
 
@@ -129,13 +129,13 @@ A complete example:
 
 return [
     // Jimdo: pages without suffix, subpages with a path
-    'ueber-uns'            => 'familie-und-hof',
-    'angebot/gemuesekiste' => 'hofladen',
+    'ueber-uns'            => 'team',
+    'angebot/kurs-1' => 'produkte',
     // Jimdo and WordPress exports with a suffix
     'impressum.html'       => 'impressum',
     'index.html'           => 'home',
     // Old downloads whose content is a page now
-    'downloads/preisliste-2024.pdf' => 'hofladen',
+    'downloads/preisliste-2024.pdf' => 'produkte',
     // WordPress with plain permalinks (query-string addresses)
     '?page_id=82'          => 'impressum',
     '?pagename=contact'    => 'kontakt',
@@ -143,7 +143,7 @@ return [
     // Removed for good: 410 instead of a redirect
     'gewinnspiel-2019'     => 410,
     // Temporary, with the query dropped
-    'aktion'               => ['to' => 'hofladen', 'status' => 302, 'query' => 'drop'],
+    'aktion'               => ['to' => 'produkte', 'status' => 302, 'query' => 'drop'],
     // A foreign target, needs hikkoshi.allowedHosts
     'partner'              => 'https://partner.example/start',
 ];
@@ -281,7 +281,7 @@ The test helper adds findings about the site itself (see [Test helper for sites]
 
 Two kinds of chains are not reported, because the list alone cannot show them:
 
-- An entry with a query condition is not counted as the next hop. With `query` on `keep`, `'alt' => 'speisekarte'` forwards `?x=1`, and `'speisekarte?x=1' => 'hofladen'` then answers a second time — but only for that query. Give the first entry `'query' => 'drop'` if that matters.
+- An entry with a query condition is not counted as the next hop. With `query` on `keep`, `'alt' => 'speisekarte'` forwards `?x=1`, and `'speisekarte?x=1' => 'produkte'` then answers a second time — but only for that query. Give the first entry `'query' => 'drop'` if that matters.
 - A target `home` is never captured by an entry `home`: the redirect lands on `/`, and the entry `home` answers `/home`. If the site renames its home page (Kirby option `home`), the same holds for that page's id; the list check does not know it, `hikkoshiCheck()` does.
 
 Chains are warnings, not errors: the site keeps working with two hops, and the warning is logged. Loops and duplicates are errors. Run `vendor/bin/hikkoshi check --strict` in CI to fail on chains too, or set `hikkoshi.resolveChains` to let the site resolve them.
@@ -333,9 +333,9 @@ It reads these directives (names are case-insensitive): `Redirect`, `RedirectPer
 
 Exit codes: `0` all lines converted, `1` lines skipped (listed on standard error), `2` usage error or file not found.
 
-#### The radladen example
+#### A WordPress example
 
-The WordPress site of radladen ran with plain permalinks, so its old addresses were query strings (`/?page_id=82`). Its `public/.htaccess` maps them with one `RewriteCond` and one `RewriteRule` per target, for example:
+A WordPress site ran with plain permalinks, so its old addresses were query strings (`/?page_id=82`). Its `public/.htaccess` maps them with one `RewriteCond` and one `RewriteRule` per target, for example:
 
 ```apache
 RewriteCond %{QUERY_STRING} (^|&)page_id=82(&|$)
@@ -351,7 +351,7 @@ The converter produces this from the whole file:
 
 ```text
 $ vendor/bin/hikkoshi convert public/.htaccess > site/config/hikkoshi.php
-Skipped line 18 (condition is not a query-string condition): RewriteRule ^(.*)$ https://radladen.com/$1 [R=301,L]
+Skipped line 18 (condition is not a query-string condition): RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]
 14 entries converted, 1 lines skipped.
 ```
 
@@ -381,7 +381,7 @@ return [
 ];
 ```
 
-Fourteen entries come out. The `RewriteRule` that was skipped is the rule that sends `www.radladen.com` to the bare domain. It depends on the host name, so it stays in `.htaccess` and is not a redirect of the list. That is why the converter exits with 1: it is a review signal, not a failure. The seven rewrites that pass requests to `index.php` produce no entries.
+Fourteen entries come out. The `RewriteRule` that was skipped is the rule that sends `www.example.com` to the bare domain. It depends on the host name, so it stays in `.htaccess` and is not a redirect of the list. That is why the converter exits with 1: it is a review signal, not a failure. The seven rewrites that pass requests to `index.php` produce no entries.
 
 Every target ends in `?` in the Apache rules, so every entry has `'query' => 'drop'`. The matched `page_id` or `p` parameter is always removed anyway; `drop` also removes `utm_*` parameters. Write plain strings instead of the array form if you want to keep them.
 
@@ -397,7 +397,7 @@ Lines the converter cannot translate are skipped and listed, never guessed. Skip
 
 ## Taking over `.htaccess` rules
 
-Until Hikkoshi, the WordPress query-string redirects of radladen had to be written as Apache rules. Kirby routes see only the path, `/`, so `/?page_id=82` looks like the home page to Kirby; only Apache's `RewriteCond %{QUERY_STRING}` could tell the addresses apart. Hikkoshi's route receives the query string, so the query-string rules can move into the list (`'?page_id=82' => 'impressum'`).
+Until Hikkoshi, the WordPress query-string redirects of such a site had to be written as Apache rules. Kirby routes see only the path, `/`, so `/?page_id=82` looks like the home page to Kirby; only Apache's `RewriteCond %{QUERY_STRING}` could tell the addresses apart. Hikkoshi's route receives the query string, so the query-string rules can move into the list (`'?page_id=82' => 'impressum'`).
 
 Move the rules that depend on the request's path or query, and keep what belongs to the web server:
 
@@ -570,7 +570,7 @@ Steps:
 3. Add `'hikkoshi.active' => true` to `site/config/config.php`. **The copy was on whenever its list file existed; Hikkoshi is off until this switch is set.**
 4. Keep `site/config/weiterleitungen.php` (it is read unchanged), or rename it to `site/config/hikkoshi.php`.
 5. Replace `tests/WeiterleitungenTest.php` and `tests/WeiterleitungenHttpTest.php` with the site test from [Test helper for sites](#test-helper-for-sites).
-6. Look for other tests that load the copy: `grep -rn 'plugins/weiterleitungen' tests/`. mustergasthaus's Playwright spec `tests/weiterleitungen.spec.ts` `require`s `site/plugins/weiterleitungen/index.php` against a fake Kirby App to test rejected keys; that test fails once the folder is gone. Replace it with a loop over `Hikkoshi\Validator::assert([$bad => 'hofladen'])` (it throws `ConfigException`, a `LogicException` as before), or drop it in favour of the list test. Note that `'a%2ehtml'` is now decoded to `a.html` and accepted.
+6. Look for other tests that load the copy: `grep -rn 'plugins/weiterleitungen' tests/`. A site's Playwright spec `tests/weiterleitungen.spec.ts` `require`s `site/plugins/weiterleitungen/index.php` against a fake Kirby App to test rejected keys; that test fails once the folder is gone. Replace it with a loop over `Hikkoshi\Validator::assert([$bad => 'produkte'])` (it throws `ConfigException`, a `LogicException` as before), or drop it in favour of the list test. Note that `'a%2ehtml'` is now decoded to `a.html` and accepted.
 7. Run `vendor/bin/hikkoshi check`, then the site test.
 
 | Before (copy) | Now (Hikkoshi) |

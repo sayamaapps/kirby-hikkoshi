@@ -2,7 +2,7 @@
 /**
  * Resolver (src/Resolver.php), Kirby-free. Covers SPEC.md §8.2: path
  * normalisation in the lookup, the suffix pass, umlauts and percent-encoding,
- * lowercase and transliterate off, query conditions (radladen), the
+ * lowercase and transliterate off, query conditions (WordPress .htaccess), the
  * specificity order, conditionsMatch(), targetQuery(), appendQuery().
  *
  *   ASDF_PHP_VERSION=8.5.3 php tests/ResolverTest.php
@@ -116,7 +116,7 @@ $exactCase = rResolver(['Menue' => 'x'], ['lowercase' => false]);
 expect('Menue', rKey($exactCase, '/Menue'), 'lowercase off: /Menue hits the key Menue');
 expect(null, rKey($exactCase, '/menue'), 'lowercase off: /menue does not hit');
 
-// ── Conditions, radladen (§8.2) ─────────────────────────────────────
+// ── Conditions, WordPress .htaccess (§8.2) ─────────────────────────────────────
 $wp = rResolver([
     '?page_id=13' => 'ueber-mich',
     '?page_id=14' => 'kontakt',

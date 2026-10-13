@@ -12,10 +12,9 @@ Package `sayamaapps/kirby-hikkoshi`, plugin id `sayamaapps/hikkoshi`, namespace
 `Hikkoshi`, option prefix `hikkoshi.`, directory this repository.
 
 It replaces `site/plugins/weiterleitungen` (plugin id `weiterleitungen/kern`,
-class `Weiterleitungen\Liste`), a byte-identical copy in kirby-starter,
-mustergasthaus, praxisbeispiel, gasthaus-muster, sayamaapps.de, kundenseite and
-radladen, and takes over the WordPress query-string redirects that
-radladen still writes as Apache rules.
+class `Weiterleitungen\Liste`), a byte-identical copy in kirby-starter and in the
+sites built from it, and takes over the WordPress query-string redirects that a
+migrated site still writes as Apache rules.
 
 This document is the contract. Section numbers are referenced from code
 comments and task prompts.
@@ -60,9 +59,9 @@ comments and task prompts.
 | Original plugin | `../kirby-starter/site/plugins/weiterleitungen/{index.php,src/Liste.php}` |
 | Original config template | `../kirby-starter/site/config/weiterleitungen.example.php` |
 | Original tests | `../kirby-starter/tests/WeiterleitungenTest.php` (rules), `../kirby-starter/tests/WeiterleitungenHttpTest.php` (real requests) |
-| Real lists (compatibility contract) | `../mustergasthaus/site/config/weiterleitungen.php` (Jimdo, 14 entries), `../gasthaus-muster/site/config/weiterleitungen.php` (Wix, 12 entries) |
-| Apache rules to take over | `../radladen/public/.htaccess` (WordPress `?page_id=` redirects), `../radladen/docs/alte-urls.md` (the expected mapping) |
-| Site e2e expectations | `../mustergasthaus/tests/weiterleitungen.spec.ts` (catches `\LogicException`) |
+| Real lists (compatibility contract) | two migrated sites' lists, not in this repo: a Jimdo one (14 entries) and a Wix one (12 entries), copied verbatim into the tests |
+| Apache rules to take over | a migrated WordPress site's `public/.htaccess` (`?page_id=` redirects), not in this repo; the test reads it from `../wp-site/` when present |
+| Site e2e expectations | a site's Playwright spec (catches `\LogicException`) |
 | Family conventions | `../kirby-noren` (SPEC, README, CHANGELOG, PRIVACY, DATENSCHUTZ, tests), `../kirby-koe` (bin/ script), `../kirby-kizami` |
 
 ---
@@ -186,7 +185,7 @@ Kirby-free path rules. Read the file; summary:
 | `split(string $key): array{path: string, conditions: array<string, ?string>}` | `'?page_id=82'` → `['path' => '', 'conditions' => ['page_id' => '82']]`; `'index.php?p=1&feed'` → `['path' => 'index.php', 'conditions' => ['p' => '1', 'feed' => null]]`. Path part is NOT normalised. |
 | `stripSuffix(string $path, array $suffixes, array $indexFiles): ?string` | `'impressum.html'` → `'impressum'`; `'blog/index.php'` → `'blog'`; `'index.html'` → `''`; `'impressum'` → null; `'karte.pdf'` → null. |
 | `isValidSource(string $path): bool` | segments `[a-zA-Z0-9_-]+` with at most one dot each; `''` is NOT valid. |
-| `isValidTarget(string $target): bool` | lowercase page id: segments `[a-z0-9_-]+`, no dots, no slashes at the ends. `'Hofladen'`, `'/hofladen'`, `'hofladen.html'` invalid. |
+| `isValidTarget(string $target): bool` | lowercase page id: segments `[a-z0-9_-]+`, no dots, no slashes at the ends. `'Produkte'`, `'/produkte'`, `'produkte.html'` invalid. |
 | `externalHost(string $target): ?string` | `'https://Example.org/x'` → `'example.org'`; `'//example.org'` → `'example.org'`; page id → null; `javascript:` → null (and invalid). |
 | `query(array $query): string` | RFC 3986 query string, `''` for `[]`. |
 
@@ -212,7 +211,7 @@ warnings and infos keep their entry. Order of `entries` = config order.
 | # | Condition | Finding (code, level) | Values |
 |---|---|---|---|
 | 0 | `$config` is not an array | `config.notArray` error | — (returns immediately) |
-| 1 | key is an int (`'2024' => …` or a list `['hofladen']`) | `source.numeric` error | entry |
+| 1 | key is an int (`'2024' => …` or a list `['produkte']`) | `source.numeric` error | entry |
 | 2 | `Path::split(key)`; `source = Path::normalize(path, lowercase, transliterate)`; `source === ''` and no conditions | `source.empty` error | entry |
 | 3 | `source !== ''` and `!Path::isValidSource(source)` | `source.invalid` error | entry |
 | 4 | value: int other than 410 | `entry.invalid` error | entry |
@@ -267,16 +266,16 @@ For every non-external, non-410 entry E, follow `target → plain[target] →
 Examples (`→` = chain text): `['a'=>'b','b'=>'c']` → warning `a → b → c`
 (reported for `a` only; `b → c` is no chain). `['a'=>'b','b'=>'c','c'=>'d']` →
 warnings for `a` (`a → b → c → d`) and `b` (`b → c → d`). `['a'=>'b','b'=>410]`
-+ resolve → info `a → b → 410`, `a` becomes 410. `['?page_id=1'=>'start','start'=>'hofladen']`
-→ warning `?page_id=1 → start → hofladen`. `['?page_id=1'=>'home','home'=>'start']`
++ resolve → info `a → b → 410`, `a` becomes 410. `['?page_id=1'=>'start','start'=>'produkte']`
+→ warning `?page_id=1 → start → produkte`. `['?page_id=1'=>'home','home'=>'start']`
 → no chain (see above). `['impressum.html'=>'impressum']` → no
-chain (`impressum` is not a source). `['produkte'=>'hofladen','shop'=>'hofladen']`
+chain (`impressum` is not a source). `['produkte'=>'produkte','shop'=>'produkte']`
 → no chain.
 
 #### 3.2.3 `Hikkoshi\ConfigException` (src/ConfigException.php — written, architect → `core`)
 
 `final class ConfigException extends \LogicException` — the pre-1.0 type, which
-`mustergasthaus/tests/weiterleitungen.spec.ts` catches. Constructor takes the full
+a site's own test catches it. Constructor takes the full
 findings list; `getMessage()` = error messages joined with `"\n"`;
 `findings(): array` (all), `errors(): array` (errors only).
 
@@ -371,7 +370,7 @@ plus:
 'pass'      => 'exact'|'suffix',
 'remaining' => [...],                               // Resolver match remaining
 'page'      => Page|null,                           // the target page (internal), null for 410/external
-'location'  => 'http://example.invalid/hofladen?utm_source=qr' | null (410),
+'location'  => 'http://example.invalid/produkte?utm_source=qr' | null (410),
 ```
 Target page: `$page = $kirby->site()->find($target)`; when null and
 `$target === 'home'` → `$kirby->site()->homePage()`; `null` or
@@ -486,7 +485,7 @@ the cond has no `[OR]`: `alternatives = [alt + [p] for alt in alternatives for p
 `pending = []`. At the rule, a trailing OR-pending is merged the same way.
 Each alternative becomes one key: `path . '?' . implode('&', conds)` with
 `name=value` or bare `name`; conditions within a key in cond order. One
-`RewriteRule` therefore yields several keys (radladen: `?page_id=14`,
+`RewriteRule` therefore yields several keys (WordPress .htaccess: `?page_id=14`,
 `?p=14`, `?pagename=contact` all → `kontakt`; `page_id=(2|12|15|16|17)` →
 five keys).
 
@@ -522,20 +521,20 @@ skipped, the line is reported).
 return [
     '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],
     'alt' => 410,
-    'produkte' => 'hofladen',
+    'produkte' => 'produkte',
 ];
 ```
 Keys via `var_export`, values via `I18n::export()`, four-space indent, one
 entry per line, trailing comma, `"\n"` line ends. No header → no docblock.
 Empty entries → `return [\n];`.
 
-**Expected result for `../radladen/public/.htaccess`** (the acceptance
+**Expected result for `../wp-site/public/.htaccess`** (the acceptance
 case): 14 entries in this order, all `['to' => …, 'query' => 'drop']`:
 `?page_id=13`→ueber-mich, `?page_id=36`→bilder, `?page_id=14`→kontakt,
 `?p=14`→kontakt, `?pagename=contact`→kontakt, `?page_id=80`→datenschutz,
 `?page_id=82`→impressum, `?page_id=2`, `?page_id=12`, `?page_id=15`,
 `?page_id=16`, `?page_id=17`, `?p=1`, `?feed` → home. Exactly one skipped
-line: the `RewriteRule ^(.*)$ https://radladen.com/$1 [R=301,L]` with
+line: the `RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]` with
 reason `condition` (its `RewriteCond %{HTTP_HOST}`). Nothing else is reported
 (the seven internal `index.php` rewrites are ignored).
 
@@ -695,9 +694,9 @@ The list is a PHP array `old => target`, returned by `site/config/hikkoshi.php`
 
 | Value form | Meaning |
 |---|---|
-| `'hofladen'`, `'leistungen/beratung'`, `'home'` | page id (lowercase, no slashes at the ends); `home` = the home page. Status/query from the options. |
+| `'produkte'`, `'leistungen/beratung'`, `'home'` | page id (lowercase, no slashes at the ends); `home` = the home page. Status/query from the options. |
 | `410` | gone: 410 with the `hikkoshi/gone` snippet |
-| `['to' => 'hofladen', 'status' => 302, 'query' => 'drop']` | per-entry status (301/302/307/308) and query mode; `['status' => 410]` is also gone |
+| `['to' => 'produkte', 'status' => 302, 'query' => 'drop']` | per-entry status (301/302/307/308) and query mode; `['status' => 410]` is also gone |
 | `'https://other.example/x'` or `['to' => 'https://…']` | external, only with the host in `hikkoshi.allowedHosts` |
 
 Request handling: GET and HEAD only; the matched condition parameters are
@@ -754,8 +753,8 @@ these adaptations, each named in a comment:
   `key`/`source`/`target` equal the list, `status 301`, `query 'keep'`,
   `conditions []`, `external false`; `assert([])` → `[]`.
 - `config/hikkoshi.example.php` is valid (no errors; exactly which findings:
-  none). Also the two real lists copied verbatim into the test (mustergasthaus 14
-  entries, gasthaus 12 entries) → no findings at all.
+  none). Also the two real lists copied verbatim into the test (Jimdo 14
+  entries, Wix 12 entries) → no findings at all.
 - `['2024' => 'archiv']` → one error `source.numeric`, message contains
   `rein numerisch` (de); `['archiv/2024' => 'archiv']` accepted.
 - the former "invalid old paths" split into (a) still rejected (error
@@ -769,10 +768,10 @@ these adaptations, each named in a comment:
   case; with `['transliterate' => false]`: `über-uns` is rejected
   (`source.invalid`).
 - invalid targets (each one error, code given): `https://example.org` and
-  `//example.org` → `target.foreign` (host `example.org`); `/hofladen`,
-  `hofladen/`, `hofladen.html`, `../hofladen`, `Hofladen`, `hofladen?x=1`,
-  `''`, `(:all)`, `null` → `target.invalid`; `['hofladen']` → `entry.invalid`;
-  `301` → `entry.invalid`; non-array config (`'hofladen'`, `1`) →
+  `//example.org` → `target.foreign` (host `example.org`); `/produkte`,
+  `produkte/`, `produkte.html`, `../produkte`, `Produkte`, `produkte?x=1`,
+  `''`, `(:all)`, `null` → `target.invalid`; `['produkte']` → `entry.invalid`;
+  `301` → `entry.invalid`; non-array config (`'produkte'`, `1`) →
   `config.notArray`.
 - self: `['menue' => 'menue']` → `target.self`, message contains `sich selbst`
   (de); `['Menue/' => 'menue']` also self (normalised).
@@ -792,7 +791,7 @@ these adaptations, each named in a comment:
   `chain.resolved` info, `a` has target `c`, `b` unchanged; `['a'=>'b','b'=>410]`
   → `a` becomes `status 410`, `target null`, `query 'drop'`; a loop with
   resolveChains → `loop` error and nothing resolved.
-- no chain: `['produkte'=>'hofladen','shop'=>'hofladen']`,
+- no chain: `['produkte'=>'produkte','shop'=>'produkte']`,
   `['impressum.html'=>'impressum']`, `['a'=>'b','b.html'=>'c']`.
 - value forms: `410` → entry `target null status 410 query drop`;
   `['status'=>410]` same; `['to'=>'x','status'=>308,'query'=>'drop']`;
@@ -810,9 +809,9 @@ these adaptations, each named in a comment:
   duplicate of a 410 reports target `410`.
 - `source.empty`: `['' => 'x']` and `['?' => 'x']`; `['?page_id=82' => 'impressum']`
   accepted with source `''`.
-- messages: `Ungültiger alter Pfad: '../secret' => 'hofladen'` exact (de; code
+- messages: `Ungültiger alter Pfad: '../secret' => 'produkte'` exact (de; code
   `source.invalid`, §3.2.1 rule 3 and §5);
-  English default `Invalid old path: '../secret' => 'hofladen'`; array entry
+  English default `Invalid old path: '../secret' => 'produkte'`; array entry
   printed on one line `'m' => ['to' => 'x', 'status' => 200]`.
 - `identity('a', [])` → `a`; `identity('', ['q'=>'2','p'=>null])` → `?p&q=2`.
 - `hasErrors`, `ofLevel` on a mixed findings list.
@@ -839,7 +838,7 @@ stated. Cases (expected `key` of the hit, `pass`, `remaining`):
   `/über-uns` null, `/ueber-uns` hit.
 - `lowercase false`: entry `['Menue'=>'x']` (source stays `Menue`): `/Menue` hit,
   `/menue` null.
-- conditions (radladen): entries `['?page_id=13'=>'ueber-mich','?page_id=14'=>'kontakt','?p=14'=>'kontakt','?pagename=contact'=>'kontakt','?feed'=>'home','index.php?p=1'=>'home']`:
+- conditions (WordPress .htaccess): entries `['?page_id=13'=>'ueber-mich','?page_id=14'=>'kontakt','?p=14'=>'kontakt','?pagename=contact'=>'kontakt','?feed'=>'home','index.php?p=1'=>'home']`:
   `('', ['page_id'=>'13'])` → `?page_id=13` exact; `('/', ['page_id'=>'13','utm'=>'x'])`
   → same, remaining `['utm'=>'x']`; `('/index.php', ['page_id'=>'14'])` →
   `?page_id=14`/suffix; `('', ['feed'=>'rss2'])` and `('', ['feed'=>''])` → `?feed`;
@@ -864,8 +863,8 @@ stated. Cases (expected `key` of the hit, `pass`, `remaining`):
 
 Port of `kirby-starter/tests/WeiterleitungenHttpTest.php`, rendered
 in-process with `hikkoshi_render()` (no PHP server, no sockets). The fixture
-`hikkoshi_site()` already has the pages of that test (speisekarte, hofladen,
-leistungen/beratung, team, draft destillerie, home, error). Use
+`hikkoshi_site()` already has the pages of that test (speisekarte, produkte,
+leistungen/beratung, team, draft produkt-b, home, error). Use
 `hikkoshi_write_config()` for the list, `hikkoshi_kirby($tmp, $options,
 $request)` for a fresh instance (a new instance per list; the query is a
 property of the instance). Use a `withSite()` wrapper with try/finally like
@@ -875,26 +874,26 @@ noren's KirbyTest. Sections:
    `hikkoshiRedirects()` `[]` and `/menue` → 404 while off even with a list
    file; `'hikkoshi.active' => 'yes'` stays off; translations
    `hikkoshi.gone.title` en/de; `hikkoshi_option('active')`.
-2. **The pre-1.0 list** (`menue`, `hofladen-bio-gaertnerei.html`,
-   `mittagskarte/hofcafe-25-04.pdf`, `alt/tief/seite`, `index.html`,
-   `brennerei-schnaps.html` → draft `destillerie`, `team` → `hofladen`) written
+2. **The pre-1.0 list** (`menue`, `produkt-c.html`,
+   `tageskarte/karte-1.pdf`, `alt/tief/seite`, `index.html`,
+   `produkt-b.html` → draft `produkt-b`, `team` → `produkte`) written
    as **`weiterleitungen.php`** (legacy file name) with `hikkoshi.active`:
    for each of the first five, `GET` and `HEAD`, with and without trailing
    slash → 301 and Location `http://example.invalid/<target>`
    (`http://example.invalid` for home); target paths render 200. Query kept:
    instance with request query `['utm_source'=>'qr','probe'=>['1']]` →
    Location path `/speisekarte`, `parse_str` of its query equals the array;
-   `/menue/` too. **Changed:** `/MENUE`, `/Menue`, `/Hofladen-Bio-Gaertnerei.html`
+   `/menue/` too. **Changed:** `/MENUE`, `/Menue`, `/Produkt-c.html`
    → 301 now (comment: pre-1.0 gave 404). Draft target → 404, no Location.
-   `/team` → 301 to hofladen (page hidden). `POST /menue` → not 301.
+   `/team` → 301 to produkte (page hidden). `POST /menue` → not 301.
    `/speisekarte` → 200 body `Page speisekarte`; `/gibt-es-nicht` → 404 no
    Location; `/menue/unterseite` → 404.
 3. **Without a list**: file removed → `/menue` 404, `/` 200.
 4. **Broken list = 500 on every request** (pre-1.0, kept) for: loop
-   `['a'=>'b','b'=>'a']`, pattern `['(:all)'=>'hofladen']`, foreign domain
+   `['a'=>'b','b'=>'a']`, pattern `['(:all)'=>'produkte']`, foreign domain
    `['menue'=>'https://example.org']`, duplicate `['menue'=>'a','Menue'=>'b']`:
    `/` → 500, body contains neither `example.org` nor `Weiterleitungsschleife`
-   (`debug false`). **Changed:** chain `['menue'=>'speisekarte','speisekarte'=>'hofladen']`
+   (`debug false`). **Changed:** chain `['menue'=>'speisekarte','speisekarte'=>'produkte']`
    → `/` 200 and `/menue` → 301 to speisekarte (two hops), and the warning
    appears in the PHP error log (capture with `ini_set('error_log', file)`,
    see noren's `withErrorLog`). After repairing the list a new instance gives
@@ -914,13 +913,13 @@ noren's KirbyTest. Sections:
    → 301 `http://example.invalid/impressum?utm=x` (condition key removed,
    rest kept); on `/index.php` → same (suffix pass); `page_id=99` → 200 home
    (no match, Kirby renders home); `/index.php` with `p=1` → 301 to home.
-7. **Suffix and umlaut on real requests**: `['impressum'=>'speisekarte','ueber-uns'=>'hofladen']`:
+7. **Suffix and umlaut on real requests**: `['impressum'=>'speisekarte','ueber-uns'=>'produkte']`:
    `/impressum.html`, `/Impressum.php` → 301; `/über-uns`, `/%C3%BCber-uns`
    → 301; `'hikkoshi.lowercase'=>false` → `/Impressum.html` 404.
 8. **Site and page methods**: `hikkoshiRedirects()` count and first key;
    `hikkoshiResolve('/menue', ['a'=>'1'])` → `location`, `status 301`, `pass`;
-   `hikkoshiResolve('/nope')` → null; `$kirby->page('hofladen')->hikkoshiSources()`
-   → `['hofladen-bio-gaertnerei.html', 'team']` (config order);
+   `hikkoshiResolve('/nope')` → null; `$kirby->page('produkte')->hikkoshiSources()`
+   → `['produkt-c.html', 'team']` (config order);
    `$kirby->site()->homePage()->hikkoshiSources()` → `['index.html']`;
    all `[]`/null when off.
 9. **Options validation**: `'hikkoshi.status'=>200` → logged once (error log
@@ -933,9 +932,9 @@ noren's KirbyTest. Sections:
 
 - off → exactly `[inactive]` (codes()).
 - the pre-1.0 list without the draft and `team` entries → `[]`.
-- draft target (`brennerei-schnaps.html` → `destillerie`) → `page.missing`;
+- draft target (`produkt-b.html` → `produkt-b`) → `page.missing`;
   missing page → `page.missing`.
-- chain `['menue'=>'speisekarte','speisekarte'=>'hofladen']` → codes contain
+- chain `['menue'=>'speisekarte','speisekarte'=>'produkte']` → codes contain
   `chain` (warning) and `check.hop` (speisekarte renders as 301), nothing else.
 - loop → codes `[loop]` only (no render checks).
 - `'hikkoshi.redirects' => fn () => [...]` works.
@@ -951,9 +950,9 @@ noren's KirbyTest. Sections:
 
 ### 8.5 tests/HtaccessTest.php (task `cli`) — Kirby-free
 
-- **Acceptance**: `Htaccess::convert(file_get_contents('../radladen/public/.htaccess'))`
-  — read from `dirname(__DIR__, 2) . '/radladen/public/.htaccess'`; if the
-  file is missing, `holds(true, 'radladen fixture not present')` and skip
+- **Acceptance**: `Htaccess::convert(file_get_contents('../wp-site/public/.htaccess'))`
+  — read from `dirname(__DIR__, 2) . '/wp-site/public/.htaccess'`; if the
+  file is missing, `holds(true, 'real WordPress file not present')` and skip
   that block — gives exactly the 14 entries of §3.7 in order (compare the
   whole array), and exactly one skipped entry with `reason 'condition'` whose
   `text` starts with `RewriteRule ^(.*)$`. Additionally embed the redirect
@@ -1025,7 +1024,7 @@ streams and a temp dir as `$cwd` (`sys_get_temp_dir()`, removed in finally):
   `$err` has `Skipped line 2 (status is not a redirect status): Redirect 303 /c /d`
   and `1 entries converted, 1 lines skipped.`.
 - only convertible lines → 0 and `$err` has `… 0 lines skipped.`.
-- the radladen file (when present) via the binary: exit 1, stdout `eval`s
+- the WordPress file (when present) via the binary: exit 1, stdout `eval`s
   to the 14-entry array, stderr has exactly one `Skipped line` line.
 - the command never writes: the temp dir contains only the input afterwards.
 
@@ -1044,7 +1043,7 @@ line until Packagist, `.gitignore` note); Quick start (config.php with
 rules in prose with examples, both passes, what is NOT matched, methods);
 Options (§4 table); Validation (findings table: what is an error, a warning,
 an info; what happens at runtime: 500 vs. log); CLI (`check`, `convert`, exit
-codes, the radladen example with its output); Taking over `.htaccess`
+codes, the WordPress example with its output); Taking over `.htaccess`
 rules (why `?page_id=` worked only in Apache before, what stays in `.htaccess`:
 www→apex, assets); Test helper for sites (a complete `tests/HikkoshiTest.php`
 example booting Kirby from `public/index.php`'s roots, calling
@@ -1094,7 +1093,7 @@ The docs task may run `sh tests/run.sh` but owns no test file.
    from the redirect (`/?page_id=82&utm=x` → `/impressum?utm=x`); `keep`/`drop`
    governs the rest. The converter therefore emits `'query' => 'drop'` for
    every Apache target ending in `?` (faithful to the `.htaccess`); for
-   radladen that is all 14 entries. You can strip the array form by hand
+   the WordPress file that is all 14 entries. You can strip the array form by hand
    if you prefer plain strings there — the only difference is `utm_*`
    parameters.
 5. **Suffix pass default includes `php`**: `/impressum.php` → `impressum`.
@@ -1117,7 +1116,7 @@ The docs task may run `sh tests/run.sh` but owns no test file.
     `hikkoshiCheck()`'s job (the site test). Booting Kirby from the CLI was
     judged too fragile across hosters.
 11. **Converter exit code 1 on skipped lines**: the www→apex rule of
-    radladen is skipped by design (it belongs in `.htaccess`), so the
+    the WordPress www rule is skipped by design (it belongs in `.htaccess`), so the
     converter exits 1 there. It is a review signal, not a failure.
 12. **Multi-language paths** (`/de/menue`) are not handled specially; the key
     would include the prefix. Documented as a limitation, no test.

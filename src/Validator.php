@@ -58,7 +58,7 @@ final class Validator
             $entryText = I18n::entry($key, $value);
 
             // PHP silently turns the key '2024' into the int 2024 — not
-            // distinguishable from a forgotten key (['hofladen']).
+            // distinguishable from a forgotten key (['produkte']).
             if (is_int($key)) {
                 $findings[] = self::finding(self::ERROR, 'source.numeric', ['entry' => $entryText], null);
                 continue;

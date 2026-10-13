@@ -53,8 +53,8 @@ function scKirby(string $tmp, array $list, array $extra = []): App
 /** The pre-1.0 list without the draft target and the team entry. */
 const SC_CLEAN_LIST = [
     'menue' => 'speisekarte',
-    'hofladen-bio-gaertnerei.html' => 'hofladen',
-    'mittagskarte/hofcafe-25-04.pdf' => 'speisekarte',
+    'produkt-c.html' => 'produkte',
+    'tageskarte/karte-1.pdf' => 'speisekarte',
     'alt/tief/seite' => 'leistungen/beratung',
     'index.html' => 'home',
 ];
@@ -79,7 +79,7 @@ withSite(function (string $tmp): void {
 
 withSite(function (string $tmp): void {
     hikkoshi_page($tmp, '6_boom', 'boom', ['title' => 'Boom']);
-    $kirby = scKirby($tmp, ['brennerei-schnaps.html' => 'destillerie']);
+    $kirby = scKirby($tmp, ['produkt-b.html' => 'produkt-b']);
     expect(['page.missing'], codes($kirby->site()->hikkoshiCheck()), 'draft target: exactly [page.missing]');
 
     $missing = scKirby($tmp, ['menue' => 'gibtsnicht']);
@@ -89,7 +89,7 @@ withSite(function (string $tmp): void {
 /* --- chains and loops ---------------------------------------------------- */
 
 withSite(function (string $tmp): void {
-    $chain = scKirby($tmp, ['menue' => 'speisekarte', 'speisekarte' => 'hofladen']);
+    $chain = scKirby($tmp, ['menue' => 'speisekarte', 'speisekarte' => 'produkte']);
     $findings = $chain->site()->hikkoshiCheck();
     expect(['chain', 'check.hop'], codes($findings), 'chain: codes are chain (warning) and check.hop, nothing else');
     expect('warning', $findings[0]['level'] ?? null, 'chain: the chain finding is a warning');

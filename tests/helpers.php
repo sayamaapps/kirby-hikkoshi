@@ -77,8 +77,8 @@ function finish(string $suite): never
  * A throwaway site directory with the package symlinked as
  * site/plugins/hikkoshi, templates (default prints "Page <id>", error prints
  * "Fixture 404"), a home page, an error page, and the pages of the pre-1.0
- * HTTP test: speisekarte, hofladen, leistungen/beratung, team, and the DRAFT
- * destillerie. Returns its path; remove it with hikkoshi_remove_tree() in a
+ * HTTP test: speisekarte, produkte, leistungen/beratung, team, and the DRAFT
+ * produkt-b. Returns its path; remove it with hikkoshi_remove_tree() in a
  * finally block.
  */
 function hikkoshi_site(): string
@@ -91,18 +91,18 @@ function hikkoshi_site(): string
     require_once $base . '/vendor/autoload.php';
 
     $tmp = sys_get_temp_dir() . '/hikkoshi-kirby-' . bin2hex(random_bytes(6));
-    foreach (['public', 'content/home', 'content/error', 'content/1_speisekarte', 'content/2_hofladen',
-              'content/3_leistungen/beratung', 'content/4_team', 'content/_drafts/destillerie',
+    foreach (['public', 'content/home', 'content/error', 'content/1_speisekarte', 'content/2_produkte',
+              'content/3_leistungen/beratung', 'content/4_team', 'content/_drafts/produkt-b',
               'site/config', 'site/plugins', 'site/snippets', 'site/templates', 'storage'] as $dir) {
         mkdir($tmp . '/' . $dir, 0700, true);
     }
     symlink($base, $tmp . '/site/plugins/hikkoshi');
     file_put_contents($tmp . '/site/templates/default.php', '<?php echo "Page " . $page->id();');
     file_put_contents($tmp . '/site/templates/error.php', 'Fixture 404');
-    file_put_contents($tmp . '/content/site.txt', "Title: Testhof\n");
+    file_put_contents($tmp . '/content/site.txt', "Title: Testseite\n");
     file_put_contents($tmp . '/content/home/default.txt', "Title: Start\n");
     file_put_contents($tmp . '/content/error/error.txt', "Title: Error\n");
-    foreach (['1_speisekarte', '2_hofladen', '3_leistungen', '3_leistungen/beratung', '4_team', '_drafts/destillerie'] as $page) {
+    foreach (['1_speisekarte', '2_produkte', '3_leistungen', '3_leistungen/beratung', '4_team', '_drafts/produkt-b'] as $page) {
         file_put_contents($tmp . "/content/$page/default.txt", "Title: $page\n");
     }
     return $tmp;
@@ -111,8 +111,8 @@ function hikkoshi_site(): string
 /**
  * A fresh Kirby instance on a hikkoshi_site() directory with these options
  * and, optionally, a request (['method' => 'GET', 'query' => ['page_id' => '82']]).
- * The site URL is http://example.invalid, so a redirect to `hofladen` has the
- * Location http://example.invalid/hofladen and `home` http://example.invalid.
+ * The site URL is http://example.invalid, so a redirect to `produkte` has the
+ * Location http://example.invalid/produkte and `home` http://example.invalid.
  * Snippet paths are cached per process by Kirby, so the cache is reset.
  */
 function hikkoshi_kirby(string $tmp, array $options = [], ?array $request = null): Kirby\Cms\App

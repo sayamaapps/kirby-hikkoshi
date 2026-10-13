@@ -22,13 +22,13 @@
  */
 return [
     // Jimdo: pages without suffix, subpages with a path
-    'ueber-uns' => 'familie-und-hof',
-    'angebot/gemuesekiste' => 'hofladen',
+    'ueber-uns' => 'team',
+    'angebot/kurs-1' => 'produkte',
     // Jimdo/WordPress exports with a suffix
     'impressum.html' => 'impressum',
     'index.html' => 'home',
     // Old downloads whose content is a page now
-    'downloads/preisliste-2024.pdf' => 'hofladen',
+    'downloads/preisliste-2024.pdf' => 'produkte',
     // WordPress with plain permalinks (query-string addresses)
     '?page_id=82' => 'impressum',
     '?pagename=contact' => 'kontakt',
@@ -36,5 +36,5 @@ return [
     // Removed for good: 410 instead of a redirect
     'gewinnspiel-2019' => 410,
     // Temporary, with the query dropped
-    'aktion' => ['to' => 'hofladen', 'status' => 302, 'query' => 'drop'],
+    'aktion' => ['to' => 'produkte', 'status' => 302, 'query' => 'drop'],
 ];
