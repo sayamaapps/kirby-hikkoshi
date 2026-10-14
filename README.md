@@ -609,6 +609,10 @@ The tests are plain PHP scripts (exit code 0 = pass), without PHPUnit, so they a
 
 Changes to the matching rules or the config contract are major versions. See [CHANGELOG.md](CHANGELOG.md).
 
+## Maintenance
+
+This module is open source under the MIT license and is maintained for the author's own projects. Issues and pull requests are welcome, but there is no support promise and no release schedule. Report security problems privately through GitHub's private vulnerability reporting (the "Report a vulnerability" button on the Security tab).
+
 ## License
 
 MIT. See `LICENSE`.
