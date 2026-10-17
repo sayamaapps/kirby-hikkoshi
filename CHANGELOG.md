@@ -11,6 +11,52 @@ All notable changes to this project are documented here. Versions follow
   **[privacy text]**. Every site using the plugin must then review its privacy
   policy.
 
+## [1.1.0] — 2026-10-17
+
+### Fixed
+
+- **`hikkoshiCheck()` reads the status a target's template sets.** A target
+  page whose template calls `$kirby->response()->code(503)` or
+  `->redirect(...)` was reported as fine; the check assumed 200 for every
+  rendered page that is not the error page. It now reads Kirby's Responder
+  after rendering, as `App::io()` does, and reports `check.target` or
+  `check.hop`. The Responder is reset before every simulated request and
+  once after the check, so nothing leaks into the site's test process.
+- **`convert` maps the `QSD` flag.** `RewriteRule … [R=301,QSD,L]` (also
+  `qsdiscard`) discards the request's query in Apache; the converter ignored
+  the flag and produced a plain entry with `query=keep`, so the parameters
+  travelled on. QSD now gives `'query' => 'drop'`, like a trailing `?` on the
+  target. `QSA` keeps the query even when the target ends in `?`, as in
+  Apache.
+- **`convert` no longer narrows prefix rules silently.** Apache's `Redirect`,
+  `RedirectPermanent` and `RedirectTemp` match the old path as a prefix and
+  forward the paths below it (`/old/child` → `/new/child`); a regex without
+  a closing `$` does the same. The entry for the exact path is still
+  converted, and the line is now reported as converted partially
+  (`partial`, reason `prefix`) on standard error with exit code 1: add
+  entries for the old subpaths, or keep that rule in `.htaccess`. A
+  `RedirectMatch` or `RewriteRule` pattern without a leading `^` can match
+  anywhere in the path and is skipped (`pattern`).
+- **`convert` reads the `\/?` pattern form.** A literal regex ending in
+  `\/?$` (`^/alt\/?$`) was skipped as `pattern`; it now converts like `/?$`.
+
+### Changed
+
+- **`convert` skips redirects with a flag the list cannot express** (`CO`,
+  `C`, `S`, `N`, `P`, `T`, `H` or an unknown flag) with the new reason
+  `flag`, instead of converting them silently. `L`, `END`, `NC`, `NE`,
+  `E` and similar flags stay ignored; rules without `R` or `G` stay internal
+  rewrites. A path target with a query of its own (`/page?x=1`) is skipped as
+  `target`: the Validator accepts no `?` in a page id.
+- `Htaccess::convert()` returns a third list `partial` next to `entries` and
+  `skipped`. `hikkoshi convert` exits 1 when lines were skipped or converted
+  partially.
+
+### Added
+
+- Translation keys `reason.flag`, `reason.prefix`, `cli.partial` and
+  `cli.partialSummary`.
+
 ## [1.0.0] — 2026-10-11
 
 First release as a Composer package. Before 1.0.0 the redirects lived as a copy

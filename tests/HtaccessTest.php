@@ -141,6 +141,7 @@ function check_wpsite(string $label, string $text): void
 {
     $result = Htaccess::convert($text);
     expect(WPSITE_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
+    expect([], $result['partial'], "$label: no partial line");
     expect(1, count($result['skipped']), "$label: exactly one skipped line");
     $skip = $result['skipped'][0] ?? ['line' => -1, 'text' => '', 'reason' => ''];
     expect('condition', $skip['reason'], "$label: skipped reason is condition");
@@ -165,6 +166,7 @@ if (is_file($realWpsite)) {
 $r = Htaccess::convert('Redirect 301 /alt /neu');
 expect(['alt' => 'neu'], $r['entries'], 'Redirect 301 → plain string');
 expect([], $r['skipped'], 'Redirect 301 → nothing skipped');
+expect([['line' => 1, 'text' => 'Redirect 301 /alt /neu', 'reason' => 'prefix']], $r['partial'], 'Redirect 301 → reported as partial (prefix rule in Apache)');
 
 expect(['a' => 'b'], Htaccess::convert('Redirect permanent /a /b')['entries'], 'Redirect permanent = 301');
 expect(['a' => ['to' => 'b', 'status' => 302]], Htaccess::convert('Redirect /a /b')['entries'], 'Redirect without token = 302 array');
@@ -213,6 +215,64 @@ expect(['alt' => 410], Htaccess::convert('RedirectMatch gone ^/alt$')['entries']
 $r = Htaccess::convert('RedirectMatch 303 ^/alt$ /neu');
 expect([['line' => 1, 'text' => 'RedirectMatch 303 ^/alt$ /neu', 'reason' => 'status']], $r['skipped'], 'RedirectMatch 303 → skipped status');
 
+/* Partial: converted for the exact path, but Apache matched the paths below as well */
+
+foreach ([
+    'Redirect permanent /a /b' => 'Redirect permanent',
+    'Redirect /a /b' => 'Redirect without token (302)',
+    'Redirect temp /a /b' => 'Redirect temp',
+    'Redirect gone /alt' => 'Redirect gone',
+    'Redirect 301 /alt/ /neu/' => 'Redirect with slashes',
+    'RedirectPermanent /a /b' => 'RedirectPermanent',
+    'RedirectTemp /a /b' => 'RedirectTemp',
+    'RedirectMatch 301 ^/alt /neu' => 'RedirectMatch ^ without $',
+    'RedirectMatch 301 ^/alt/? /neu' => 'RedirectMatch ^ with /? but without $',
+    'RewriteRule ^alt /neu [R=301]' => 'RewriteRule ^ without $',
+    'RewriteRule ^alt/ /neu [R=301]' => 'RewriteRule ^alt/ without $',
+    'RewriteRule ^alt - [G]' => 'RewriteRule G ^ without $',
+] as $rule => $label) {
+    $r = Htaccess::convert($rule);
+    expect(1, count($r['entries']), "$label → one entry");
+    expect([], $r['skipped'], "$label → nothing skipped");
+    expect([['line' => 1, 'text' => $rule, 'reason' => 'prefix']], $r['partial'], "$label → partial prefix");
+}
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt/ /neu [R=301]')['entries'], 'RewriteRule ^alt/ → entry alt');
+
+foreach ([
+    'RedirectMatch 301 ^/alt$ /neu',
+    'RedirectMatch 301 ^/alt/?$ /neu',
+    'RedirectMatch 301 ^/alt\.html$ /neu',
+    'RewriteRule ^alt$ /neu [R=301]',
+    'RewriteRule ^alt/?$ /neu [R=301]',
+    'RewriteRule ^alt\/?$ /neu [R=301]',
+    'RewriteRule ^alt$ - [G]',
+    'Redirect 303 /a /b',
+    'Redirect 301 /a b',
+    'Redirect 301 a /b',
+] as $rule) {
+    expect([], Htaccess::convert($rule)['partial'], "$rule → no partial note");
+}
+$r = Htaccess::convert("RewriteCond %{QUERY_STRING} ^p=1\$\nRewriteRule ^(index\\.php)?\$ /x? [R=301]");
+expect([], $r['partial'], 'WordPress home form is anchored → no partial note');
+
+foreach ([
+    'RedirectMatch 301 /alt /neu',
+    'RedirectMatch 301 alt$ /neu',
+    'RewriteRule alt /neu [R=301]',
+    'RewriteRule alt$ /neu [R]',
+    'RewriteRule /alt$ /neu [R=301]',
+] as $rule) {
+    $r = Htaccess::convert($rule);
+    expect([], $r['entries'], "$rule → no entry");
+    expect([['line' => 1, 'text' => $rule, 'reason' => 'pattern']], $r['skipped'], "$rule → skipped pattern (no ^: may match anywhere)");
+    expect([], $r['partial'], "$rule → no partial note");
+}
+
+$r = Htaccess::convert("Redirect 301 /alt /neu\nRedirect 301 /alt /other\nRedirectMatch 301 ^/alt /third");
+expect(['alt' => 'neu'], $r['entries'], 'duplicates → first wins');
+expect([['line' => 2, 'text' => 'Redirect 301 /alt /other', 'reason' => 'duplicate'], ['line' => 3, 'text' => 'RedirectMatch 301 ^/alt /third', 'reason' => 'duplicate']], $r['skipped'], 'partial duplicates → skipped duplicate');
+expect([['line' => 1, 'text' => 'Redirect 301 /alt /neu', 'reason' => 'prefix']], $r['partial'], 'partial duplicates → no partial note');
+
 expect(['a' => 'b', 'c' => ['to' => 'd', 'status' => 302]], Htaccess::convert("RedirectPermanent /a /b\nRedirectTemp /c /d")['entries'], 'RedirectPermanent = 301, RedirectTemp = 302');
 $r = Htaccess::convert('redirectpermanent /a');
 expect([['line' => 1, 'text' => 'redirectpermanent /a', 'reason' => 'target']], $r['skipped'], 'RedirectPermanent without target → skipped target (case-insensitive name)');
@@ -247,7 +307,44 @@ expect([['line' => 1, 'text' => 'RewriteRule ^alt$ /neu/$1 [R=301]', 'reason' =>
 $r = Htaccess::convert('RewriteRule ^(index\.php)?$ /neu [R=301]');
 expect([['line' => 1, 'text' => 'RewriteRule ^(index\.php)?$ /neu [R=301]', 'reason' => 'pattern']], $r['skipped'], 'home without conditions → pattern');
 expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu [NC,R=301,L]')['entries'], 'flag order irrelevant');
-expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSD,L]')['entries'], 'QSD flag accepted');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSD,L]')['entries'], 'QSD flag → query drop');
+
+/* RewriteRule flags: QSD discards the query, flags the list cannot express are skipped */
+
+expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R=301,QSD,L]')['entries'], 'QSD → query drop');
+expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R=301,qsdiscard,L]')['entries'], 'qsdiscard (lowercase, long name) → query drop');
+expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte? [R=301,QSD,L]')['entries'], 'QSD plus trailing ? → one drop');
+expect(['old' => ['to' => 'produkte', 'status' => 302, 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R,QSD]')['entries'], 'R with QSD → 302 array with drop');
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301,QSA]')['entries'], 'QSA with a trailing ? keeps the query (plain string)');
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301,qsappend]')['entries'], 'qsappend (long name) with a trailing ? keeps the query');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301,QSA,QSD]')['entries'], 'QSA plus QSD with a trailing ? → drop (QSD always drops)');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSA,QSD]')['entries'], 'QSA plus QSD without ? → drop');
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSA]')['entries'], 'QSA without a trailing ? → plain string');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301]')['entries'], 'trailing ? without QSA → drop');
+foreach (['RewriteRule ^alt\/?$ /neu [R=301,L]', 'RedirectMatch 301 ^/alt\/?$ /neu'] as $rule) {
+    $r = Htaccess::convert($rule);
+    expect(['alt' => 'neu'], $r['entries'], "$rule → entry alt");
+    expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
+}
+expect(['old' => 410], Htaccess::convert('RewriteRule ^old$ - [G,QSD]')['entries'], '410 rule with QSD → 410');
+
+foreach ([
+    'RewriteRule ^old$ /produkte [R=301,CO=name:value:example.com]' => 'cookie flag CO',
+    'RewriteRule ^old$ /produkte [R=301,S=1]' => 'skip flag S',
+    'RewriteRule ^old$ /produkte [R=301,XYZ]' => 'unknown flag XYZ',
+    'RewriteRule ^old$ /produkte [R=301,P]' => 'proxy flag P',
+    'RewriteRule ^old$ - [G,T=text/html]' => 'type flag T on a 410 rule',
+] as $rule => $label) {
+    $r = Htaccess::convert($rule);
+    expect([], $r['entries'], "$label → no entry");
+    expect([['line' => 1, 'text' => $rule, 'reason' => 'flag']], $r['skipped'], "$label → skipped flag");
+}
+
+expect(['old' => 'produkte'], Htaccess::convert('RewriteRule ^old$ /produkte [NC,R=301,NE,L,END,QSA,E=VAR:1]')['entries'], 'ignorable flags (NC, NE, L, END, QSA, E) → converted');
+expect([[], []], [Htaccess::convert('RewriteRule ^old$ /intern.php [L,CO=a:b:c]')['entries'], Htaccess::convert('RewriteRule ^old$ /intern.php [L,CO=a:b:c]')['skipped']], 'unsupported flag without R/G → still an ignored internal rewrite');
+
+$r = Htaccess::convert('RewriteRule ^old$ /produkte?x=1 [R=301]');
+expect([[], 'target'], [$r['entries'], $r['skipped'][0]['reason'] ?? ''], 'target with its own query → target (the Validator accepts no ? in a page id)');
 expect(['alt' => ['to' => 'neu', 'status' => 307]], Htaccess::convert('RewriteRule ^alt$ /neu [R=307,L]')['entries'], 'R=307');
 
 /* ------------------------------------------------------------------------

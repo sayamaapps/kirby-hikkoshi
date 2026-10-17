@@ -119,7 +119,7 @@ try {
 
 $dir = cv_tmp();
 try {
-    file_put_contents($dir . '/input.htaccess', "Redirect 301 /a /b\nRedirect 303 /c /d\n");
+    file_put_contents($dir . '/input.htaccess', "RedirectMatch 301 ^/a\$ /b\nRedirect 303 /c /d\n");
     [$code, $out, $err] = cv_run(['input.htaccess'], $dir);
 
     expect(1, $code, 'a skipped line → exit 1');
@@ -131,14 +131,14 @@ try {
 
     expect(['a' => 'b'], cv_eval($out), 'stdout evaluates to the converted list');
     expect(['input.htaccess'], array_values(array_diff(scandir($dir) ?: [], ['.', '..'])), 'the converter writes nothing');
-    expect("Redirect 301 /a /b\nRedirect 303 /c /d\n", file_get_contents($dir . '/input.htaccess'), 'the input is unchanged');
+    expect("RedirectMatch 301 ^/a\$ /b\nRedirect 303 /c /d\n", file_get_contents($dir . '/input.htaccess'), 'the input is unchanged');
 } finally {
     cv_remove($dir);
 }
 
 $dir = cv_tmp();
 try {
-    file_put_contents($dir . '/ok.htaccess', "Redirect 301 /a /b\nRedirect gone /c\n");
+    file_put_contents($dir . '/ok.htaccess', "RedirectMatch 301 ^/a\$ /b\nRedirectMatch gone ^/c\$\n");
     [$code, $out, $err] = cv_run(['ok.htaccess'], $dir);
     expect(0, $code, 'only convertible lines → exit 0');
     holds(str_contains($err, '2 entries converted, 0 lines skipped.'), 'only convertible lines → 0 lines skipped');
@@ -149,10 +149,42 @@ try {
 
 $dir = cv_tmp();
 try {
-    file_put_contents($dir . '/abs.htaccess', "Redirect 301 /x /y\n");
+    file_put_contents($dir . '/abs.htaccess', "RedirectMatch 301 ^/x\$ /y\n");
     [$code, $out] = cv_run([$dir . '/abs.htaccess'], '/');
     expect(0, $code, 'absolute FILE is read');
     holds(str_contains($out, 'Converted from ' . $dir . '/abs.htaccess by hikkoshi convert.'), 'the header names the FILE as given');
+} finally {
+    cv_remove($dir);
+}
+
+$dir = cv_tmp();
+try {
+    file_put_contents($dir . '/prefix.htaccess', "Redirect 301 /a /b\n");
+    [$code, $out, $err] = cv_run(['prefix.htaccess'], $dir);
+    expect(1, $code, 'a partly converted line → exit 1');
+    expect(['a' => 'b'], cv_eval($out), 'a partly converted line is still in the list');
+    holds(str_contains($err, 'Line 1 converted for the exact path only (' . I18n::t('reason.prefix') . '): Redirect 301 /a /b'), 'stderr names the partial line via the translation');
+    holds(str_contains($err, 'Apache also redirected the paths below it'), 'the prefix reason is not a bare key');
+    holds(str_contains($err, '1 entries converted, 0 lines skipped.'), 'partial line → convert summary unchanged');
+    holds(str_contains($err, '1 lines converted for the exact path only; add entries for the paths below them or keep those rules in .htaccess.'), 'partial line → partial summary');
+    expect(3, substr_count($err, "\n"), 'stderr has three lines (partial, summary, partial summary)');
+
+    file_put_contents($dir . '/anchored.htaccess', "RedirectMatch 301 ^/a\$ /b\n");
+    [$code, $out, $err] = cv_run(['anchored.htaccess'], $dir);
+    expect(0, $code, 'an anchored regex → exit 0');
+    holds(!str_contains($err, 'exact path only'), 'an anchored regex → no partial line on stderr');
+    expect(1, substr_count($err, "\n"), 'an anchored regex → only the convert summary');
+} finally {
+    cv_remove($dir);
+}
+
+$dir = cv_tmp();
+try {
+    file_put_contents($dir . '/flag.htaccess', "RewriteRule ^old$ /produkte [R=301,S=1]\n");
+    [$code, $out, $err] = cv_run(['flag.htaccess'], $dir);
+    expect(1, $code, 'unsupported flag → exit 1');
+    holds(str_contains($err, 'Skipped line 1 (' . I18n::t('reason.flag') . '): RewriteRule ^old$ /produkte [R=301,S=1]'), 'stderr names the flag skip via the translation');
+    holds(str_contains($err, 'flag cannot be expressed'), 'the flag reason is not a bare key');
 } finally {
     cv_remove($dir);
 }
