@@ -4,7 +4,7 @@ namespace Hikkoshi;
 
 /**
  * `hikkoshi convert FILE [--lang=..]` — prints the Hikkoshi list as PHP to
- * stdout, skipped lines to stderr. Kirby-free (SPEC.md §3.9). Never
+ * stdout, skipped and partly converted lines to stderr. Kirby-free (SPEC.md §3.9). Never
  * writes a file.
  */
 final class ConvertCommand
@@ -13,7 +13,7 @@ final class ConvertCommand
      * @param list<string> $args
      * @param resource     $out
      * @param resource     $err
-     * @return int exit code: 0 all converted, 1 lines skipped, 2 usage / file not found
+     * @return int exit code: 0 all converted, 1 lines skipped or converted partially, 2 usage / file not found
      */
     public static function run(array $args, $out, $err, string $cwd): int
     {
@@ -54,12 +54,23 @@ final class ConvertCommand
                 'text'   => $skip['text'],
             ])) . "\n");
         }
+        foreach ($result['partial'] as $note) {
+            fwrite($err, I18n::printable(I18n::t('cli.partial', [
+                'line'   => $note['line'],
+                'reason' => I18n::t('reason.' . $note['reason']),
+                'text'   => $note['text'],
+            ])) . "\n");
+        }
         $skipped = count($result['skipped']);
+        $partial = count($result['partial']);
         fwrite($err, I18n::t('cli.convertSummary', [
             'entries' => count($result['entries']),
             'skipped' => $skipped,
         ]) . "\n");
+        if ($partial > 0) {
+            fwrite($err, I18n::t('cli.partialSummary', ['partial' => $partial]) . "\n");
+        }
 
-        return $skipped > 0 ? 1 : 0;
+        return $skipped > 0 || $partial > 0 ? 1 : 0;
     }
 }

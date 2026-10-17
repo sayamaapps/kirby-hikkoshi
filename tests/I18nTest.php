@@ -40,8 +40,8 @@ foreach ([
     'finding.check.location', 'finding.check.target', 'finding.check.hop',
     'gone.title', 'gone.text',
     'cli.usage', 'cli.file', 'cli.unknownCommand', 'cli.fileMissing', 'cli.noFile', 'cli.ok', 'cli.summary',
-    'cli.skipped', 'cli.convertSummary',
-    'reason.pattern', 'reason.condition', 'reason.target', 'reason.status', 'reason.flag', 'reason.duplicate',
+    'cli.skipped', 'cli.convertSummary', 'cli.partial', 'cli.partialSummary',
+    'reason.pattern', 'reason.condition', 'reason.target', 'reason.status', 'reason.flag', 'reason.duplicate', 'reason.prefix',
     'level.error', 'level.warning', 'level.info',
 ] as $key) {
     holds(isset($en[$key]), "key $key exists");

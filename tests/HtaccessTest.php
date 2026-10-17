@@ -141,6 +141,7 @@ function check_wpsite(string $label, string $text): void
 {
     $result = Htaccess::convert($text);
     expect(WPSITE_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
+    expect([], $result['partial'], "$label: no partial line");
     expect(1, count($result['skipped']), "$label: exactly one skipped line");
     $skip = $result['skipped'][0] ?? ['line' => -1, 'text' => '', 'reason' => ''];
     expect('condition', $skip['reason'], "$label: skipped reason is condition");
@@ -165,6 +166,7 @@ if (is_file($realWpsite)) {
 $r = Htaccess::convert('Redirect 301 /alt /neu');
 expect(['alt' => 'neu'], $r['entries'], 'Redirect 301 → plain string');
 expect([], $r['skipped'], 'Redirect 301 → nothing skipped');
+expect([['line' => 1, 'text' => 'Redirect 301 /alt /neu', 'reason' => 'prefix']], $r['partial'], 'Redirect 301 → reported as partial (prefix rule in Apache)');
 
 expect(['a' => 'b'], Htaccess::convert('Redirect permanent /a /b')['entries'], 'Redirect permanent = 301');
 expect(['a' => ['to' => 'b', 'status' => 302]], Htaccess::convert('Redirect /a /b')['entries'], 'Redirect without token = 302 array');
@@ -212,6 +214,64 @@ expect(['alt' => ['to' => 'neu', 'status' => 302]], Htaccess::convert('RedirectM
 expect(['alt' => 410], Htaccess::convert('RedirectMatch gone ^/alt$')['entries'], 'RedirectMatch gone without target → 410');
 $r = Htaccess::convert('RedirectMatch 303 ^/alt$ /neu');
 expect([['line' => 1, 'text' => 'RedirectMatch 303 ^/alt$ /neu', 'reason' => 'status']], $r['skipped'], 'RedirectMatch 303 → skipped status');
+
+/* Partial: converted for the exact path, but Apache matched the paths below as well */
+
+foreach ([
+    'Redirect permanent /a /b' => 'Redirect permanent',
+    'Redirect /a /b' => 'Redirect without token (302)',
+    'Redirect temp /a /b' => 'Redirect temp',
+    'Redirect gone /alt' => 'Redirect gone',
+    'Redirect 301 /alt/ /neu/' => 'Redirect with slashes',
+    'RedirectPermanent /a /b' => 'RedirectPermanent',
+    'RedirectTemp /a /b' => 'RedirectTemp',
+    'RedirectMatch 301 ^/alt /neu' => 'RedirectMatch ^ without $',
+    'RedirectMatch 301 ^/alt/? /neu' => 'RedirectMatch ^ with /? but without $',
+    'RewriteRule ^alt /neu [R=301]' => 'RewriteRule ^ without $',
+    'RewriteRule ^alt/ /neu [R=301]' => 'RewriteRule ^alt/ without $',
+    'RewriteRule ^alt - [G]' => 'RewriteRule G ^ without $',
+] as $rule => $label) {
+    $r = Htaccess::convert($rule);
+    expect(1, count($r['entries']), "$label → one entry");
+    expect([], $r['skipped'], "$label → nothing skipped");
+    expect([['line' => 1, 'text' => $rule, 'reason' => 'prefix']], $r['partial'], "$label → partial prefix");
+}
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt/ /neu [R=301]')['entries'], 'RewriteRule ^alt/ → entry alt');
+
+foreach ([
+    'RedirectMatch 301 ^/alt$ /neu',
+    'RedirectMatch 301 ^/alt/?$ /neu',
+    'RedirectMatch 301 ^/alt\.html$ /neu',
+    'RewriteRule ^alt$ /neu [R=301]',
+    'RewriteRule ^alt/?$ /neu [R=301]',
+    'RewriteRule ^alt\/?$ /neu [R=301]',
+    'RewriteRule ^alt$ - [G]',
+    'Redirect 303 /a /b',
+    'Redirect 301 /a b',
+    'Redirect 301 a /b',
+] as $rule) {
+    expect([], Htaccess::convert($rule)['partial'], "$rule → no partial note");
+}
+$r = Htaccess::convert("RewriteCond %{QUERY_STRING} ^p=1\$\nRewriteRule ^(index\\.php)?\$ /x? [R=301]");
+expect([], $r['partial'], 'WordPress home form is anchored → no partial note');
+
+foreach ([
+    'RedirectMatch 301 /alt /neu',
+    'RedirectMatch 301 alt$ /neu',
+    'RewriteRule alt /neu [R=301]',
+    'RewriteRule alt$ /neu [R]',
+    'RewriteRule /alt$ /neu [R=301]',
+] as $rule) {
+    $r = Htaccess::convert($rule);
+    expect([], $r['entries'], "$rule → no entry");
+    expect([['line' => 1, 'text' => $rule, 'reason' => 'pattern']], $r['skipped'], "$rule → skipped pattern (no ^: may match anywhere)");
+    expect([], $r['partial'], "$rule → no partial note");
+}
+
+$r = Htaccess::convert("Redirect 301 /alt /neu\nRedirect 301 /alt /other\nRedirectMatch 301 ^/alt /third");
+expect(['alt' => 'neu'], $r['entries'], 'duplicates → first wins');
+expect([['line' => 2, 'text' => 'Redirect 301 /alt /other', 'reason' => 'duplicate'], ['line' => 3, 'text' => 'RedirectMatch 301 ^/alt /third', 'reason' => 'duplicate']], $r['skipped'], 'partial duplicates → skipped duplicate');
+expect([['line' => 1, 'text' => 'Redirect 301 /alt /neu', 'reason' => 'prefix']], $r['partial'], 'partial duplicates → no partial note');
 
 expect(['a' => 'b', 'c' => ['to' => 'd', 'status' => 302]], Htaccess::convert("RedirectPermanent /a /b\nRedirectTemp /c /d")['entries'], 'RedirectPermanent = 301, RedirectTemp = 302');
 $r = Htaccess::convert('redirectpermanent /a');

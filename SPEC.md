@@ -448,13 +448,18 @@ Kirby-free converter for Apache rules. Never touches files.
 
 ```php
 public static function convert(string $text): array
-    // ['entries' => array<string, mixed>, 'skipped' => list<['line' => int, 'text' => string, 'reason' => string]>]
+    // ['entries' => array<string, mixed>,
+    //  'skipped' => list<['line' => int, 'text' => string, 'reason' => string]>,   // nothing converted
+    //  'partial' => list<['line' => int, 'text' => string, 'reason' => string]>]   // converted for the exact path only
 public static function render(array $entries, string $header = ''): string   // PHP source of a config file
 ```
 
 `reason` is the translation key suffix: `pattern`, `condition`, `target`,
-`status`, `flag`, `duplicate` (`I18n::t('reason.' . reason)` for display). `line` is
-1-based; `text` the trimmed directive line.
+`status`, `flag`, `duplicate` (`I18n::t('reason.' . reason)` for display); in
+`partial` the reason is always `prefix`. `line` is 1-based; `text` the trimmed
+directive line. A `partial` line IS converted (entry for the exact path) and
+reported: Apache matched the paths below it too, and the list has no prefix
+matching. A line skipped for any other reason has no `partial` note.
 
 Parsing, line by line (trim; join a line ending in `\` with the next; skip
 empty lines, `#` comments and everything that is not `Redirect`,
@@ -466,11 +471,17 @@ empty lines, `#` comments and everything that is not `Redirect`,
 `gone`=410, no token = 302). `303`/`seeother` or anything else → `status`.
 Old path must start with `/`; key = path without the leading slash (verbatim,
 the Validator normalises later). 410: no target, value `410`. Otherwise target
-rules below.
+rules below. `Redirect`, `RedirectPermanent` and `RedirectTemp` (mod_alias)
+match the path as a prefix of complete segments and append the rest
+(`/old/child` → `/target/child`): every converted line also gets one
+`partial` note (`prefix`), 410 included.
 
-**`RedirectMatch [status] regex target`** — only a *literal* regex: strip `^`
-and `$`, a trailing `/?`, unescape `\.` `\-` `\/`; if any unescaped regex
-meta (`. * + ? ( ) [ ] { } | \`) remains → `pattern`. Then as `Redirect`.
+**`RedirectMatch [status] regex target`** — only a *literal* regex that
+starts with `^` (without it the regex may match anywhere → `pattern`): strip
+`^` and `$`, a trailing `/?`, unescape `\.` `\-` `\/`; if any unescaped regex
+meta (`. * + ? ( ) [ ] { } | \`) remains → `pattern`. Without the closing `$`
+(`^/old`, `^/old/?`) the regex also matches the paths below: converted with a
+`partial` note (`prefix`). Then as `Redirect`.
 
 **`RewriteCond %{QUERY_STRING} regex [flags]`** — collected for the next
 `RewriteRule`. Accepted regex: optional `(^|&)` or `^` prefix, then
@@ -501,7 +512,8 @@ Flags of a redirect (R/G), case-insensitive: `QSD`/`QSDISCARD` → `query drop`
 NE NOESCAPE QSA QSAPPEND E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
 PASSTHROUGH` are ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
 unknown) → `flag`. Rules without R/G are not judged by their flags.
-Pattern: literal only, like RedirectMatch, plus these exact WordPress forms →
+Pattern: literal only and starting with `^`, anchored with `$` or else
+`partial`, like RedirectMatch, plus these exact WordPress forms (anchored) →
 path `''`: `^$`, `^/?$`, `^(index\.php)?$`, `^index\.php$` → `'index.php'`.
 Other meta → `pattern`. Path `''` **without** conditions → `pattern` (home
 cannot be a source). Target rules below; `-` → `target`. Entries in file order.
@@ -519,7 +531,7 @@ or `%1`, or does not start with `/` or `http` → `target`.
 `n !== 301` plus `'query' => 'drop'` when dropped — keys in that order.
 
 **Duplicates**: a key already produced → `duplicate` (second occurrence
-skipped, the line is reported).
+skipped, the line is reported; a duplicate gets no `partial` note).
 
 `render($entries, $header)`:
 ```php
@@ -579,9 +591,11 @@ FILE required (none → usage to `$err`, 2; not found → `cli.fileMissing`, 2).
 `Htaccess::convert(file_get_contents)`; `$out` ← `Htaccess::render($entries,
 "Converted from {FILE as given} by hikkoshi convert.\nReview before use and run: hikkoshi check")`;
 `$err` ← one `cli.skipped` line per skipped entry (values `line`, `reason` =
-`I18n::t('reason.' . reason)`, `text`), then `cli.convertSummary` (values
-`entries`, `skipped`). Return 1 when anything was skipped, else 0. Never
-writes a file.
+`I18n::t('reason.' . reason)`, `text`), then one `cli.partial` line per
+partial entry (same values), then `cli.convertSummary` (values `entries`,
+`skipped`), then `cli.partialSummary` (value `partial`) only when something
+was partial. Line texts go through `I18n::printable`. Return 1 when anything
+was skipped or partial, else 0. Never writes a file.
 
 ### 3.10 `Hikkoshi\I18n`, `Hikkoshi\Options` (written, architect)
 
@@ -678,7 +692,11 @@ Complete tables: `translations/en.php`, `translations/de.php` (written;
 | `reason.pattern` | pattern is not a literal path | Muster ist kein fester Pfad |
 | `reason.condition` | condition is not a query-string condition | Bedingung ist keine Query-String-Bedingung |
 | `reason.target` | target cannot be converted | Ziel lässt sich nicht übernehmen |
+| `cli.partial` | Line {line} converted for the exact path only ({reason}): {text} | Zeile {line} nur für den genauen Pfad übernommen ({reason}): {text} |
+| `cli.partialSummary` | {partial} lines converted for the exact path only; add entries for the paths below them or keep those rules in .htaccess. | {partial} Zeilen nur für den genauen Pfad übernommen; Einträge für die Pfade darunter ergänzen oder die Regeln in der .htaccess lassen. |
 | `reason.status` | status is not a redirect status | Status ist kein Weiterleitungsstatus |
+| `reason.flag` | flag cannot be expressed in the list | Flag lässt sich nicht übernehmen |
+| `reason.prefix` | Apache also redirected the paths below it | Apache leitete auch die Pfade darunter weiter |
 | `reason.duplicate` | old path already converted | alter Pfad bereits übernommen |
 
 The German `finding.target.invalid`, `finding.target.self`, `finding.chain`
@@ -963,11 +981,14 @@ noren's KirbyTest. Sections:
   — read from `dirname(__DIR__, 2) . '/wp-site/public/.htaccess'`; if the
   file is missing, `holds(true, 'real WordPress file not present')` and skip
   that block — gives exactly the 14 entries of §3.7 in order (compare the
-  whole array), and exactly one skipped entry with `reason 'condition'` whose
+  whole array), an empty `partial` list, and exactly one skipped entry with `reason 'condition'` whose
   `text` starts with `RewriteRule ^(.*)$`. Additionally embed the redirect
   block of that file verbatim as a heredoc fixture so the test runs without
   the sibling repo, with the same expectation.
-- `Redirect 301 /alt /neu` → `['alt' => 'neu']`; `Redirect permanent /a /b`;
+- `Redirect 301 /alt /neu` → `['alt' => 'neu']` and `partial` `[['line' => 1,
+  'text' => 'Redirect 301 /alt /neu', 'reason' => 'prefix']]` (the same for
+  `permanent`, `temp`, `gone`, `Redirect /a /b`, `/alt/ /neu/`, `RedirectPermanent`,
+  `RedirectTemp`); `Redirect 303 …` → skipped `status`, `partial` `[]`; `Redirect permanent /a /b`;
   `Redirect /a /b` → `['a' => ['to' => 'b', 'status' => 302]]`; `Redirect 302 …`,
   `307`, `308`; `Redirect gone /alt` and `Redirect 410 /alt` → `['alt' => 410]`;
   `Redirect 303 /a /b` and `Redirect seeother …` → skipped `status`;
@@ -978,13 +999,16 @@ noren's KirbyTest. Sections:
   `Redirect 301 /a b` (no slash) → `target`; `Redirect 301 a /b` (old without
   slash) → `pattern`; `Redirect 301 /alt/ /neu/` → `['alt' => 'neu']`.
 - `RedirectMatch 301 ^/alt/?$ /neu` → `['alt' => 'neu']`; `^/alt\.html$` →
-  `['alt.html' => 'neu']`; `^/blog/(.*)$ /news` → `pattern`; `^/a|b$` → `pattern`.
+  `['alt.html' => 'neu']`, all with `partial` `[]`; `^/blog/(.*)$ /news` → `pattern`;
+  `^/a|b$` → `pattern`; `^/alt /neu` → entry plus `partial`; `/alt /neu` and
+  `alt$ /neu` (no `^`) → `pattern`.
 - `RewriteRule ^alt/?$ /neu [R=301,L]` → `['alt' => 'neu']`; `[R,L]` → status
   302 array form; `[L]` (no R) → nothing, not even skipped; `^(.*)$ index.php [L]`
   → nothing; `RewriteRule ^alt$ - [R=410]` → `['alt' => 410]`... (`-` with
   `R=410` is gone; `-` with R=301 → `target`); `^alt$ /neu/$1 [R=301]` →
   `target`; `^(index\.php)?$ /neu [R=301]` without conds → `pattern`; `[NC,R=301,L]`
-  flag order irrelevant; `[R=301,QSD,L]` → `['to' => 'neu', 'query' => 'drop']`;
+  flag order irrelevant; `^alt /neu [R=301]` and `^alt/ /neu [R=301]` → entry
+  `alt` plus `partial`; `alt /neu [R=301]` and `alt$ /neu [R]` → `pattern`; `[R=301,QSD,L]` → `['to' => 'neu', 'query' => 'drop']`;
   `[R=301,CO=a:b:c]`, `[R=301,S=1]`, `[R=301,XYZ]` → `flag`; `[L,CO=a:b:c]` (no R) → nothing.
 - RewriteCond groups: single cond `(^|&)page_id=13(&|$)` + rule `^(index\.php)?$ /x? [R=301,L]`
   → `['?page_id=13' => ['to' => 'x', 'query' => 'drop']]`; three `[OR]` conds →
@@ -994,7 +1018,8 @@ noren's KirbyTest. Sections:
   `%{HTTP_HOST} ^www\.` + rule with R → skipped `condition`, and the group is
   reset for the next rule; cond regex `page_id=.*` → `condition`; `[NC]` on a
   cond accepted; cond followed by a rule without R → nothing (group reset).
-- duplicates: two rules for `/alt` → second skipped `duplicate`.
+- duplicates: two rules for `/alt` → second skipped `duplicate`, no `partial`
+  note for it.
 - line handling: `#` comments, blank lines, `<IfModule>` ignored; directive
   case-insensitive (`redirect 301 …`); `\` continuation joins lines; `line`
   numbers are 1-based and point at the directive line.
@@ -1033,7 +1058,11 @@ streams and a temp dir as `$cwd` (`sys_get_temp_dir()`, removed in finally):
   `Converted from <FILE> by hikkoshi convert.` / `Review before use and run: hikkoshi check`;
   `$err` has `Skipped line 2 (status is not a redirect status): Redirect 303 /c /d`
   and `1 entries converted, 1 lines skipped.`.
-- only convertible lines → 0 and `$err` has `… 0 lines skipped.`.
+- only convertible lines (anchored `RedirectMatch`) → 0 and `$err` has `… 0 lines skipped.`
+  and no `cli.partial` line.
+- a file with `Redirect 301 /a /b` → 1, `$out` has the entry, `$err` has
+  `Line 1 converted for the exact path only (Apache also redirected the paths below it): Redirect 301 /a /b`,
+  `1 entries converted, 0 lines skipped.` and the `cli.partialSummary` line.
 - the WordPress file (when present) via the binary: exit 1, stdout `eval`s
   to the 14-entry array, stderr has exactly one `Skipped line` line.
 - the command never writes: the temp dir contains only the input afterwards.
@@ -1125,9 +1154,10 @@ The docs task may run `sh tests/run.sh` but owns no test file.
     `--allow-host`). Page existence and real responses are
     `hikkoshiCheck()`'s job (the site test). Booting Kirby from the CLI was
     judged too fragile across hosters.
-11. **Converter exit code 1 on skipped lines**: the www→apex rule of
+11. **Converter exit code 1 on skipped or partial lines**: the www→apex rule of
     the WordPress www rule is skipped by design (it belongs in `.htaccess`), so the
-    converter exits 1 there. It is a review signal, not a failure.
+    converter exits 1 there; so it does for a prefix rule converted for the exact
+    path only. It is a review signal, not a failure.
 12. **Multi-language paths** (`/de/menue`) are not handled specially; the key
     would include the prefix. Documented as a limitation, no test.
 13. **`SiteCheck` renders via `$kirby->router()->call()`**, not

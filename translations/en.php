@@ -63,6 +63,8 @@ convert  reads Apache Redirect, RedirectMatch and RewriteRule lines from an .hta
     'cli.summary'        => '{entries} entries, {errors} errors, {warnings} warnings.',
     'cli.skipped'        => 'Skipped line {line} ({reason}): {text}',
     'cli.convertSummary' => '{entries} entries converted, {skipped} lines skipped.',
+    'cli.partial'        => 'Line {line} converted for the exact path only ({reason}): {text}',
+    'cli.partialSummary' => '{partial} lines converted for the exact path only; add entries for the paths below them or keep those rules in .htaccess.',
 
     // Reasons why the converter skipped a line (Htaccess::convert()).
     'reason.pattern'   => 'pattern is not a literal path',
@@ -71,4 +73,5 @@ convert  reads Apache Redirect, RedirectMatch and RewriteRule lines from an .hta
     'reason.status'    => 'status is not a redirect status',
     'reason.flag'      => 'flag cannot be expressed in the list',
     'reason.duplicate' => 'old path already converted',
+    'reason.prefix'    => 'Apache also redirected the paths below it',
 ];

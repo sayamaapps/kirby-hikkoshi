@@ -322,16 +322,16 @@ warning: Redirect chain: b → c → d. Enter the final target directly.
 vendor/bin/hikkoshi convert FILE [--lang=en|de]
 ```
 
-`convert` reads an `.htaccess` file and prints the list as PHP to standard output. Skipped lines go to standard error. Redirect the output to a file yourself; the command never writes one, and you should review the result before you use it:
+`convert` reads an `.htaccess` file and prints the list as PHP to standard output. Skipped and partly converted lines go to standard error. Redirect the output to a file yourself; the command never writes one, and you should review the result before you use it:
 
 ```sh
 vendor/bin/hikkoshi convert public/.htaccess > site/config/hikkoshi.php
 vendor/bin/hikkoshi check
 ```
 
-It reads these directives (names are case-insensitive): `Redirect`, `RedirectPermanent`, `RedirectTemp`, `RedirectMatch` (only literal patterns), and `RewriteRule` with an `R` flag (a redirect) or a `G` flag (410), together with the `RewriteCond %{QUERY_STRING}` lines before it. Other lines are ignored, not skipped: Kirby's own `RewriteRule`s that pass requests to `index.php` produce no redirect and are not part of the list. A `RewriteRule` to an absolute URL without `R` is skipped and reported, because Apache answers it with a redirect too when the host is another one. A protocol-relative target (`//host/path`) is skipped as well, and so is a path target with a query of its own (`/page?x=1`). The flag `QSD` (`qsdiscard`) discards the query and becomes `'query' => 'drop'`, like a trailing `?` on the target. A redirect with a flag the list cannot express (`CO`, `C`, `S`, `N`, `P`, `T`, `H`, or an unknown one) is skipped; `L`, `END`, `NC`, `NE`, `QSA`, `E` and similar flags are ignored.
+It reads these directives (names are case-insensitive): `Redirect`, `RedirectPermanent`, `RedirectTemp`, `RedirectMatch` (only literal patterns that start with `^`), and `RewriteRule` with an `R` flag (a redirect) or a `G` flag (410), together with the `RewriteCond %{QUERY_STRING}` lines before it. Other lines are ignored, not skipped: Kirby's own `RewriteRule`s that pass requests to `index.php` produce no redirect and are not part of the list. `RedirectMatch` and `RewriteRule` patterns need the anchors `^…$`: without `^` the regex may match anywhere in the path (skipped as `pattern`), and with `^` but without the closing `$` it also matches the paths below (converted for the exact path and reported as partial). `Redirect`, `RedirectPermanent` and `RedirectTemp` are prefix rules in Apache (`/old/child` goes to `/target/child`); the converter writes the entry for the exact path and reports the line as partial, because the list has no prefix matching. A `RewriteRule` to an absolute URL without `R` is skipped and reported, because Apache answers it with a redirect too when the host is another one. A protocol-relative target (`//host/path`) is skipped as well, and so is a path target with a query of its own (`/page?x=1`). The flag `QSD` (`qsdiscard`) discards the query and becomes `'query' => 'drop'`, like a trailing `?` on the target. A redirect with a flag the list cannot express (`CO`, `C`, `S`, `N`, `P`, `T`, `H`, or an unknown one) is skipped; `L`, `END`, `NC`, `NE`, `QSA`, `E` and similar flags are ignored.
 
-Exit codes: `0` all lines converted, `1` lines skipped (listed on standard error), `2` usage error or file not found.
+Exit codes: `0` all lines converted, `1` lines skipped or converted partially (listed on standard error), `2` usage error or file not found.
 
 #### A WordPress example
 
@@ -395,6 +395,8 @@ Lines the converter cannot translate are skipped and listed, never guessed. Skip
 | `status is not a redirect status` | a status such as 303 |
 | `flag cannot be expressed in the list` | a `RewriteRule` flag such as `CO` or `S` that the list cannot reproduce |
 | `old path already converted` | a duplicate old path; the second line is skipped |
+
+Partial lines are converted, but only for the exact path. They are listed with the reason `Apache also redirected the paths below it` and counted in a second summary line. Add entries for the old subpaths you need, or keep the rule in `.htaccess`.
 
 ## Taking over `.htaccess` rules
 
