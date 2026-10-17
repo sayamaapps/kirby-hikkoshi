@@ -26,7 +26,8 @@ All notable changes to this project are documented here. Versions follow
   `qsdiscard`) discards the request's query in Apache; the converter ignored
   the flag and produced a plain entry with `query=keep`, so the parameters
   travelled on. QSD now gives `'query' => 'drop'`, like a trailing `?` on the
-  target.
+  target. `QSA` keeps the query even when the target ends in `?`, as in
+  Apache.
 - **`convert` no longer narrows prefix rules silently.** Apache's `Redirect`,
   `RedirectPermanent` and `RedirectTemp` match the old path as a prefix and
   forward the paths below it (`/old/child` → `/new/child`); a regex without
@@ -36,12 +37,14 @@ All notable changes to this project are documented here. Versions follow
   entries for the old subpaths, or keep that rule in `.htaccess`. A
   `RedirectMatch` or `RewriteRule` pattern without a leading `^` can match
   anywhere in the path and is skipped (`pattern`).
+- **`convert` reads the `\/?` pattern form.** A literal regex ending in
+  `\/?$` (`^/alt\/?$`) was skipped as `pattern`; it now converts like `/?$`.
 
 ### Changed
 
 - **`convert` skips redirects with a flag the list cannot express** (`CO`,
   `C`, `S`, `N`, `P`, `T`, `H` or an unknown flag) with the new reason
-  `flag`, instead of converting them silently. `L`, `END`, `NC`, `NE`, `QSA`,
+  `flag`, instead of converting them silently. `L`, `END`, `NC`, `NE`,
   `E` and similar flags stay ignored; rules without `R` or `G` stay internal
   rewrites. A path target with a query of its own (`/page?x=1`) is skipped as
   `target`: the Validator accepts no `?` in a page id.

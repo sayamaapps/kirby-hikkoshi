@@ -458,7 +458,7 @@ public static function render(array $entries, string $header = ''): string   // 
 `status`, `flag`, `duplicate` (`I18n::t('reason.' . reason)` for display); in
 `partial` the reason is always `prefix`. `line` is 1-based; `text` the trimmed
 directive line. A `partial` line IS converted (entry for the exact path) and
-reported: Apache matched the paths below it too, and the list has no prefix
+reported: Apache matched the paths below it too (for a regex: every path starting with it), and the list has no prefix
 matching. A line skipped for any other reason has no `partial` note.
 
 Parsing, line by line (trim; join a line ending in `\` with the next; skip
@@ -480,8 +480,9 @@ match the path as a prefix of complete segments and append the rest
 starts with `^` (without it the regex may match anywhere → `pattern`): strip
 `^` and `$`, a trailing `/?`, unescape `\.` `\-` `\/`; if any unescaped regex
 meta (`. * + ? ( ) [ ] { } | \`) remains → `pattern`. Without the closing `$`
-(`^/old`, `^/old/?`) the regex also matches the paths below: converted with a
-`partial` note (`prefix`). Then as `Redirect`.
+(`^/old`, `^/old/?`) the regex also matches every path that starts with it
+(`/old/child`, `/older`): converted with a `partial` note (`prefix`). The
+suffix `\/?` counts like `/?`. Then as `Redirect`.
 
 **`RewriteCond %{QUERY_STRING} regex [flags]`** — collected for the next
 `RewriteRule`. Accepted regex: optional `(^|&)` or `^` prefix, then
@@ -508,8 +509,10 @@ five keys).
 accepted as 410 without target); **no `R` flag → ignored** (an internal
 rewrite is not a redirect: Kirby's own `index.php` rules produce no output).
 Flags of a redirect (R/G), case-insensitive: `QSD`/`QSDISCARD` → `query drop`
-(also with a trailing `?`: one drop; irrelevant for 410); `L LAST END NC NOCASE
-NE NOESCAPE QSA QSAPPEND E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
+(also with a trailing `?`: one drop; irrelevant for 410); a trailing `?` on
+the target drops too, unless `QSA`/`QSAPPEND` is set (it appends the request's
+query to the emptied one: `keep`; with QSD the drop wins); `L LAST END NC NOCASE
+NE NOESCAPE E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
 PASSTHROUGH` are ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
 unknown) → `flag`. Rules without R/G are not judged by their flags.
 Pattern: literal only and starting with `^`, anchored with `$` or else
@@ -689,11 +692,11 @@ Complete tables: `translations/en.php`, `translations/de.php` (written;
 | `cli.summary` | {entries} entries, {errors} errors, {warnings} warnings. | {entries} Einträge, {errors} Fehler, {warnings} Warnungen. |
 | `cli.skipped` | Skipped line {line} ({reason}): {text} | Zeile {line} übersprungen ({reason}): {text} |
 | `cli.convertSummary` | {entries} entries converted, {skipped} lines skipped. | {entries} Einträge übernommen, {skipped} Zeilen übersprungen. |
+| `cli.partial` | Line {line} converted for the exact path only ({reason}): {text} | Zeile {line} nur für den genauen Pfad übernommen ({reason}): {text} |
+| `cli.partialSummary` | {partial} lines converted for the exact path only; add entries for the paths below them or keep those rules in .htaccess. | {partial} Zeilen nur für den genauen Pfad übernommen; Einträge für die Pfade darunter ergänzen oder die Regeln in der .htaccess lassen. |
 | `reason.pattern` | pattern is not a literal path | Muster ist kein fester Pfad |
 | `reason.condition` | condition is not a query-string condition | Bedingung ist keine Query-String-Bedingung |
 | `reason.target` | target cannot be converted | Ziel lässt sich nicht übernehmen |
-| `cli.partial` | Line {line} converted for the exact path only ({reason}): {text} | Zeile {line} nur für den genauen Pfad übernommen ({reason}): {text} |
-| `cli.partialSummary` | {partial} lines converted for the exact path only; add entries for the paths below them or keep those rules in .htaccess. | {partial} Zeilen nur für den genauen Pfad übernommen; Einträge für die Pfade darunter ergänzen oder die Regeln in der .htaccess lassen. |
 | `reason.status` | status is not a redirect status | Status ist kein Weiterleitungsstatus |
 | `reason.flag` | flag cannot be expressed in the list | Flag lässt sich nicht übernehmen |
 | `reason.prefix` | Apache also redirected the paths below it | Apache leitete auch die Pfade darunter weiter |
@@ -1009,6 +1012,7 @@ noren's KirbyTest. Sections:
   `target`; `^(index\.php)?$ /neu [R=301]` without conds → `pattern`; `[NC,R=301,L]`
   flag order irrelevant; `^alt /neu [R=301]` and `^alt/ /neu [R=301]` → entry
   `alt` plus `partial`; `alt /neu [R=301]` and `alt$ /neu [R]` → `pattern`; `[R=301,QSD,L]` → `['to' => 'neu', 'query' => 'drop']`;
+  `/neu? [R=301,QSA]` → `['alt' => 'neu']` (keep), with `QSD` → drop; `^alt\/?$` → `['alt' => 'neu']`;
   `[R=301,CO=a:b:c]`, `[R=301,S=1]`, `[R=301,XYZ]` → `flag`; `[L,CO=a:b:c]` (no R) → nothing.
 - RewriteCond groups: single cond `(^|&)page_id=13(&|$)` + rule `^(index\.php)?$ /x? [R=301,L]`
   → `['?page_id=13' => ['to' => 'x', 'query' => 'drop']]`; three `[OR]` conds →

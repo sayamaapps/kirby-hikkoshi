@@ -275,8 +275,11 @@ final class Htaccess
                 self::skip($state, $line, $body, 'target');
                 return;
             }
-            // QSD discards the query string like a trailing `?` on the target; both are one drop.
-            $destination['drop'] = $destination['drop'] || self::hasFlag($flags, 'QSD') || self::hasFlag($flags, 'QSDISCARD');
+            // QSD always discards the query. A trailing `?` empties the substitution's
+            // query, but QSA appends the request's query to it again: then nothing is dropped.
+            $append = self::hasFlag($flags, 'QSA') || self::hasFlag($flags, 'QSAPPEND');
+            $destination['drop'] = self::hasFlag($flags, 'QSD') || self::hasFlag($flags, 'QSDISCARD')
+                || ($destination['drop'] && !$append);
             $value = self::value($status, $destination);
         }
         if (self::store($state, self::keys($path, $chains), $value, $line, $body) && !$anchored) {
@@ -400,10 +403,11 @@ final class Htaccess
         if ($s === '(index\.php)?') {
             return '';
         }
-        if (str_ends_with($s, '/?')) {
-            $s = substr($s, 0, -2);
-        } elseif (str_ends_with($s, '\/?')) {
+        // `\/?` first: `/?` also ends it and would leave the backslash behind.
+        if (str_ends_with($s, '\/?')) {
             $s = substr($s, 0, -3);
+        } elseif (str_ends_with($s, '/?')) {
+            $s = substr($s, 0, -2);
         }
 
         $out = '';

@@ -315,6 +315,17 @@ expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('Re
 expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R=301,qsdiscard,L]')['entries'], 'qsdiscard (lowercase, long name) → query drop');
 expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte? [R=301,QSD,L]')['entries'], 'QSD plus trailing ? → one drop');
 expect(['old' => ['to' => 'produkte', 'status' => 302, 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R,QSD]')['entries'], 'R with QSD → 302 array with drop');
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301,QSA]')['entries'], 'QSA with a trailing ? keeps the query (plain string)');
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301,qsappend]')['entries'], 'qsappend (long name) with a trailing ? keeps the query');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301,QSA,QSD]')['entries'], 'QSA plus QSD with a trailing ? → drop (QSD always drops)');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSA,QSD]')['entries'], 'QSA plus QSD without ? → drop');
+expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSA]')['entries'], 'QSA without a trailing ? → plain string');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301]')['entries'], 'trailing ? without QSA → drop');
+foreach (['RewriteRule ^alt\/?$ /neu [R=301,L]', 'RedirectMatch 301 ^/alt\/?$ /neu'] as $rule) {
+    $r = Htaccess::convert($rule);
+    expect(['alt' => 'neu'], $r['entries'], "$rule → entry alt");
+    expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
+}
 expect(['old' => 410], Htaccess::convert('RewriteRule ^old$ - [G,QSD]')['entries'], '410 rule with QSD → 410');
 
 foreach ([
