@@ -69,5 +69,6 @@ convert  reads Apache Redirect, RedirectMatch and RewriteRule lines from an .hta
     'reason.condition' => 'condition is not a query-string condition',
     'reason.target'    => 'target cannot be converted',
     'reason.status'    => 'status is not a redirect status',
+    'reason.flag'      => 'flag cannot be expressed in the list',
     'reason.duplicate' => 'old path already converted',
 ];

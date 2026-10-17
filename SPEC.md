@@ -450,7 +450,7 @@ public static function render(array $entries, string $header = ''): string   // 
 ```
 
 `reason` is the translation key suffix: `pattern`, `condition`, `target`,
-`status`, `duplicate` (`I18n::t('reason.' . reason)` for display). `line` is
+`status`, `flag`, `duplicate` (`I18n::t('reason.' . reason)` for display). `line` is
 1-based; `text` the trimmed directive line.
 
 Parsing, line by line (trim; join a line ending in `\` with the next; skip
@@ -493,13 +493,19 @@ five keys).
 `R` → 302, `R=301` etc. → that status (only STATUSES minus 410 … `R=410`
 accepted as 410 without target); **no `R` flag → ignored** (an internal
 rewrite is not a redirect: Kirby's own `index.php` rules produce no output).
+Flags of a redirect (R/G), case-insensitive: `QSD`/`QSDISCARD` → `query drop`
+(also with a trailing `?`: one drop; irrelevant for 410); `L LAST END NC NOCASE
+NE NOESCAPE QSA QSAPPEND E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
+PASSTHROUGH` are ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
+unknown) → `flag`. Rules without R/G are not judged by their flags.
 Pattern: literal only, like RedirectMatch, plus these exact WordPress forms →
 path `''`: `^$`, `^/?$`, `^(index\.php)?$`, `^index\.php$` → `'index.php'`.
 Other meta → `pattern`. Path `''` **without** conditions → `pattern` (home
 cannot be a source). Target rules below; `-` → `target`. Entries in file order.
 
 **Target rules** (Redirect, RedirectMatch, RewriteRule): `/` → `home`;
-`/path` → `path` (leading slash removed, trailing slash removed); a trailing
+`/path` → `path` (leading slash removed, trailing slash removed); a `?` elsewhere in a path target (`/path?x=1`) → `target` (the Validator
+accepts no query in a page id); a trailing
 `?` (`/ueber-mich?`, `/?`) means Apache dropped the query → `query drop`;
 `http://…` or `https://…` → external, verbatim (the Validator decides whether
 the host is allowed; a trailing `?` is removed and means drop); contains `$1`
@@ -975,7 +981,8 @@ noren's KirbyTest. Sections:
   → nothing; `RewriteRule ^alt$ - [R=410]` → `['alt' => 410]`... (`-` with
   `R=410` is gone; `-` with R=301 → `target`); `^alt$ /neu/$1 [R=301]` →
   `target`; `^(index\.php)?$ /neu [R=301]` without conds → `pattern`; `[NC,R=301,L]`
-  flag order irrelevant; `[R=301,QSD,L]` fine.
+  flag order irrelevant; `[R=301,QSD,L]` → `['to' => 'neu', 'query' => 'drop']`;
+  `[R=301,CO=a:b:c]`, `[R=301,S=1]`, `[R=301,XYZ]` → `flag`; `[L,CO=a:b:c]` (no R) → nothing.
 - RewriteCond groups: single cond `(^|&)page_id=13(&|$)` + rule `^(index\.php)?$ /x? [R=301,L]`
   → `['?page_id=13' => ['to' => 'x', 'query' => 'drop']]`; three `[OR]` conds →
   three keys; alternation `page_id=(2|12)` → two keys; `feed=` → `?feed`;

@@ -247,7 +247,33 @@ expect([['line' => 1, 'text' => 'RewriteRule ^alt$ /neu/$1 [R=301]', 'reason' =>
 $r = Htaccess::convert('RewriteRule ^(index\.php)?$ /neu [R=301]');
 expect([['line' => 1, 'text' => 'RewriteRule ^(index\.php)?$ /neu [R=301]', 'reason' => 'pattern']], $r['skipped'], 'home without conditions → pattern');
 expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu [NC,R=301,L]')['entries'], 'flag order irrelevant');
-expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSD,L]')['entries'], 'QSD flag accepted');
+expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSD,L]')['entries'], 'QSD flag → query drop');
+
+/* RewriteRule flags: QSD discards the query, flags the list cannot express are skipped */
+
+expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R=301,QSD,L]')['entries'], 'QSD → query drop');
+expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R=301,qsdiscard,L]')['entries'], 'qsdiscard (lowercase, long name) → query drop');
+expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte? [R=301,QSD,L]')['entries'], 'QSD plus trailing ? → one drop');
+expect(['old' => ['to' => 'produkte', 'status' => 302, 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R,QSD]')['entries'], 'R with QSD → 302 array with drop');
+expect(['old' => 410], Htaccess::convert('RewriteRule ^old$ - [G,QSD]')['entries'], '410 rule with QSD → 410');
+
+foreach ([
+    'RewriteRule ^old$ /produkte [R=301,CO=name:value:example.com]' => 'cookie flag CO',
+    'RewriteRule ^old$ /produkte [R=301,S=1]' => 'skip flag S',
+    'RewriteRule ^old$ /produkte [R=301,XYZ]' => 'unknown flag XYZ',
+    'RewriteRule ^old$ /produkte [R=301,P]' => 'proxy flag P',
+    'RewriteRule ^old$ - [G,T=text/html]' => 'type flag T on a 410 rule',
+] as $rule => $label) {
+    $r = Htaccess::convert($rule);
+    expect([], $r['entries'], "$label → no entry");
+    expect([['line' => 1, 'text' => $rule, 'reason' => 'flag']], $r['skipped'], "$label → skipped flag");
+}
+
+expect(['old' => 'produkte'], Htaccess::convert('RewriteRule ^old$ /produkte [NC,R=301,NE,L,END,QSA,E=VAR:1]')['entries'], 'ignorable flags (NC, NE, L, END, QSA, E) → converted');
+expect([[], []], [Htaccess::convert('RewriteRule ^old$ /intern.php [L,CO=a:b:c]')['entries'], Htaccess::convert('RewriteRule ^old$ /intern.php [L,CO=a:b:c]')['skipped']], 'unsupported flag without R/G → still an ignored internal rewrite');
+
+$r = Htaccess::convert('RewriteRule ^old$ /produkte?x=1 [R=301]');
+expect([[], 'target'], [$r['entries'], $r['skipped'][0]['reason'] ?? ''], 'target with its own query → target (the Validator accepts no ? in a page id)');
 expect(['alt' => ['to' => 'neu', 'status' => 307]], Htaccess::convert('RewriteRule ^alt$ /neu [R=307,L]')['entries'], 'R=307');
 
 /* ------------------------------------------------------------------------

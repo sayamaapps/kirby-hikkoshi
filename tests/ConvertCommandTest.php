@@ -157,6 +157,17 @@ try {
     cv_remove($dir);
 }
 
+$dir = cv_tmp();
+try {
+    file_put_contents($dir . '/flag.htaccess', "RewriteRule ^old$ /produkte [R=301,S=1]\n");
+    [$code, $out, $err] = cv_run(['flag.htaccess'], $dir);
+    expect(1, $code, 'unsupported flag → exit 1');
+    holds(str_contains($err, 'Skipped line 1 (' . I18n::t('reason.flag') . '): RewriteRule ^old$ /produkte [R=301,S=1]'), 'stderr names the flag skip via the translation');
+    holds(str_contains($err, 'flag cannot be expressed'), 'the flag reason is not a bare key');
+} finally {
+    cv_remove($dir);
+}
+
 /* ------------------------------------------------------------------------
  * Hostile file names and lines: no code from the path, no escape sequences
  * --------------------------------------------------------------------- */

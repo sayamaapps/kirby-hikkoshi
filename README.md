@@ -329,7 +329,7 @@ vendor/bin/hikkoshi convert public/.htaccess > site/config/hikkoshi.php
 vendor/bin/hikkoshi check
 ```
 
-It reads these directives (names are case-insensitive): `Redirect`, `RedirectPermanent`, `RedirectTemp`, `RedirectMatch` (only literal patterns), and `RewriteRule` with an `R` flag (a redirect) or a `G` flag (410), together with the `RewriteCond %{QUERY_STRING}` lines before it. Other lines are ignored, not skipped: Kirby's own `RewriteRule`s that pass requests to `index.php` produce no redirect and are not part of the list. A `RewriteRule` to an absolute URL without `R` is skipped and reported, because Apache answers it with a redirect too when the host is another one. A protocol-relative target (`//host/path`) is skipped as well.
+It reads these directives (names are case-insensitive): `Redirect`, `RedirectPermanent`, `RedirectTemp`, `RedirectMatch` (only literal patterns), and `RewriteRule` with an `R` flag (a redirect) or a `G` flag (410), together with the `RewriteCond %{QUERY_STRING}` lines before it. Other lines are ignored, not skipped: Kirby's own `RewriteRule`s that pass requests to `index.php` produce no redirect and are not part of the list. A `RewriteRule` to an absolute URL without `R` is skipped and reported, because Apache answers it with a redirect too when the host is another one. A protocol-relative target (`//host/path`) is skipped as well, and so is a path target with a query of its own (`/page?x=1`). The flag `QSD` (`qsdiscard`) discards the query and becomes `'query' => 'drop'`, like a trailing `?` on the target. A redirect with a flag the list cannot express (`CO`, `C`, `S`, `N`, `P`, `T`, `H`, or an unknown one) is skipped; `L`, `END`, `NC`, `NE`, `QSA`, `E` and similar flags are ignored.
 
 Exit codes: `0` all lines converted, `1` lines skipped (listed on standard error), `2` usage error or file not found.
 
@@ -393,6 +393,7 @@ Lines the converter cannot translate are skipped and listed, never guessed. Skip
 | `condition is not a query-string condition` | a `RewriteCond` on something other than `%{QUERY_STRING}`, such as the host |
 | `target cannot be converted` | a target with `$1`, or one that is not a path or URL |
 | `status is not a redirect status` | a status such as 303 |
+| `flag cannot be expressed in the list` | a `RewriteRule` flag such as `CO` or `S` that the list cannot reproduce |
 | `old path already converted` | a duplicate old path; the second line is skipped |
 
 ## Taking over `.htaccess` rules

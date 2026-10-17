@@ -41,7 +41,7 @@ foreach ([
     'gone.title', 'gone.text',
     'cli.usage', 'cli.file', 'cli.unknownCommand', 'cli.fileMissing', 'cli.noFile', 'cli.ok', 'cli.summary',
     'cli.skipped', 'cli.convertSummary',
-    'reason.pattern', 'reason.condition', 'reason.target', 'reason.status', 'reason.duplicate',
+    'reason.pattern', 'reason.condition', 'reason.target', 'reason.status', 'reason.flag', 'reason.duplicate',
     'level.error', 'level.warning', 'level.info',
 ] as $key) {
     holds(isset($en[$key]), "key $key exists");

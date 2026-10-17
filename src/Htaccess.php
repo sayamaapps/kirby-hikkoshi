@@ -19,6 +19,17 @@ final class Htaccess
     private const META = '.*+?()[]{}|\\^$';
 
     /**
+     * RewriteRule flags a redirect may carry: handled (R, G, QSD) or without
+     * effect on the list. Any other flag changes what Apache does in a way
+     * the list cannot express, so the rule is skipped (`flag`).
+     */
+    private const FLAGS = [
+        'R', 'REDIRECT', 'G', 'GONE', 'L', 'LAST', 'END', 'NC', 'NOCASE', 'NE', 'NOESCAPE',
+        'QSA', 'QSAPPEND', 'QSD', 'QSDISCARD', 'E', 'ENV', 'B', 'BNP', 'BCTLS', 'BNE',
+        'DPI', 'DISCARDPATH', 'NS', 'NOSUBREQ', 'PT', 'PASSTHROUGH',
+    ];
+
+    /**
      * @return array{entries: array<string, mixed>, skipped: list<array{line:int, text:string, reason:string}>}
      */
     public static function convert(string $text): array
@@ -229,6 +240,11 @@ final class Htaccess
             }
             return;   // an internal rewrite, not a redirect
         }
+        // Only redirects are judged by their flags, so this follows the R/G decision above.
+        if (!self::knownFlags($flags)) {
+            self::skip($state, $line, $body, 'flag');
+            return;
+        }
         if ($poisoned) {
             self::skip($state, $line, $body, 'condition');
             return;
@@ -252,6 +268,8 @@ final class Htaccess
                 self::skip($state, $line, $body, 'target');
                 return;
             }
+            // QSD discards the query string like a trailing `?` on the target; both are one drop.
+            $destination['drop'] = $destination['drop'] || self::hasFlag($flags, 'QSD') || self::hasFlag($flags, 'QSDISCARD');
             $value = self::value($status, $destination);
         }
         self::store($state, self::keys($path, $chains), $value, $line, $body);
@@ -325,6 +343,18 @@ final class Htaccess
             }
         }
         return null;
+    }
+
+    /** Are all flags of the list one the converter handles or may ignore (self::FLAGS)? */
+    private static function knownFlags(string $flags): bool
+    {
+        foreach (explode(',', $flags) as $flag) {
+            $name = strtoupper(trim(explode('=', $flag, 2)[0]));
+            if ($name !== '' && !in_array($name, self::FLAGS, true)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static function hasFlag(string $flags, string $name): bool
@@ -401,6 +431,10 @@ final class Htaccess
             return ['to' => $target, 'drop' => $drop];
         }
         if (!str_starts_with($target, '/') || str_starts_with($target, '//')) {
+            return null;
+        }
+        // A query of its own replaces the request's; the Validator accepts no `?` in a page id.
+        if (str_contains($target, '?')) {
             return null;
         }
         $to = trim($target, '/');

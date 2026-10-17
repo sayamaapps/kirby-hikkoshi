@@ -58,5 +58,6 @@ convert  liest Apache-Zeilen Redirect, RedirectMatch und RewriteRule aus einer .
     'reason.condition' => 'Bedingung ist keine Query-String-Bedingung',
     'reason.target'    => 'Ziel lässt sich nicht übernehmen',
     'reason.status'    => 'Status ist kein Weiterleitungsstatus',
+    'reason.flag'      => 'Flag lässt sich nicht übernehmen',
     'reason.duplicate' => 'alter Pfad bereits übernommen',
 ];
