@@ -156,6 +156,45 @@ withSite(function (string $tmp): void {
     expect(500, $findings[0]['values']['actual'] ?? null, 'throwing template as target: actual 500');
 });
 
+/* --- a status or redirect set by the target's template ---------------------- */
+
+withSite(function (string $tmp): void {
+    hikkoshi_page($tmp, '6_wartung', 'wartung', ['title' => 'Wartung']);
+    file_put_contents($tmp . '/site/templates/wartung.php', '<?php $kirby->response()->code(503); echo "Down";');
+    $findings = scKirby($tmp, ['menue' => 'wartung'])->site()->hikkoshiCheck();
+    expect(['check.target'], codes($findings), 'template sets 503: exactly [check.target]');
+    expect(503, $findings[0]['values']['actual'] ?? null, 'template sets 503: actual 503');
+});
+
+withSite(function (string $tmp): void {
+    hikkoshi_page($tmp, '6_umzug', 'umzug', ['title' => 'Umzug']);
+    file_put_contents($tmp . '/site/templates/umzug.php', '<?php $kirby->response()->redirect("/team", 302);');
+    expect(['check.hop'], codes(scKirby($tmp, ['menue' => 'umzug'])->site()->hikkoshiCheck()), 'template redirects: exactly [check.hop]');
+});
+
+withSite(function (string $tmp): void {
+    hikkoshi_page($tmp, '6_ok', 'ok', ['title' => 'Ok']);
+    file_put_contents($tmp . '/site/templates/ok.php', '<?php $kirby->response()->code(200); echo "Fine";');
+    expect([], scKirby($tmp, ['menue' => 'ok'])->site()->hikkoshiCheck(), 'template sets 200 explicitly: []');
+});
+
+withSite(function (string $tmp): void {
+    hikkoshi_page($tmp, '6_wartung', 'wartung', ['title' => 'Wartung']);
+    file_put_contents($tmp . '/site/templates/wartung.php', '<?php $kirby->response()->code(503); echo "Down";');
+    $kirby = scKirby($tmp, ['alt-a' => 'wartung', 'alt-b' => 'speisekarte']);
+    $findings = $kirby->site()->hikkoshiCheck();
+    expect(['check.target'], codes($findings), 'isolation: one finding for two entries, no false check.status');
+    expect('alt-a', $findings[0]['key'] ?? null, 'isolation: the finding belongs to the first entry');
+    expect(null, $kirby->response()->code(), 'afterwards the App Responder has no code again');
+});
+
+withSite(function (string $tmp): void {
+    $kirby = scKirby($tmp, SC_CLEAN_LIST);
+    $kirby->response()->code(418);
+    $kirby->site()->hikkoshiCheck();
+    expect(null, $kirby->response()->code(), 'after hikkoshiCheck() the Responder code is null');
+});
+
 /* --- shape and German messages ------------------------------------------- */
 
 withSite(function (string $tmp): void {

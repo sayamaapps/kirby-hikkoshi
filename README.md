@@ -277,7 +277,7 @@ The messages are translated; the codes are the keys of the translation table (`f
 | `chain` | warning | a redirect to an address that redirects again, for example `a → b → c`. Enter the final target directly. |
 | `chain.resolved` | info | a chain that `hikkoshi.resolveChains` has resolved |
 
-The test helper adds findings about the site itself (see [Test helper for sites](#test-helper-for-sites)): `inactive`, `page.missing` (the target page does not exist or is a draft), `check.noMatch` (an old path does not match its own entry), `check.status` (the old path answers with another status), `check.location` (it redirects to another address), `check.target` (the target does not answer 200) and `check.hop` (the target is itself redirected).
+The test helper adds findings about the site itself (see [Test helper for sites](#test-helper-for-sites)): `inactive`, `page.missing` (the target page does not exist or is a draft), `check.noMatch` (an old path does not match its own entry), `check.status` (the old path answers with another status), `check.location` (it redirects to another address), `check.target` (the target does not answer 200) and `check.hop` (the target is itself redirected). A status or redirect set by the target's template (`$kirby->response()->code(503)`, `->redirect()`) counts.
 
 Two kinds of chains are not reported, because the list alone cannot show them:
 
@@ -464,7 +464,7 @@ exit($findings === [] ? 0 : 1);
 
 Errors in the list (a loop, a duplicate, a foreign host) never reach `hikkoshiCheck()`: Kirby registers the routes while it starts, and a list with an error throws `Hikkoshi\ConfigException` there — the same 500 the live site would show. That is why the example catches it. `hikkoshiCheck()` then reports the warnings and what only the running site can tell.
 
-`hikkoshiCheck()` runs each entry through the router and renders the target pages. It is slower than the list check, but it finds what only the site knows: a missing or draft target page, an address that answers differently than its entry says, and a target that is itself redirected. Use `hikkoshiCheck(false)` to check the list and the target pages without rendering.
+`hikkoshiCheck()` runs each entry through the router and renders the target pages. It is slower than the list check, but it finds what only the site knows: a missing or draft target page, an address that answers differently than its entry says, and a target that is itself redirected, also when its template sets the status or redirect itself. Use `hikkoshiCheck(false)` to check the list and the target pages without rendering.
 
 ### Without Kirby
 

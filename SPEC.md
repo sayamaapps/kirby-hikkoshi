@@ -435,8 +435,11 @@ page". Infos are never returned (a resolved chain is not a problem).
    `$result = $kirby->router()->call(trim($path, '/'), 'GET')` — NOT
    `$kirby->render()` (it writes into the one shared `Responder`, so a 404
    would stick to every later render). Map: `Response` → `[code, (string) Location header or null]`;
-   `Page` → `[isErrorPage ? 404 : 200, null]` (call `$page->render()` first:
-   a throwing template counts as 500); `File` → `[200, null]`; `null` → `[404, null]`;
+   `Page` → call `$page->render()` first (a throwing template counts as 500), then read the
+   Responder as `App::io()` does: `[$kirby->response()->code() ?? (isErrorPage ? 404 : 200),
+   (string) its Location header or null]`, so a template that sets `->code(503)` or
+   `->redirect()` counts. The App's Responder is reset (bound closure) before every
+   request and once after the loop in `run()`; `File` → `[200, null]`; `null` → `[404, null]`;
    `Throwable` → `[getHttpCode() for Kirby\Exception\Exception, else 500, null]`.
 
 ### 3.7 `Hikkoshi\Htaccess` (src/Htaccess.php — stub → `cli`)
@@ -1129,8 +1132,8 @@ The docs task may run `sh tests/run.sh` but owns no test file.
     would include the prefix. Documented as a limitation, no test.
 13. **`SiteCheck` renders via `$kirby->router()->call()`**, not
     `$kirby->render()`, because Kirby's single `Responder` keeps the last
-    status code. The test helper `hikkoshi_render()` resets that Responder
-    through a bound closure (test code only).
+    status code. `SiteCheck` and the test helper `hikkoshi_render()` both reset
+    that Responder through a bound closure before each request.
 14. **No deprecated aliases** for `Weiterleitungen\Liste` or the plugin id
     `weiterleitungen/kern`: the copy must be deleted on upgrade because both
     would register routes for the same paths.

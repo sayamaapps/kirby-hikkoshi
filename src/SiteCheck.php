@@ -15,8 +15,11 @@ use Kirby\Http\Url;
  * in a site's test suite; never on a live request.
  *
  * Renders through $kirby->router()->call(), not $kirby->render(): Kirby keeps
- * one Responder per App, and a 404 rendered earlier would stick to later
- * results.
+ * one Responder per App, and a status rendered earlier would stick to later
+ * results. The Responder is therefore reset before every simulated request
+ * (and after the last one, so nothing leaks into the caller's process), and
+ * a Page is read back from it the way App::io() does: a template that sets
+ * `$kirby->response()->code(503)` or `->redirect(...)` counts.
  */
 final class SiteCheck
 {
@@ -116,16 +119,38 @@ final class SiteCheck
             }
         }
 
+        // Nothing a target's template set on the Responder may leak to the caller.
+        self::resetResponder($kirby);
+
         return $findings;
+    }
+
+    /**
+     * Drops the App's Responder; Kirby creates a fresh one on the next
+     * response() call. There is no public reset (Responder::code(null) is a
+     * getter), hence the bound closure.
+     */
+    private static function resetResponder(App $kirby): void
+    {
+        (function (): void {
+            $this->response = null;
+        })->call($kirby);
     }
 
     /**
      * What the router answers for a GET on this path: [status, Location or null].
      *
+     * The Responder is reset first: Kirby keeps one per App, and the status or
+     * redirect a template set during an earlier request would otherwise stick.
+     * For a Page the result mirrors App::io(): render, then the Responder's
+     * code (404 for the error page when none is set) and its Location header.
+     *
      * @return array{0: int, 1: ?string}
      */
     private static function request(App $kirby, string $path): array
     {
+        self::resetResponder($kirby);
+
         try {
             $result = $kirby->router()->call(trim($path, '/'), 'GET');
 
@@ -140,7 +165,12 @@ final class SiteCheck
             }
             if ($result instanceof Page) {
                 $result->render();
-                return [$result->isErrorPage() ? 404 : 200, null];
+                $responder = $kirby->response();
+                $location = $responder->headers()['Location'] ?? null;
+                return [
+                    $responder->code() ?? ($result->isErrorPage() ? 404 : 200),
+                    $location === null ? null : (string) $location,
+                ];
             }
             if ($result === null) {
                 return [404, null];
