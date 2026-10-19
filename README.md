@@ -30,7 +30,7 @@ Composer installs the plugin into `site/plugins/hikkoshi/` (via `getkirby/compos
 Until the package is on Packagist, add the repository first:
 
 ```json
-"repositories": [{ "type": "vcs", "url": "https://github.com/simsimmal/kirby-hikkoshi" }]
+"repositories": [{ "type": "vcs", "url": "https://github.com/sayamaapps/kirby-hikkoshi" }]
 ```
 
 Manual installation (download into `site/plugins/hikkoshi/`) also works. The command is then `php site/plugins/hikkoshi/bin/hikkoshi`.
