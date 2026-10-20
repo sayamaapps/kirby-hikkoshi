@@ -27,7 +27,7 @@ comments and task prompts.
   no 8.3+ functions). Run with `ASDF_PHP_VERSION=8.5.3 php …` (asdf otherwise
   says "No version is set"). Composer: `php ~/Applications/PHP_Composer/composer.phar`.
 - Code, identifiers, comments, README in **English**. German only in
-  `translations/de.php` and `DATENSCHUTZ.md`.
+  `translations/de.php`.
 - Every user-facing string comes from `I18n::t()` (keys in §5). If you need a
   key that does not exist, do NOT add it — write it into `NOTES-<task>.md` and
   use the closest existing key.
@@ -62,7 +62,7 @@ comments and task prompts.
 | Real lists (compatibility contract) | two migrated sites' lists, not in this repo: a Jimdo one (14 entries) and a Wix one (12 entries), copied verbatim into the tests |
 | Apache rules to take over | a migrated WordPress site's `public/.htaccess` (`?page_id=` redirects), not in this repo; the test reads it from `../wp-site/` when present |
 | Site e2e expectations | a site's Playwright spec (catches `\LogicException`) |
-| Family conventions | `../kirby-noren` (SPEC, README, CHANGELOG, PRIVACY, DATENSCHUTZ, tests), `../kirby-koe` (bin/ script), `../kirby-kizami` |
+| Family conventions | `../kirby-noren` (SPEC, README, CHANGELOG, tests), `../kirby-koe` (bin/ script), `../kirby-kizami` |
 
 ---
 
@@ -115,9 +115,7 @@ kirby-hikkoshi/
 │   ├── CheckCommandTest.php         cli       (§8.6)
 │   └── ConvertCommandTest.php       cli       (§8.7)
 ├── README.md                        docs   (§9)
-├── CHANGELOG.md                     docs
-├── PRIVACY.md                       docs
-└── DATENSCHUTZ.md                   docs
+└── CHANGELOG.md                     docs
 ```
 
 Run everything: `cd this repository && ASDF_PHP_VERSION=8.5.3 sh tests/run.sh`.
@@ -1075,8 +1073,8 @@ streams and a temp dir as `$cwd` (`sys_get_temp_dir()`, removed in finally):
 
 ## 9. Documentation (task `docs`)
 
-Model on `../kirby-noren` (README structure, CHANGELOG rules, PRIVACY and
-DATENSCHUTZ tone). English everywhere except DATENSCHUTZ.md.
+Model on `../kirby-noren` (README structure, CHANGELOG rules). English
+everywhere.
 
 **README.md** sections: title + one-paragraph meaning of the name; feature
 list; Requirements (PHP 8.2–8.4, Kirby 5); Installation (composer, repository
@@ -1095,7 +1093,7 @@ Kirby-free `Validator::validate(require 'site/config/hikkoshi.php')` variant);
 Site and page methods (`hikkoshiRedirects`, `hikkoshiResolve`, `hikkoshiCheck`,
 `hikkoshiSources`, `hikkoshi_option`); 410 snippet override; Upgrading from
 `site/plugins/weiterleitungen` (§7 table, the "remove the copy" warning, the
-test replacement); Privacy (link); License.
+test replacement); Privacy (short statement); License.
 
 **CHANGELOG.md**: Keep a Changelog, SemVer, `## [1.0.0] — unreleased`, with
 the project rule "a change to the matching rules or the config contract is a
@@ -1103,15 +1101,6 @@ major version". Sections: Added (everything new vs. the copy), Changed
 (breaking, with the §7 table: chains are warnings, normalised keys, uppercase
 requests redirect, `active` switch, catch-all route), Removed (German class and
 plugin names, no aliases).
-
-**PRIVACY.md / DATENSCHUTZ.md**: the plugin reads the request path and query
-to decide on a redirect, sends a `Location` header, stores nothing, sets no
-cookies, makes no outbound request; configuration errors go to the server's
-error log without visitor data; the 410 page is static text; `allowedHosts`
-means the operator alone decides which foreign hosts are targets; web server
-access logs are outside the plugin. DATENSCHUTZ.md: German text block for a
-privacy policy + "Hinweise für den Betreiber", "beschreibt die
-Implementierung, keine Rechtsberatung".
 
 The docs task may run `sh tests/run.sh` but owns no test file.
 
