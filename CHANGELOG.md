@@ -7,9 +7,12 @@ All notable changes to this project are documented here. Versions follow
   value forms of the redirect list, the normalisation of keys and request
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
-- **A change to the privacy text** (`DATENSCHUTZ.md` / `PRIVACY.md`) is marked
-  **[privacy text]**. Every site using the plugin must then review its privacy
-  policy.
+
+## [Unreleased]
+
+### Removed
+
+- **`DATENSCHUTZ.md` and `PRIVACY.md`.** Hikkoshi processes no visitor data, so it has no place in a site's privacy policy. The README says so under "Privacy".
 
 ## [1.1.0] — 2026-10-17
 

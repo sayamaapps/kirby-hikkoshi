@@ -594,12 +594,7 @@ The German class names and the old plugin id are gone. The German messages of th
 
 ## Privacy
 
-Hikkoshi reads the request path and query to decide on a redirect, sends a `Location` header or a static 410 page, stores nothing, sets no cookies, uses no browser storage and makes no outbound request. Configuration problems are written to the server's error log, without visitor data.
-
-- [PRIVACY.md](PRIVACY.md): English summary.
-- [DATENSCHUTZ.md](DATENSCHUTZ.md): German text block for a site's privacy policy and notes for the operator. It describes the implementation; it is not legal advice.
-
-The operator alone decides which foreign hosts may be redirect targets (`hikkoshi.allowedHosts`). The web server's access logs are outside the plugin and are covered by the site's own privacy policy.
+Hikkoshi processes no visitor data: it sets no cookies, uses no browser storage and makes no request to a third party. It stores nothing; configuration errors go to the server's error log without visitor data. There is nothing to add to a site's privacy policy.
 
 ## Development
 
