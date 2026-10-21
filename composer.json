@@ -4,7 +4,7 @@
     "type": "kirby-plugin",
     "license": "MIT",
     "keywords": ["kirby", "kirby-plugin", "kirby-5", "redirects", "301", "migration", "jimdo", "wix", "wordpress", "htaccess"],
-    "homepage": "https://github.com/simsimmal/kirby-hikkoshi",
+    "homepage": "https://github.com/sayamaapps/kirby-hikkoshi",
     "authors": [
         {
             "name": "Simon Räder",
@@ -12,8 +12,8 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/simsimmal/kirby-hikkoshi/issues",
-        "source": "https://github.com/simsimmal/kirby-hikkoshi"
+        "issues": "https://github.com/sayamaapps/kirby-hikkoshi/issues",
+        "source": "https://github.com/sayamaapps/kirby-hikkoshi"
     },
     "require": {
         "php": "^8.2",

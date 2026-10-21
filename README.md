@@ -30,7 +30,7 @@ Composer installs the plugin into `site/plugins/hikkoshi/` (via `getkirby/compos
 Until the package is on Packagist, add the repository first:
 
 ```json
-"repositories": [{ "type": "vcs", "url": "https://github.com/simsimmal/kirby-hikkoshi" }]
+"repositories": [{ "type": "vcs", "url": "https://github.com/sayamaapps/kirby-hikkoshi" }]
 ```
 
 Manual installation (download into `site/plugins/hikkoshi/`) also works. The command is then `php site/plugins/hikkoshi/bin/hikkoshi`.
@@ -277,7 +277,7 @@ The messages are translated; the codes are the keys of the translation table (`f
 | `chain` | warning | a redirect to an address that redirects again, for example `a → b → c`. Enter the final target directly. |
 | `chain.resolved` | info | a chain that `hikkoshi.resolveChains` has resolved |
 
-The test helper adds findings about the site itself (see [Test helper for sites](#test-helper-for-sites)): `inactive`, `page.missing` (the target page does not exist or is a draft), `check.noMatch` (an old path does not match its own entry), `check.status` (the old path answers with another status), `check.location` (it redirects to another address), `check.target` (the target does not answer 200) and `check.hop` (the target is itself redirected).
+The test helper adds findings about the site itself (see [Test helper for sites](#test-helper-for-sites)): `inactive`, `page.missing` (the target page does not exist or is a draft), `check.noMatch` (an old path does not match its own entry), `check.status` (the old path answers with another status), `check.location` (it redirects to another address), `check.target` (the target does not answer 200) and `check.hop` (the target is itself redirected). A status or redirect set by the target's template (`$kirby->response()->code(503)`, `->redirect()`) counts.
 
 Two kinds of chains are not reported, because the list alone cannot show them:
 
@@ -322,16 +322,16 @@ warning: Redirect chain: b → c → d. Enter the final target directly.
 vendor/bin/hikkoshi convert FILE [--lang=en|de]
 ```
 
-`convert` reads an `.htaccess` file and prints the list as PHP to standard output. Skipped lines go to standard error. Redirect the output to a file yourself; the command never writes one, and you should review the result before you use it:
+`convert` reads an `.htaccess` file and prints the list as PHP to standard output. Skipped and partly converted lines go to standard error. Redirect the output to a file yourself; the command never writes one, and you should review the result before you use it:
 
 ```sh
 vendor/bin/hikkoshi convert public/.htaccess > site/config/hikkoshi.php
 vendor/bin/hikkoshi check
 ```
 
-It reads these directives (names are case-insensitive): `Redirect`, `RedirectPermanent`, `RedirectTemp`, `RedirectMatch` (only literal patterns), and `RewriteRule` with an `R` flag (a redirect) or a `G` flag (410), together with the `RewriteCond %{QUERY_STRING}` lines before it. Other lines are ignored, not skipped: Kirby's own `RewriteRule`s that pass requests to `index.php` produce no redirect and are not part of the list. A `RewriteRule` to an absolute URL without `R` is skipped and reported, because Apache answers it with a redirect too when the host is another one. A protocol-relative target (`//host/path`) is skipped as well.
+It reads these directives (names are case-insensitive): `Redirect`, `RedirectPermanent`, `RedirectTemp`, `RedirectMatch` (only literal patterns that start with `^`), and `RewriteRule` with an `R` flag (a redirect) or a `G` flag (410), together with the `RewriteCond %{QUERY_STRING}` lines before it. Other lines are ignored, not skipped: Kirby's own `RewriteRule`s that pass requests to `index.php` produce no redirect and are not part of the list. `RedirectMatch` and `RewriteRule` patterns need the anchors `^…$`: without `^` the regex may match anywhere in the path (skipped as `pattern`), and with `^` but without the closing `$` it also matches every path that starts with it (converted for the exact path and reported as partial). `Redirect`, `RedirectPermanent` and `RedirectTemp` are prefix rules in Apache (`/old/child` goes to `/target/child`, complete path segments only); the converter writes the entry for the exact path and reports the line as partial, because the list has no prefix matching. A `RewriteRule` to an absolute URL without `R` is skipped and reported, because Apache answers it with a redirect too when the host is another one. A protocol-relative target (`//host/path`) is skipped as well, and so is a path target with a query of its own (`/page?x=1`). The flag `QSD` (`qsdiscard`) discards the query and becomes `'query' => 'drop'`, like a trailing `?` on the target; `QSA` (`qsappend`) keeps the query even when the target ends in `?`. A redirect with a flag the list cannot express (`CO`, `C`, `S`, `N`, `P`, `T`, `H`, or an unknown one) is skipped; `L`, `END`, `NC`, `NE`, `E` and similar flags are ignored.
 
-Exit codes: `0` all lines converted, `1` lines skipped (listed on standard error), `2` usage error or file not found.
+Exit codes: `0` all lines converted, `1` lines skipped or converted partially (listed on standard error), `2` usage error or file not found.
 
 #### A WordPress example
 
@@ -393,7 +393,10 @@ Lines the converter cannot translate are skipped and listed, never guessed. Skip
 | `condition is not a query-string condition` | a `RewriteCond` on something other than `%{QUERY_STRING}`, such as the host |
 | `target cannot be converted` | a target with `$1`, or one that is not a path or URL |
 | `status is not a redirect status` | a status such as 303 |
+| `flag cannot be expressed in the list` | a `RewriteRule` flag such as `CO` or `S` that the list cannot reproduce |
 | `old path already converted` | a duplicate old path; the second line is skipped |
+
+Partial lines are converted, but only for the exact path. They are listed with the reason `Apache also redirected the paths below it` and counted in a second summary line. Add entries for the old subpaths you need, or keep the rule in `.htaccess`. An old path with a trailing slash (`Redirect 301 /alt/ /neu/`) becomes the entry `alt`, which also answers `/alt` (Apache answered 404 there); the converter does not tell the two apart.
 
 ## Taking over `.htaccess` rules
 
@@ -463,7 +466,7 @@ exit($findings === [] ? 0 : 1);
 
 Errors in the list (a loop, a duplicate, a foreign host) never reach `hikkoshiCheck()`: Kirby registers the routes while it starts, and a list with an error throws `Hikkoshi\ConfigException` there — the same 500 the live site would show. That is why the example catches it. `hikkoshiCheck()` then reports the warnings and what only the running site can tell.
 
-`hikkoshiCheck()` runs each entry through the router and renders the target pages. It is slower than the list check, but it finds what only the site knows: a missing or draft target page, an address that answers differently than its entry says, and a target that is itself redirected. Use `hikkoshiCheck(false)` to check the list and the target pages without rendering.
+`hikkoshiCheck()` runs each entry through the router and renders the target pages. It is slower than the list check, but it finds what only the site knows: a missing or draft target page, an address that answers differently than its entry says, and a target that is itself redirected, also when its template sets the status or redirect itself. Use `hikkoshiCheck(false)` to check the list and the target pages without rendering.
 
 ### Without Kirby
 
@@ -591,12 +594,7 @@ The German class names and the old plugin id are gone. The German messages of th
 
 ## Privacy
 
-Hikkoshi reads the request path and query to decide on a redirect, sends a `Location` header or a static 410 page, stores nothing, sets no cookies, uses no browser storage and makes no outbound request. Configuration problems are written to the server's error log, without visitor data.
-
-- [PRIVACY.md](PRIVACY.md): English summary.
-- [DATENSCHUTZ.md](DATENSCHUTZ.md): German text block for a site's privacy policy and notes for the operator. It describes the implementation; it is not legal advice.
-
-The operator alone decides which foreign hosts may be redirect targets (`hikkoshi.allowedHosts`). The web server's access logs are outside the plugin and are covered by the site's own privacy policy.
+Hikkoshi processes no visitor data: it sets no cookies, uses no browser storage and makes no request to a third party. It stores nothing; configuration errors go to the server's error log without visitor data. There is nothing to add to a site's privacy policy.
 
 ## Development
 

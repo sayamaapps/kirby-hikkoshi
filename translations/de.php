@@ -53,10 +53,14 @@ convert  liest Apache-Zeilen Redirect, RedirectMatch und RewriteRule aus einer .
     'cli.summary'        => '{entries} Einträge, {errors} Fehler, {warnings} Warnungen.',
     'cli.skipped'        => 'Zeile {line} übersprungen ({reason}): {text}',
     'cli.convertSummary' => '{entries} Einträge übernommen, {skipped} Zeilen übersprungen.',
+    'cli.partial'        => 'Zeile {line} nur für den genauen Pfad übernommen ({reason}): {text}',
+    'cli.partialSummary' => '{partial} Zeilen nur für den genauen Pfad übernommen; Einträge für die Pfade darunter ergänzen oder die Regeln in der .htaccess lassen.',
 
     'reason.pattern'   => 'Muster ist kein fester Pfad',
     'reason.condition' => 'Bedingung ist keine Query-String-Bedingung',
     'reason.target'    => 'Ziel lässt sich nicht übernehmen',
     'reason.status'    => 'Status ist kein Weiterleitungsstatus',
+    'reason.flag'      => 'Flag lässt sich nicht übernehmen',
     'reason.duplicate' => 'alter Pfad bereits übernommen',
+    'reason.prefix'    => 'Apache leitete auch die Pfade darunter weiter',
 ];

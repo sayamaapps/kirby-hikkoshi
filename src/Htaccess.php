@@ -12,6 +12,8 @@ namespace Hikkoshi;
  * (internal rewrites, IfModule, headers) is ignored silently; only redirects
  * that cannot be converted are reported as skipped — including a RewriteRule
  * to an absolute URL without R, which Apache answers with a redirect too.
+ * Prefix rules (Redirect, or a regex without its closing `$`) are converted
+ * for the exact path and reported as partial.
  */
 final class Htaccess
 {
@@ -19,13 +21,28 @@ final class Htaccess
     private const META = '.*+?()[]{}|\\^$';
 
     /**
-     * @return array{entries: array<string, mixed>, skipped: list<array{line:int, text:string, reason:string}>}
+     * RewriteRule flags a redirect may carry: handled (R, G, QSD) or without
+     * effect on the list. Any other flag changes what Apache does in a way
+     * the list cannot express, so the rule is skipped (`flag`).
+     */
+    private const FLAGS = [
+        'R', 'REDIRECT', 'G', 'GONE', 'L', 'LAST', 'END', 'NC', 'NOCASE', 'NE', 'NOESCAPE',
+        'QSA', 'QSAPPEND', 'QSD', 'QSDISCARD', 'E', 'ENV', 'B', 'BNP', 'BCTLS', 'BNE',
+        'DPI', 'DISCARDPATH', 'NS', 'NOSUBREQ', 'PT', 'PASSTHROUGH',
+    ];
+
+    /**
+     * `skipped`: nothing converted. `partial`: converted for the exact path,
+     * but Apache matched the paths below it too (reason `prefix`).
+     *
+     * @return array{entries: array<string, mixed>, skipped: list<array{line:int, text:string, reason:string}>, partial: list<array{line:int, text:string, reason:string}>}
      */
     public static function convert(string $text): array
     {
         $state = [
             'entries'  => [],
             'skipped'  => [],
+            'partial'  => [],
             'chains'   => [],   // closed RewriteCond OR-chains, each a list of options (cond strings)
             'open'     => [],   // the OR-chain still waiting for a cond without [OR]
             'poisoned' => false,
@@ -60,7 +77,7 @@ final class Htaccess
             }
         }
 
-        return ['entries' => $state['entries'], 'skipped' => $state['skipped']];
+        return ['entries' => $state['entries'], 'skipped' => $state['skipped'], 'partial' => $state['partial']];
     }
 
     /**
@@ -229,6 +246,11 @@ final class Htaccess
             }
             return;   // an internal rewrite, not a redirect
         }
+        // Only redirects are judged by their flags, so this follows the R/G decision above.
+        if (!self::knownFlags($flags)) {
+            self::skip($state, $line, $body, 'flag');
+            return;
+        }
         if ($poisoned) {
             self::skip($state, $line, $body, 'condition');
             return;
@@ -238,7 +260,8 @@ final class Htaccess
             self::skip($state, $line, $body, 'status');
             return;
         }
-        $path = self::literal($pattern);
+        $anchored = true;
+        $path = self::literal($pattern, $anchored);
         if ($path === null || ($path === '' && $chains === [])) {
             self::skip($state, $line, $body, 'pattern');
             return;
@@ -252,9 +275,16 @@ final class Htaccess
                 self::skip($state, $line, $body, 'target');
                 return;
             }
+            // QSD always discards the query. A trailing `?` empties the substitution's
+            // query, but QSA appends the request's query to it again: then nothing is dropped.
+            $append = self::hasFlag($flags, 'QSA') || self::hasFlag($flags, 'QSAPPEND');
+            $destination['drop'] = self::hasFlag($flags, 'QSD') || self::hasFlag($flags, 'QSDISCARD')
+                || ($destination['drop'] && !$append);
             $value = self::value($status, $destination);
         }
-        self::store($state, self::keys($path, $chains), $value, $line, $body);
+        if (self::store($state, self::keys($path, $chains), $value, $line, $body) && !$anchored) {
+            self::note($state, $line, $body);
+        }
     }
 
     /** Redirect and RedirectMatch: `[status] old target`. */
@@ -279,9 +309,11 @@ final class Htaccess
         $old = $tokens[0] ?? '';
         $target = $tokens[1] ?? '';
 
+        $anchored = true;
         if ($regex) {
-            $path = self::literal($old);
+            $path = self::literal($old, $anchored);
         } else {
+            $anchored = false;   // mod_alias Redirect matches the path and everything below it
             $path = str_starts_with($old, '/') ? trim(substr($old, 1), '/') : null;
         }
         if ($path === null || $path === '') {
@@ -299,7 +331,9 @@ final class Htaccess
             }
             $value = self::value($status, $destination);
         }
-        self::store($state, [$path], $value, $line, $body);
+        if (self::store($state, [$path], $value, $line, $body) && !$anchored) {
+            self::note($state, $line, $body);
+        }
     }
 
     /** Status of a Redirect token or an R flag value; '' (no token) is a temporary redirect. */
@@ -327,6 +361,18 @@ final class Htaccess
         return null;
     }
 
+    /** Are all flags of the list one the converter handles or may ignore (self::FLAGS)? */
+    private static function knownFlags(string $flags): bool
+    {
+        foreach (explode(',', $flags) as $flag) {
+            $name = strtoupper(trim(explode('=', $flag, 2)[0]));
+            if ($name !== '' && !in_array($name, self::FLAGS, true)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static function hasFlag(string $flags, string $name): bool
     {
         foreach (explode(',', $flags) as $flag) {
@@ -339,24 +385,29 @@ final class Htaccess
 
     /**
      * A regex that is a literal path (`^/alt/?$` → 'alt'), or null when it
-     * is a real pattern. The WordPress home forms become ''.
+     * is a real pattern. The WordPress home forms become ''. Without a
+     * leading `^` the regex may match anywhere in the path: null. Without a
+     * closing `$` it matches the paths below as well: $anchored is false.
      */
-    private static function literal(string $pattern): ?string
+    private static function literal(string $pattern, bool &$anchored): ?string
     {
         $s = $pattern;
-        if (str_starts_with($s, '^')) {
-            $s = substr($s, 1);
+        if (!str_starts_with($s, '^')) {
+            return null;
         }
-        if (str_ends_with($s, '$')) {
+        $s = substr($s, 1);
+        $anchored = str_ends_with($s, '$');
+        if ($anchored) {
             $s = substr($s, 0, -1);
         }
         if ($s === '(index\.php)?') {
             return '';
         }
-        if (str_ends_with($s, '/?')) {
-            $s = substr($s, 0, -2);
-        } elseif (str_ends_with($s, '\/?')) {
+        // `\/?` first: `/?` also ends it and would leave the backslash behind.
+        if (str_ends_with($s, '\/?')) {
             $s = substr($s, 0, -3);
+        } elseif (str_ends_with($s, '/?')) {
+            $s = substr($s, 0, -2);
         }
 
         $out = '';
@@ -377,7 +428,7 @@ final class Htaccess
             }
             $out .= $c;
         }
-        return ltrim($out, '/');
+        return trim($out, '/');
     }
 
     /**
@@ -401,6 +452,10 @@ final class Htaccess
             return ['to' => $target, 'drop' => $drop];
         }
         if (!str_starts_with($target, '/') || str_starts_with($target, '//')) {
+            return null;
+        }
+        // A query of its own replaces the request's; the Validator accepts no `?` in a page id.
+        if (str_contains($target, '?')) {
             return null;
         }
         $to = trim($target, '/');
@@ -454,20 +509,27 @@ final class Htaccess
         );
     }
 
-    /** Adds the entry under all keys, or skips the line when one key already exists. */
-    private static function store(array &$state, array $keys, mixed $value, int $line, string $body): void
+    /** Adds the entry under all keys, or skips the line when one key already exists; true when added. */
+    private static function store(array &$state, array $keys, mixed $value, int $line, string $body): bool
     {
         $seen = [];
         foreach ($keys as $key) {
             if (array_key_exists($key, $state['entries']) || isset($seen[$key])) {
                 self::skip($state, $line, $body, 'duplicate');
-                return;
+                return false;
             }
             $seen[$key] = true;
         }
         foreach ($keys as $key) {
             $state['entries'][$key] = $value;
         }
+        return true;
+    }
+
+    /** A converted line that Apache applied to the paths below the entry's path as well. */
+    private static function note(array &$state, int $line, string $body): void
+    {
+        $state['partial'][] = ['line' => $line, 'text' => $body, 'reason' => 'prefix'];
     }
 
     private static function skip(array &$state, int $line, string $body, string $reason): void
