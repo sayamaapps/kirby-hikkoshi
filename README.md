@@ -22,12 +22,6 @@ Checked redirects for [Kirby CMS](https://getkirby.com) after a site has moved.
 composer require sayamaapps/kirby-hikkoshi
 ```
 
-Until the package is on Packagist, add the repository to `composer.json` first:
-
-```json
-"repositories": [{ "type": "vcs", "url": "https://github.com/sayamaapps/kirby-hikkoshi" }]
-```
-
 Composer installs to `site/plugins/hikkoshi/`. Add that path to `.gitignore` and deploy it like `vendor/`.
 
 ## Usage
