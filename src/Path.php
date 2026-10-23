@@ -4,7 +4,7 @@ namespace Hikkoshi;
 
 /**
  * Path normalisation and the character rules for old paths and targets,
- * Kirby-free. Shared file — owned by the architect (SPEC.md §2, §3.1).
+ * Kirby-free (SPEC.md §3.1).
  *
  * Both sides of a match go through the same normalize(): the config keys at
  * load time (Validator) and the request path at run time (Resolver). That
@@ -29,7 +29,7 @@ final class Path
 
     /**
      * A Kirby page id: lowercase segments without dots (`home`,
-     * `leistungen/beratung`). Lowercase only, as the pre-1.0 copy demanded:
+     * `leistungen/beratung`). Lowercase only, as the pre-1.0 release demanded:
      * Kirby slugs are lowercase, and `Produkte` would never be found.
      */
     private const ID_SEGMENT = '[a-z0-9_-]+';

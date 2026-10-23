@@ -5,9 +5,9 @@ namespace Hikkoshi;
 /**
  * A redirect list with at least one error-level finding (SPEC.md §3.2.3).
  *
- * Extends LogicException on purpose: the pre-1.0 copy threw LogicException,
- * and a site's own tests catch
- * exactly that type. The message lists every error, one per line, in the
+ * Extends LogicException on purpose: the pre-1.0 release threw LogicException,
+ * and a site's own tests catch exactly that type. The message lists every error,
+ * one per line, in the
  * current I18n language; findings() gives the structured list (errors AND
  * warnings) for a test suite or the CLI.
  *

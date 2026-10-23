@@ -2,7 +2,7 @@
 /**
  * The plugin with real Kirby (SPEC.md §8.3), in throwaway site directories,
  * rendered in-process (no PHP server, no sockets, no outbound HTTP). Port of
- * kirby-starter/tests/WeiterleitungenHttpTest.php. Sections:
+ * the pre-1.0 HTTP test. Sections:
  *  1. registered, off by default, translations, hikkoshi_option();
  *  2. the pre-1.0 list in weiterleitungen.php: targets, GET/HEAD, slash, query,
  *     drafts, POST, plain pages (changed: uppercase requests redirect now);
@@ -18,7 +18,7 @@
  * Kirby loads the plugin through the symlink hikkoshi_site() creates, so no
  * src file is required here.
  *
- *   ASDF_PHP_VERSION=8.5.3 php tests/KirbyTest.php
+ *   php tests/KirbyTest.php
  */
 
 require_once __DIR__ . '/helpers.php';
@@ -63,7 +63,7 @@ function ktRequest(array $query): array
     return ['method' => 'GET', 'query' => $query];
 }
 
-/** The pre-1.0 list of the starter's HTTP test. */
+/** The pre-1.0 list of the HTTP test. */
 function ktPreList(): array
 {
     return [

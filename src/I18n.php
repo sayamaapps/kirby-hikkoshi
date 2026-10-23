@@ -3,8 +3,7 @@
 namespace Hikkoshi;
 
 /**
- * Strings of the plugin, Kirby-free. Shared file — owned by the architect
- * (SPEC.md §2). Builders never edit it; a missing key goes into NOTES-<key>.md.
+ * Strings of the plugin, Kirby-free (SPEC.md §5).
  *
  * The tables live in translations/<language>.php and are also registered as
  * Kirby plugin translations under `hikkoshi.<key>` (index.php), so a site's
@@ -72,7 +71,7 @@ final class I18n
     }
 
     /**
-     * A config entry for messages: `'old' => 'new'`, as the pre-1.0 plugin
+     * A config entry for messages: `'old' => 'new'`, as the pre-1.0 release
      * printed it (var_export of key and value), so existing expectations hold.
      * Arrays are printed on one line in short syntax: `['to' => 'x', 'status' => 302]`.
      */

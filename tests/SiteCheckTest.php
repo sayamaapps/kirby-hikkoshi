@@ -4,7 +4,7 @@
  * and SiteCheck::run(), in throwaway site directories, in-process (no server,
  * no sockets, no outbound HTTP).
  *
- *   ASDF_PHP_VERSION=8.5.3 php tests/SiteCheckTest.php
+ *   php tests/SiteCheckTest.php
  *
  * A list with an error throws while the App is built (the routes are read
  * then), so the loop case builds the App with a valid list first and swaps

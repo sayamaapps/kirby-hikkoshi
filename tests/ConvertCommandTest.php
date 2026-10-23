@@ -223,7 +223,7 @@ $expected = [
 
 $dir = cv_tmp();
 try {
-    // The rewrite section of wp-site/public/.htaccess (lines 11-90), copied verbatim.
+    // The WordPress rewrite section, the same fixture as in HtaccessTest.php.
     $block = <<<'HTACCESS'
 RewriteEngine on
 
@@ -250,14 +250,13 @@ RewriteRule ^index\.html$ index.php [L]
 # griffe erneut, was eine Weiterleitungsschleife ergäbe.
 #
 # Diese Regeln stehen VOR den Kirby-Regeln, sonst schluckt die Catch-all-Regel
-# am Dateiende die Anfrage vorher. Herkunft und vollständige Liste der alten
-# URLs: docs/alte-urls.md
+# am Dateiende die Anfrage vorher.
 
 RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|$)
-RewriteRule ^(index\.php)?$ /ueber-mich? [R=301,L]
+RewriteRule ^(index\.php)?$ /ueber-uns? [R=301,L]
 
 RewriteCond %{QUERY_STRING} (^|&)page_id=36(&|$)
-RewriteRule ^(index\.php)?$ /bilder? [R=301,L]
+RewriteRule ^(index\.php)?$ /galerie? [R=301,L]
 
 # Kontakt hatte drei Formen: Im alten Menü stand ausgerechnet die dritte.
 RewriteCond %{QUERY_STRING} (^|&)page_id=14(&|$) [OR]
@@ -291,7 +290,7 @@ RewriteRule ^(index\.php)?$ /? [R=301,L]
 RewriteRule (^|/)\.(?!well-known\/) index.php [L]
 
 # Bilder bewusst durch PHP leiten. Ohne diese Zeile liefert der Webserver die
-# generierten Bildgrößen direkt aus — am Zugangsschutz vorbei. Ein Portrait
+# generierten Bildgrößen direkt aus — am Zugangsschutz vorbei. Ein geschütztes Bild
 # wäre dann mit der richtigen URL ohne Passwort abrufbar.
 RewriteRule ^media/(.*) index.php [L]
 
@@ -306,32 +305,22 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*) index.php [L]
 </IfModule>
 HTACCESS;
-    file_put_contents($dir . '/wpsite.htaccess', $block);
+    file_put_contents($dir . '/wordpress.htaccess', $block);
 
-    [$code, $out, $err] = cv_binary(['convert', $dir . '/wpsite.htaccess']);
+    [$code, $out, $err] = cv_binary(['convert', $dir . '/wordpress.htaccess']);
     expect(1, $code, 'WordPress block via the binary → exit 1 (one skipped line)');
     expect($expected, array_keys(cv_eval($out)), 'WordPress block via the binary → the 14 keys in file order');
-    expect(14, count(cv_eval($out)), 'wp-site block → 14 entries');
-    expect(1, substr_count($err, 'Skipped line'), 'wp-site block → exactly one Skipped line on stderr');
+    expect(14, count(cv_eval($out)), 'WordPress block → 14 entries');
+    expect(1, substr_count($err, 'Skipped line'), 'WordPress block → exactly one Skipped line on stderr');
     $wwwLine = 0;
     foreach (explode("\n", $block) as $i => $blockLine) {
         if (str_starts_with($blockLine, 'RewriteRule ^(.*)$')) {
             $wwwLine = $i + 1;
         }
     }
-    holds(str_contains($err, 'Skipped line ' . $wwwLine . ' (' . I18n::t('reason.condition') . '): RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]'), 'wp-site block → the www rule is the skipped line');
+    holds(str_contains($err, 'Skipped line ' . $wwwLine . ' (' . I18n::t('reason.condition') . '): RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]'), 'WordPress block → the www rule is the skipped line');
 } finally {
     cv_remove($dir);
-}
-
-$real = dirname(__DIR__, 2) . '/wp-site/public/.htaccess';
-if (is_file($real)) {
-    [$code, $out, $err] = cv_binary(['convert', $real]);
-    expect(1, $code, 'real WordPress file via the binary → exit 1');
-    expect(14, count(cv_eval($out)), 'real WordPress file → 14 entries');
-    expect(1, substr_count($err, 'Skipped line'), 'real WordPress file → exactly one Skipped line');
-} else {
-    holds(true, 'real WordPress file not present (real file check skipped)');
 }
 
 finish('ConvertCommandTest');
