@@ -1,6 +1,6 @@
 {
     "name": "sayamaapps/kirby-hikkoshi",
-    "description": "Redirects for Kirby CMS after moving house from Jimdo, Wix or WordPress: a checked list of old paths (loops, chains, foreign domains, duplicates), tolerant matching (case, trailing slash, umlauts, .html/index.php suffixes, query strings), a converter for Apache .htaccess rules and a test helper for sites. No outbound HTTP.",
+    "description": "Checked redirects for Kirby CMS: old addresses, tolerant matching and 410 for removed pages.",
     "type": "kirby-plugin",
     "license": "MIT",
     "keywords": ["kirby", "kirby-plugin", "kirby-5", "redirects", "301", "migration", "jimdo", "wix", "wordpress", "htaccess"],
