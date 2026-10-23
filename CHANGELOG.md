@@ -63,10 +63,9 @@ All notable changes to this project are documented here. Versions follow
 ## [1.0.0] — 2026-10-11
 
 First release as a Composer package. Before 1.0.0 the redirects lived as a copy
-in each site: `site/plugins/weiterleitungen` (plugin id `weiterleitungen/kern`,
-class `Weiterleitungen\Liste`), byte-identical in kirby-starter and the sites
-built from it, and the WordPress redirects of a migrated site as Apache rules. The
-changes below are measured against that copy.
+in each site: a plugin folder with the plugin id `weiterleitungen/kern` and the
+class `Weiterleitungen\Liste`, and the WordPress redirects of a migrated site as
+Apache rules. The changes below are measured against that copy.
 
 ### Added
 
@@ -117,8 +116,9 @@ changes below are measured against that copy.
   `Hikkoshi\Validator` (`::assert()` for the old behaviour, `::validate()` for
   the list of findings). The exception `Hikkoshi\ConfigException` extends
   `LogicException`, as before. The option prefix is `hikkoshi.`.
-- **Activation.** The copy was on whenever `site/config/weiterleitungen.php`
-  existed. Hikkoshi is off until `'hikkoshi.active' => true` is set.
+- **Activation.** The copy was on whenever the legacy list file
+  `site/config/weiterleitungen.php` existed. Hikkoshi is off until
+  `'hikkoshi.active' => true` is set.
 - **One catch-all route** (GET and HEAD) instead of one route per entry, for
   normalised matching. POST and other methods are not touched.
 - **Chains are warnings**, not errors: a chain used to make every request fail
@@ -142,7 +142,7 @@ changes below are measured against that copy.
 ### Removed
 
 - `Weiterleitungen\Liste` and the plugin id `weiterleitungen/kern`. There are
-  no aliases: the copy in `site/plugins/weiterleitungen/` must be deleted when
-  the package is installed, because both would register routes for the same
-  paths.
+  no aliases: a site-local plugin folder with the pre-1.0 code must be deleted
+  when the package is installed, because both would register routes for the
+  same paths.
 - The German names of classes and options. Options are `hikkoshi.*` only.

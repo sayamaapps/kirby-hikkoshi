@@ -2,7 +2,6 @@
 /**
  * Path normalisation and character rules (src/Path.php), Kirby-free.
  *   php tests/PathTest.php
- * Owned by the architect (shared file).
  */
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';

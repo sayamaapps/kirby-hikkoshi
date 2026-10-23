@@ -9,8 +9,7 @@ use Kirby\Http\Route;
 
 /**
  * The Kirby glue (SPEC.md §3.4): reads the list, validates it once per App
- * instance, registers the catch-all route and builds the Response. Owned by
- * task `kirby`.
+ * instance, registers the catch-all route and builds the Response.
  *
  * Everything that decides a request lives in Validator, Resolver and Path;
  * this class only wires them to Kirby.

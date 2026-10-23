@@ -9,32 +9,21 @@ converter for Apache `.htaccess` rules and a test helper for sites. **No
 outbound HTTP at runtime, no styling.**
 
 Package `sayamaapps/kirby-hikkoshi`, plugin id `sayamaapps/hikkoshi`, namespace
-`Hikkoshi`, option prefix `hikkoshi.`, directory this repository.
+`Hikkoshi`, option prefix `hikkoshi.`, directory: the repository root.
 
-It replaces `site/plugins/weiterleitungen` (plugin id `weiterleitungen/kern`,
-class `Weiterleitungen\Liste`), a byte-identical copy in kirby-starter and in the
-sites built from it, and takes over the WordPress query-string redirects that a
-migrated site still writes as Apache rules.
+It replaces the pre-1.0 redirect code (a plugin folder in each site: plugin id `weiterleitungen/kern`, class `Weiterleitungen\Liste`) and takes over the WordPress query-string redirects that a migrated site still writes as Apache rules.
 
-This document is the contract. Section numbers are referenced from code
-comments and task prompts.
+This document is the contract. Section numbers are referenced from code comments.
 
 ---
 
-## 1. Ground rules for every builder
+## 1. Ground rules for contributors
 
-- PHP 8.2 compatible code (no typed class constants, no `readonly` classes,
-  no 8.3+ functions). Run with `ASDF_PHP_VERSION=8.5.3 php …` (asdf otherwise
-  says "No version is set"). Composer: `php ~/Applications/PHP_Composer/composer.phar`.
+- PHP 8.2 compatible code (no typed class constants, no `readonly` classes, no 8.3+ functions).
 - Code, identifiers, comments, README in **English**. German only in
   `translations/de.php`.
-- Every user-facing string comes from `I18n::t()` (keys in §5). If you need a
-  key that does not exist, do NOT add it — write it into `NOTES-<task>.md` and
-  use the closest existing key.
-- Only edit files your task owns (§2). Need a change in a file you do not own
-  (a bug in Validator.php, a missing translation, a helper)? Write it into
-  `NOTES-<task>.md` in the plugin root: file, problem, proposed change. Do not
-  work around it with a copy of the logic.
+- Every user-facing string comes from `I18n::t()` (keys in §5).
+- Shared logic lives in one place: do not work around a helper with a copy of its logic.
 - Tests: standalone PHP scripts `tests/<Name>Test.php`, exit code 0 = pass, no
   PHPUnit. Use `tests/helpers.php` (`expect()`, `holds()`, `only()`, `codes()`,
   `finish()`, Kirby fixtures `hikkoshi_site()`, `hikkoshi_kirby()`,
@@ -46,79 +35,56 @@ comments and task prompts.
 - `src/Options.php` loads without Kirby: `Kirby\Cms\App` appears only in type
   hints. Kirby-free code uses only `Options::DEFAULTS`, `Options::FILES`,
   `Options::PREFIX`.
-- Do not push, do not create GitHub repos, do not touch any other repository
-  (the sources in §0 are read-only). Never delete files outside the plugin
-  directory. Do not run `git commit`.
-- No outbound HTTP anywhere, not even in tests (the pre-1.0 HTTP test started
-  a local PHP server; the port renders in-process, §8.5).
-
-### 0. Sources (read-only)
-
-| What | Path |
-|---|---|
-| Original plugin | `../kirby-starter/site/plugins/weiterleitungen/{index.php,src/Liste.php}` |
-| Original config template | `../kirby-starter/site/config/weiterleitungen.example.php` |
-| Original tests | `../kirby-starter/tests/WeiterleitungenTest.php` (rules), `../kirby-starter/tests/WeiterleitungenHttpTest.php` (real requests) |
-| Real lists (compatibility contract) | two migrated sites' lists, not in this repo: a Jimdo one (14 entries) and a Wix one (12 entries), copied verbatim into the tests |
-| Apache rules to take over | a migrated WordPress site's `public/.htaccess` (`?page_id=` redirects), not in this repo; the test reads it from `../wp-site/` when present |
-| Site e2e expectations | a site's Playwright spec (catches `\LogicException`) |
-| Family conventions | `../kirby-noren` (SPEC, README, CHANGELOG, tests), `../kirby-koe` (bin/ script), `../kirby-kizami` |
+- No outbound HTTP anywhere, not even in tests. The Kirby tests render in-process, without a PHP server (§8.3).
 
 ---
 
-## 2. File tree and owners
+## 2. File tree
 
-`architect` = written before the build, shared, **builders never edit**.
-`architect → <task>` = written by the architect as working code; from now on
-owned by that task, which verifies it with tests and may fix it.
-`stub → <task>` = a placeholder so the plugin loads; the task replaces the
-whole file.
+Section numbers in brackets point to the rules below.
 
 ```
 kirby-hikkoshi/
-├── composer.json                    architect
+├── composer.json
 ├── composer.lock, vendor/           generated (composer install), not committed
-├── .gitignore, .gitattributes       architect
-├── LICENSE                          architect
-├── .github/workflows/ci.yml         architect
-├── SPEC.md                          architect
-├── index.php                        architect   (complete registration, §3.11)
-├── bin/hikkoshi                     architect   (CLI entry, §3.11)
-├── config/hikkoshi.example.php      architect   (§6; ValidatorTest checks it is valid)
-│                                    (unlike noren/koe/kizami, which keep the template in each
-│                                    site's site/config/: the starter has no Hikkoshi template yet;
-│                                    when the sites migrate, the starter gets site/config/hikkoshi.example.php)
+├── .gitignore, .gitattributes
+├── LICENSE
+├── .github/workflows/ci.yml
+├── SPEC.md
+├── index.php                        (complete registration, §3.11)
+├── bin/hikkoshi                     (CLI entry, §3.11)
+├── config/hikkoshi.example.php      (§6; ValidatorTest checks it is valid)
 ├── src/
-│   ├── I18n.php                     architect   (§3.10)
-│   ├── Options.php                  architect   (§3.10, §4)
-│   ├── Path.php                     architect   (§3.1)
-│   ├── ConfigException.php          architect → core   (§3.2.3)
-│   ├── Validator.php                architect → core   (§3.2)
-│   ├── Resolver.php                 architect → core   (§3.3)
-│   ├── Redirects.php                stub → kirby       (§3.4)
-│   ├── SiteCheck.php                stub → kirby       (§3.6)
-│   ├── Htaccess.php                 stub → cli         (§3.7)
-│   ├── CheckCommand.php             stub → cli         (§3.8)
-│   └── ConvertCommand.php           stub → cli         (§3.9)
-├── snippets/hikkoshi/gone.php       placeholder → kirby (§3.5)
-├── translations/en.php, de.php      architect   (§5)
+│   ├── I18n.php                     (§3.10)
+│   ├── Options.php                  (§3.10, §4)
+│   ├── Path.php                     (§3.1)
+│   ├── ConfigException.php          (§3.2.3)
+│   ├── Validator.php                (§3.2)
+│   ├── Resolver.php                 (§3.3)
+│   ├── Redirects.php                (§3.4)
+│   ├── SiteCheck.php                (§3.6)
+│   ├── Htaccess.php                 (§3.7)
+│   ├── CheckCommand.php             (§3.8)
+│   └── ConvertCommand.php           (§3.9)
+├── snippets/hikkoshi/gone.php       (§3.5)
+├── translations/en.php, de.php      (§5)
 ├── tests/
-│   ├── run.sh                       architect
-│   ├── helpers.php                  architect
-│   ├── I18nTest.php                 architect
-│   ├── PathTest.php                 architect
-│   ├── ValidatorTest.php            core      (§8.1)
-│   ├── ResolverTest.php             core      (§8.2)
-│   ├── KirbyTest.php                kirby     (§8.3)
-│   ├── SiteCheckTest.php            kirby     (§8.4)
-│   ├── HtaccessTest.php             cli       (§8.5)
-│   ├── CheckCommandTest.php         cli       (§8.6)
-│   └── ConvertCommandTest.php       cli       (§8.7)
-├── README.md                        docs   (§9)
-└── CHANGELOG.md                     docs
+│   ├── run.sh
+│   ├── helpers.php
+│   ├── I18nTest.php
+│   ├── PathTest.php
+│   ├── ValidatorTest.php            (§8.1)
+│   ├── ResolverTest.php             (§8.2)
+│   ├── KirbyTest.php                (§8.3)
+│   ├── SiteCheckTest.php            (§8.4)
+│   ├── HtaccessTest.php             (§8.5)
+│   ├── CheckCommandTest.php         (§8.6)
+│   └── ConvertCommandTest.php       (§8.7)
+├── README.md                        (§9)
+└── CHANGELOG.md
 ```
 
-Run everything: `cd this repository && ASDF_PHP_VERSION=8.5.3 sh tests/run.sh`.
+Run everything: `sh tests/run.sh`.
 
 ---
 
@@ -173,7 +139,7 @@ Kirby glue: `Redirects`, `SiteCheck`, `index.php`, the snippet.
 ]
 ```
 
-### 3.1 `Hikkoshi\Path` (src/Path.php — written, architect)
+### 3.1 `Hikkoshi\Path` (src/Path.php)
 
 Kirby-free path rules. Read the file; summary:
 
@@ -187,7 +153,7 @@ Kirby-free path rules. Read the file; summary:
 | `externalHost(string $target): ?string` | `'https://Example.org/x'` → `'example.org'`; `'//example.org'` → `'example.org'`; page id → null; `javascript:` → null (and invalid). |
 | `query(array $query): string` | RFC 3986 query string, `''` for `[]`. |
 
-### 3.2 `Hikkoshi\Validator` (src/Validator.php — written, architect → `core`)
+### 3.2 `Hikkoshi\Validator` (src/Validator.php)
 
 ```php
 public static function validate(mixed $config, array $settings = []): array   // ['entries' => list<Entry>, 'findings' => list<Finding>]
@@ -233,7 +199,7 @@ them per entry.
 
 Key normalisation means `'Menue'`, `'/menue/'`, `'über-uns'`, `'%c3%bcber-uns'`
 and `'a%2ehtml'` are **accepted** (stored as `menue`, `menue`, `ueber-uns`,
-`ueber-uns`, `a.html`) — the pre-1.0 copy rejected them (§7). Still rejected:
+`ueber-uns`, `a.html`) — the pre-1.0 release rejected them (§7). Still rejected:
 `../secret`, `a/../secret`, `.hidden`, `a..html`, `a.b.c`, `a(*)`, `(:all)`,
 `blog/(:any)`, `https://example.org`, `mit leerzeichen`, `''`.
 
@@ -270,14 +236,14 @@ warnings for `a` (`a → b → c → d`) and `b` (`b → c → d`). `['a'=>'b','
 chain (`impressum` is not a source). `['produkte'=>'produkte','shop'=>'produkte']`
 → no chain.
 
-#### 3.2.3 `Hikkoshi\ConfigException` (src/ConfigException.php — written, architect → `core`)
+#### 3.2.3 `Hikkoshi\ConfigException` (src/ConfigException.php)
 
 `final class ConfigException extends \LogicException` — the pre-1.0 type, which
 a site's own test catches it. Constructor takes the full
 findings list; `getMessage()` = error messages joined with `"\n"`;
 `findings(): array` (all), `errors(): array` (errors only).
 
-### 3.3 `Hikkoshi\Resolver` (src/Resolver.php — written, architect → `core`)
+### 3.3 `Hikkoshi\Resolver` (src/Resolver.php)
 
 ```php
 public function __construct(array $entries, array $settings = [])
@@ -314,7 +280,7 @@ condition keys of the matched entry (`?page_id=82&utm_source=qr` →
 `('http://h', ['u'=>'q'])` → `http://h?u=q` (the pre-1.0 form for the home
 page); fragment kept at the end; `[]` appends nothing.
 
-### 3.4 `Hikkoshi\Redirects` (src/Redirects.php — stub → `kirby`)
+### 3.4 `Hikkoshi\Redirects` (src/Redirects.php)
 
 The Kirby glue. All methods are static and take `App $kirby`.
 
@@ -391,16 +357,16 @@ public static function sourcesFor(App $kirby, Page $page): array   // list<strin
 Keys of entries whose `target === $page->id()`, or `'home'` when the page is
 the home page (`$page->isHomePage()`), config order; `[]` when inactive.
 
-### 3.5 Snippet `snippets/hikkoshi/gone.php` (placeholder → `kirby`)
+### 3.5 Snippet `snippets/hikkoshi/gone.php`
 
 Body of a 410 response. Variables `$title`, `$text` (translated strings).
 Complete HTML document, `<meta charset="utf-8">`, `<title>`, only
 `hikkoshi-gone*` classes (`hikkoshi-gone` on body, `hikkoshi-gone-title`,
 `hikkoshi-gone-text`), every value `htmlspecialchars`ed, no CSS. A site
 overrides it with `site/snippets/hikkoshi/gone.php` (Kirby looks there first).
-The placeholder already has this shape; the owner verifies and keeps it.
+The snippet has this shape; keep it when changing the markup.
 
-### 3.6 `Hikkoshi\SiteCheck` (src/SiteCheck.php — stub → `kirby`)
+### 3.6 `Hikkoshi\SiteCheck` (src/SiteCheck.php)
 
 ```php
 public static function run(App $kirby, bool $render = true): array   // list<Finding>, [] = all well
@@ -440,7 +406,7 @@ page". Infos are never returned (a resolved chain is not a problem).
    request and once after the loop in `run()`; `File` → `[200, null]`; `null` → `[404, null]`;
    `Throwable` → `[getHttpCode() for Kirby\Exception\Exception, else 500, null]`.
 
-### 3.7 `Hikkoshi\Htaccess` (src/Htaccess.php — stub → `cli`)
+### 3.7 `Hikkoshi\Htaccess` (src/Htaccess.php)
 
 Kirby-free converter for Apache rules. Never touches files.
 
@@ -522,7 +488,7 @@ cannot be a source). Target rules below; `-` → `target`. Entries in file order
 **Target rules** (Redirect, RedirectMatch, RewriteRule): `/` → `home`;
 `/path` → `path` (leading slash removed, trailing slash removed); a `?` elsewhere in a path target (`/path?x=1`) → `target` (the Validator
 accepts no query in a page id); a trailing
-`?` (`/ueber-mich?`, `/?`) means Apache dropped the query → `query drop`;
+`?` (`/ueber-uns?`, `/?`) means Apache dropped the query → `query drop`;
 `http://…` or `https://…` → external, verbatim (the Validator decides whether
 the host is allowed; a trailing `?` is removed and means drop); contains `$1`
 or `%1`, or does not start with `/` or `http` → `target`.
@@ -541,7 +507,7 @@ skipped, the line is reported; a duplicate gets no `partial` note).
  * {header, one or more lines, each prefixed " * "}
  */
 return [
-    '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],
+    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],
     'alt' => 410,
     'produkte' => 'produkte',
 ];
@@ -550,9 +516,8 @@ Keys via `var_export`, values via `I18n::export()`, four-space indent, one
 entry per line, trailing comma, `"\n"` line ends. No header → no docblock.
 Empty entries → `return [\n];`.
 
-**Expected result for `../wp-site/public/.htaccess`** (the acceptance
-case): 14 entries in this order, all `['to' => …, 'query' => 'drop']`:
-`?page_id=13`→ueber-mich, `?page_id=36`→bilder, `?page_id=14`→kontakt,
+**Expected result for the WordPress fixture** (the acceptance case in §8.5): 14 entries in this order, all `['to' => …, 'query' => 'drop']`:
+`?page_id=13`→ueber-uns, `?page_id=36`→galerie, `?page_id=14`→kontakt,
 `?p=14`→kontakt, `?pagename=contact`→kontakt, `?page_id=80`→datenschutz,
 `?page_id=82`→impressum, `?page_id=2`, `?page_id=12`, `?page_id=15`,
 `?page_id=16`, `?page_id=17`, `?p=1`, `?feed` → home. Exactly one skipped
@@ -560,7 +525,7 @@ line: the `RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]` with
 reason `condition` (its `RewriteCond %{HTTP_HOST}`). Nothing else is reported
 (the seven internal `index.php` rewrites are ignored).
 
-### 3.8 `Hikkoshi\CheckCommand` (src/CheckCommand.php — stub → `cli`)
+### 3.8 `Hikkoshi\CheckCommand` (src/CheckCommand.php)
 
 ```php
 public static function run(array $args, $out, $err, string $cwd): int
@@ -583,7 +548,7 @@ line to `$out`: `I18n::t('level.' . level) . ': ' . message`. Then
 `cli.summary` (values `entries`, `errors`, `warnings`). Return 1 when errors,
 or warnings with `--strict`; else 0.
 
-### 3.9 `Hikkoshi\ConvertCommand` (src/ConvertCommand.php — stub → `cli`)
+### 3.9 `Hikkoshi\ConvertCommand` (src/ConvertCommand.php)
 
 ```php
 public static function run(array $args, $out, $err, string $cwd): int
@@ -598,7 +563,7 @@ partial entry (same values), then `cli.convertSummary` (values `entries`,
 was partial. Line texts go through `I18n::printable`. Return 1 when anything
 was skipped or partial, else 0. Never writes a file.
 
-### 3.10 `Hikkoshi\I18n`, `Hikkoshi\Options` (written, architect)
+### 3.10 `Hikkoshi\I18n`, `Hikkoshi\Options`
 
 `I18n`: `LANGUAGES = ['en', 'de']`, `setLanguage()`, `language()`, `table()`,
 `t($key, $values)` (array values joined with `', '`), `entry($key, $value)`
@@ -608,7 +573,7 @@ was skipped or partial, else 0. Never writes a file.
 `settings()`, `hosts()`, `strings()`, `flag()`, `invalid()` (throws with
 Kirby `debug`, else logs once), `log()`, `language()`, `applyLanguage()`.
 
-### 3.11 index.php and bin/hikkoshi (written, architect)
+### 3.11 index.php and bin/hikkoshi
 
 Site methods: `hikkoshiRedirects(): array` (entries, `[]` off),
 `hikkoshiResolve(string $path, array $query = []): ?array`
@@ -648,8 +613,7 @@ returns the starred ones, normalised, for the Kirby-free classes.
 
 ## 5. Translation keys
 
-Complete tables: `translations/en.php`, `translations/de.php` (written;
-`tests/I18nTest.php` keeps them in sync). Registered in Kirby as
+Complete tables: `translations/en.php`, `translations/de.php` (`tests/I18nTest.php` keeps them in sync). Registered in Kirby as
 `hikkoshi.<key>`. `{entry}` is always `I18n::entry()`.
 
 | Key | en | de |
@@ -701,8 +665,7 @@ Complete tables: `translations/en.php`, `translations/de.php` (written;
 | `reason.duplicate` | old path already converted | alter Pfad bereits übernommen |
 
 The German `finding.target.invalid`, `finding.target.self`, `finding.chain`
-and `finding.source.numeric` texts reproduce the pre-1.0 messages word for
-word (the ported tests compare them).
+and `finding.source.numeric` texts keep the pre-1.0 wording word for word (the tests compare them).
 
 ---
 
@@ -738,13 +701,9 @@ would be the key) — not tested, documented as a limitation.
 
 ---
 
-## 7. Compatibility with site/plugins/weiterleitungen (the pre-1.0 copy)
+## 7. Compatibility with the pre-1.0 release
 
-**Must be removed when the package is installed**: both register routes for
-the same old paths and the copy would answer first. The list file stays:
-`site/config/weiterleitungen.php` is read unchanged. Site tests
-`tests/WeiterleitungenTest.php` / `WeiterleitungenHttpTest.php` are replaced by
-a call to `$site->hikkoshiCheck()` (README shows how).
+**The pre-1.0 plugin folder must be removed when the package is installed**: both register routes for the same old paths and the old one would answer first. The legacy list file stays: `site/config/weiterleitungen.php` is read unchanged. Site tests written against the pre-1.0 code are replaced by a call to `$site->hikkoshiCheck()` (README → Test helper for sites).
 
 | Before | Now |
 |---|---|
@@ -760,7 +719,7 @@ a call to `$site->hikkoshiCheck()` (README shows how).
 | always 301, query always kept | `status`/`query` options and per-entry overrides; matched condition keys removed |
 | targets: page ids only | plus 410 and allow-listed external URLs |
 
-Behaviour changes are listed in CHANGELOG under 1.0.0 (docs task).
+Behaviour changes are listed in CHANGELOG under 1.0.0.
 
 ---
 
@@ -772,17 +731,15 @@ expectations run after `I18n::setLanguage('de')`; reset to `'en'` afterwards.
 Kirby-free tests require `../src/I18n.php`, `../src/Options.php`,
 `../src/Path.php` and the classes under test, in that order.
 
-### 8.1 tests/ValidatorTest.php (task `core`) — Kirby-free
+### 8.1 tests/ValidatorTest.php — Kirby-free
 
-Port **every** check of `kirby-starter/tests/WeiterleitungenTest.php`, with
+Port **every** check of the pre-1.0 validator test, with
 these adaptations, each named in a comment:
 
 - "valid list unchanged": `Validator::assert($list)` returns entries whose
   `key`/`source`/`target` equal the list, `status 301`, `query 'keep'`,
   `conditions []`, `external false`; `assert([])` → `[]`.
-- `config/hikkoshi.example.php` is valid (no errors; exactly which findings:
-  none). Also the two real lists copied verbatim into the test (Jimdo 14
-  entries, Wix 12 entries) → no findings at all.
+- `config/hikkoshi.example.php` is valid (no findings). Also two sample lists of 14 and 12 entries, written out in the test → no findings at all.
 - `['2024' => 'archiv']` → one error `source.numeric`, message contains
   `rein numerisch` (de); `['archiv/2024' => 'archiv']` accepted.
 - the former "invalid old paths" split into (a) still rejected (error
@@ -844,7 +801,7 @@ these adaptations, each named in a comment:
 - `identity('a', [])` → `a`; `identity('', ['q'=>'2','p'=>null])` → `?p&q=2`.
 - `hasErrors`, `ofLevel` on a mixed findings list.
 
-### 8.2 tests/ResolverTest.php (task `core`) — Kirby-free
+### 8.2 tests/ResolverTest.php — Kirby-free
 
 Build entries with `Validator::assert()` and the default settings unless
 stated. Cases (expected `key` of the hit, `pass`, `remaining`):
@@ -866,7 +823,7 @@ stated. Cases (expected `key` of the hit, `pass`, `remaining`):
   `/über-uns` null, `/ueber-uns` hit.
 - `lowercase false`: entry `['Menue'=>'x']` (source stays `Menue`): `/Menue` hit,
   `/menue` null.
-- conditions (WordPress .htaccess): entries `['?page_id=13'=>'ueber-mich','?page_id=14'=>'kontakt','?p=14'=>'kontakt','?pagename=contact'=>'kontakt','?feed'=>'home','index.php?p=1'=>'home']`:
+- conditions (WordPress .htaccess): entries `['?page_id=13'=>'ueber-uns','?page_id=14'=>'kontakt','?p=14'=>'kontakt','?pagename=contact'=>'kontakt','?feed'=>'home','index.php?p=1'=>'home']`:
   `('', ['page_id'=>'13'])` → `?page_id=13` exact; `('/', ['page_id'=>'13','utm'=>'x'])`
   → same, remaining `['utm'=>'x']`; `('/index.php', ['page_id'=>'14'])` →
   `?page_id=14`/suffix; `('', ['feed'=>'rss2'])` and `('', ['feed'=>''])` → `?feed`;
@@ -887,16 +844,15 @@ stated. Cases (expected `key` of the hit, `pass`, `remaining`):
 - 410 entry: `targetQuery` → `[]` even with remaining.
 - `entries()` returns all; `settings()` has the defaults merged.
 
-### 8.3 tests/KirbyTest.php (task `kirby`) — Kirby
+### 8.3 tests/KirbyTest.php — Kirby
 
-Port of `kirby-starter/tests/WeiterleitungenHttpTest.php`, rendered
+Port of the pre-1.0 HTTP test, rendered
 in-process with `hikkoshi_render()` (no PHP server, no sockets). The fixture
 `hikkoshi_site()` already has the pages of that test (speisekarte, produkte,
 leistungen/beratung, team, draft produkt-b, home, error). Use
 `hikkoshi_write_config()` for the list, `hikkoshi_kirby($tmp, $options,
 $request)` for a fresh instance (a new instance per list; the query is a
-property of the instance). Use a `withSite()` wrapper with try/finally like
-noren's KirbyTest. Sections:
+property of the instance). Use a `withSite()` wrapper with try/finally, as in tests/KirbyTest.php. Sections:
 
 1. **Registered, off by default**: plugin `sayamaapps/hikkoshi` present;
    `hikkoshiRedirects()` `[]` and `/menue` → 404 while off even with a list
@@ -924,7 +880,7 @@ noren's KirbyTest. Sections:
    (`debug false`). **Changed:** chain `['menue'=>'speisekarte','speisekarte'=>'produkte']`
    → `/` 200 and `/menue` → 301 to speisekarte (two hops), and the warning
    appears in the PHP error log (capture with `ini_set('error_log', file)`,
-   see noren's `withErrorLog`). After repairing the list a new instance gives
+   see `withErrorLog()` in tests/KirbyTest.php). After repairing the list a new instance gives
    301 again.
 5. **New forms**: `hikkoshi.php` beats `weiterleitungen.php` when both exist;
    option `hikkoshi.redirects` (array and Closure) beats the files;
@@ -954,7 +910,7 @@ noren's KirbyTest. Sections:
    file contains `hikkoshi.status`), 301 used; with `'debug'=>true` →
    `InvalidArgumentException` on the first request.
 
-### 8.4 tests/SiteCheckTest.php (task `kirby`) — Kirby
+### 8.4 tests/SiteCheckTest.php — Kirby
 
 `$kirby->site()->hikkoshiCheck()` / `SiteCheck::run()`:
 
@@ -976,16 +932,13 @@ noren's KirbyTest. Sections:
 - findings have the full shape (`level`, `code`, `message`, `key`, `values`)
   and German messages with `'hikkoshi.language' => 'de'`.
 
-### 8.5 tests/HtaccessTest.php (task `cli`) — Kirby-free
+### 8.5 tests/HtaccessTest.php — Kirby-free
 
-- **Acceptance**: `Htaccess::convert(file_get_contents('../wp-site/public/.htaccess'))`
-  — read from `dirname(__DIR__, 2) . '/wp-site/public/.htaccess'`; if the
-  file is missing, `holds(true, 'real WordPress file not present')` and skip
-  that block — gives exactly the 14 entries of §3.7 in order (compare the
-  whole array), an empty `partial` list, and exactly one skipped entry with `reason 'condition'` whose
-  `text` starts with `RewriteRule ^(.*)$`. Additionally embed the redirect
-  block of that file verbatim as a heredoc fixture so the test runs without
-  the sibling repo, with the same expectation.
+- **Acceptance**: `Htaccess::convert()` of the embedded WordPress fixture (a
+  rewrite section with query-string rules, written out in the test as a heredoc)
+  gives exactly the 14 entries of §3.7 in order (compare the whole array), an
+  empty `partial` list, and exactly one skipped entry with `reason 'condition'`
+  whose `text` starts with `RewriteRule ^(.*)$`.
 - `Redirect 301 /alt /neu` → `['alt' => 'neu']` and `partial` `[['line' => 1,
   'text' => 'Redirect 301 /alt /neu', 'reason' => 'prefix']]` (the same for
   `permanent`, `temp`, `gone`, `Redirect /a /b`, `/alt/ /neu/`, `RedirectPermanent`,
@@ -1030,7 +983,7 @@ noren's KirbyTest. Sections:
   header with two lines → two ` * ` lines; the rendered code `eval`s (strip
   `<?php`) back to the same array.
 
-### 8.6 tests/CheckCommandTest.php (task `cli`) — Kirby-free
+### 8.6 tests/CheckCommandTest.php — Kirby-free
 
 Run `CheckCommand::run($args, $out, $err, $cwd)` with `fopen('php://memory', 'w+')`
 streams and a temp dir as `$cwd` (`sys_get_temp_dir()`, removed in finally):
@@ -1052,7 +1005,7 @@ streams and a temp dir as `$cwd` (`sys_get_temp_dir()`, removed in finally):
   → exit code and output as above; `bin/hikkoshi` without args → 2 and usage;
   `bin/hikkoshi help` → 0; `bin/hikkoshi nope` → 2 with `Unknown command: nope`.
 
-### 8.7 tests/ConvertCommandTest.php (task `cli`) — Kirby-free
+### 8.7 tests/ConvertCommandTest.php — Kirby-free
 
 - no FILE → 2 + usage on `$err`; missing FILE → 2 + `File not found`.
 - a temp `.htaccess` with `Redirect 301 /a /b` and `Redirect 303 /c /d` → 1;
@@ -1071,50 +1024,29 @@ streams and a temp dir as `$cwd` (`sys_get_temp_dir()`, removed in finally):
 
 ---
 
-## 9. Documentation (task `docs`)
+## 9. Documentation
 
-Model on `../kirby-noren` (README structure, CHANGELOG rules). English
-everywhere.
+English everywhere.
 
-**README.md** sections: title + one-paragraph meaning of the name; feature
-list; Requirements (PHP 8.2–8.4, Kirby 5); Installation (composer, repository
-line until Packagist, `.gitignore` note); Quick start (config.php with
-`hikkoshi.active`, the list file, `vendor/bin/hikkoshi check`); The list
-(§6 tables with examples; key forms, value forms, `home`); Matching (§3.3
-rules in prose with examples, both passes, what is NOT matched, methods);
-Options (§4 table); Validation (findings table: what is an error, a warning,
-an info; what happens at runtime: 500 vs. log); CLI (`check`, `convert`, exit
-codes, the WordPress example with its output); Taking over `.htaccess`
-rules (why `?page_id=` worked only in Apache before, what stays in `.htaccess`:
-www→apex, assets); Test helper for sites (a complete `tests/HikkoshiTest.php`
-example booting Kirby from `public/index.php`'s roots, calling
-`$kirby->site()->hikkoshiCheck()`, failing on any finding; and the
-Kirby-free `Validator::validate(require 'site/config/hikkoshi.php')` variant);
-Site and page methods (`hikkoshiRedirects`, `hikkoshiResolve`, `hikkoshiCheck`,
-`hikkoshiSources`, `hikkoshi_option`); 410 snippet override; Upgrading from
-`site/plugins/weiterleitungen` (§7 table, the "remove the copy" warning, the
-test replacement); Privacy (short statement); License.
+**README.md** sections, in this order: title with a one-paragraph meaning of the name; Features; Requirements (PHP 8.2–8.4 with mbstring, Kirby 5); Installation (composer, repository line until Packagist, `.gitignore` note); Usage (switch and list file, an example list; sub-sections Keys and values, Matching, Site and page methods); Options (§4 table); Validation (errors, warnings, what happens at runtime); CLI (`check`, `convert`, exit codes, which `.htaccess` rules stay); Test helper for sites (a test booting Kirby and calling `$site->hikkoshiCheck()`, and the Kirby-free `Validator::validate()` variant); Privacy; License. Examples stay short and fictional.
 
 **CHANGELOG.md**: Keep a Changelog, SemVer, `## [1.0.0] — unreleased`, with
 the project rule "a change to the matching rules or the config contract is a
-major version". Sections: Added (everything new vs. the copy), Changed
+major version". Sections: Added (everything new vs. the pre-1.0 release), Changed
 (breaking, with the §7 table: chains are warnings, normalised keys, uppercase
 requests redirect, `active` switch, catch-all route), Removed (German class and
 plugin names, no aliases).
 
-The docs task may run `sh tests/run.sh` but owns no test file.
-
 ---
 
-## 10. Decisions for Simon
+## 10. Design decisions
 
-1. **Chains are warnings, not errors** (requirement 2). The pre-1.0 copy made
+1. **Chains are warnings, not errors.** The pre-1.0 release made
    every request 500 on a chain; now the site keeps working with two hops, the
    warning is logged once, `hikkoshiCheck()` and `hikkoshi check --strict`
-   fail. Loops and duplicates still 500 (like before). If you want chains fatal
-   at runtime again, say so: one line in `Redirects::entries()`.
+   fail. Loops and duplicates still 500 (like before). To make chains fatal at runtime again, change `Redirects::entries()`.
 2. **Config keys are normalised** like request paths. `'Menue'`, `'/menue/'`,
-   `'über-uns'` are accepted now (the copy rejected them). Cost: nothing;
+   `'über-uns'` are accepted now (the pre-1.0 release rejected them). Cost: nothing;
    benefit: keys can be pasted from a browser. Duplicates after normalisation
    are errors.
 3. **No reverse suffix pass**: `'impressum.html' => 'impressum'` does not catch
@@ -1125,7 +1057,7 @@ The docs task may run `sh tests/run.sh` but owns no test file.
    from the redirect (`/?page_id=82&utm=x` → `/impressum?utm=x`); `keep`/`drop`
    governs the rest. The converter therefore emits `'query' => 'drop'` for
    every Apache target ending in `?` (faithful to the `.htaccess`); for
-   the WordPress file that is all 14 entries. You can strip the array form by hand
+   the WordPress fixture that is all 14 entries. You can strip the array form by hand
    if you prefer plain strings there — the only difference is `utm_*`
    parameters.
 5. **Suffix pass default includes `php`**: `/impressum.php` → `impressum`.
@@ -1158,7 +1090,6 @@ The docs task may run `sh tests/run.sh` but owns no test file.
     status code. `SiteCheck` and the test helper `hikkoshi_render()` both reset
     that Responder through a bound closure before each request.
 14. **No deprecated aliases** for `Weiterleitungen\Liste` or the plugin id
-    `weiterleitungen/kern`: the copy must be deleted on upgrade because both
+    `weiterleitungen/kern`: the pre-1.0 plugin must be deleted on upgrade because both
     would register routes for the same paths.
-15. **The `--strict` flag** (warnings → exit 1) was added beyond the request
-    so CI can fail on chains without resolving them.
+15. **The `--strict` flag** (warnings → exit 1) lets CI fail on chains without resolving them.

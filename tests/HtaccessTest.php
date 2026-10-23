@@ -2,7 +2,7 @@
 /**
  * Htaccess converter, SPEC.md §8.5. Kirby-free: no vendor/, no index.php.
  *
- *   ASDF_PHP_VERSION=8.5.3 php tests/HtaccessTest.php
+ *   php tests/HtaccessTest.php
  */
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
@@ -18,10 +18,10 @@ use Hikkoshi\I18n;
 I18n::setLanguage('en');
 
 /**
- * The rewrite section of wp-site/public/.htaccess (lines 11–90), copied
- * verbatim so the test runs without the sibling repository.
+ * A WordPress rewrite section: query-string redirects, the www rule and the
+ * Kirby catch-all, written out here so the test needs no other file.
  */
-const WPSITE_FIXTURE = <<<'HTACCESS'
+const WORDPRESS_FIXTURE = <<<'HTACCESS'
 RewriteEngine on
 
 # www.example.com ist dieselbe Seite, nur mit Vorsilbe. Ohne diese Regel
@@ -47,14 +47,13 @@ RewriteRule ^index\.html$ index.php [L]
 # griffe erneut, was eine Weiterleitungsschleife ergäbe.
 #
 # Diese Regeln stehen VOR den Kirby-Regeln, sonst schluckt die Catch-all-Regel
-# am Dateiende die Anfrage vorher. Herkunft und vollständige Liste der alten
-# URLs: docs/alte-urls.md
+# am Dateiende die Anfrage vorher.
 
 RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|$)
-RewriteRule ^(index\.php)?$ /ueber-mich? [R=301,L]
+RewriteRule ^(index\.php)?$ /ueber-uns? [R=301,L]
 
 RewriteCond %{QUERY_STRING} (^|&)page_id=36(&|$)
-RewriteRule ^(index\.php)?$ /bilder? [R=301,L]
+RewriteRule ^(index\.php)?$ /galerie? [R=301,L]
 
 # Kontakt hatte drei Formen: Im alten Menü stand ausgerechnet die dritte.
 RewriteCond %{QUERY_STRING} (^|&)page_id=14(&|$) [OR]
@@ -88,7 +87,7 @@ RewriteRule ^(index\.php)?$ /? [R=301,L]
 RewriteRule (^|/)\.(?!well-known\/) index.php [L]
 
 # Bilder bewusst durch PHP leiten. Ohne diese Zeile liefert der Webserver die
-# generierten Bildgrößen direkt aus — am Zugangsschutz vorbei. Ein Portrait
+# generierten Bildgrößen direkt aus — am Zugangsschutz vorbei. Ein geschütztes Bild
 # wäre dann mit der richtigen URL ohne Passwort abrufbar.
 RewriteRule ^media/(.*) index.php [L]
 
@@ -105,12 +104,12 @@ RewriteRule ^(.*) index.php [L]
 HTACCESS;
 
 /**
- * The 14 entries the converter must produce for the WordPress file, in file
- * order (SPEC §3.7). The spec text says "15" but lists these 14 keys.
+ * The 14 entries the converter must produce for the WordPress fixture, in file
+ * order (SPEC §3.7).
  */
-const WPSITE_EXPECTED = [
-    '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],
-    '?page_id=36' => ['to' => 'bilder', 'query' => 'drop'],
+const WORDPRESS_EXPECTED = [
+    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],
+    '?page_id=36' => ['to' => 'galerie', 'query' => 'drop'],
     '?page_id=14' => ['to' => 'kontakt', 'query' => 'drop'],
     '?p=14' => ['to' => 'kontakt', 'query' => 'drop'],
     '?pagename=contact' => ['to' => 'kontakt', 'query' => 'drop'],
@@ -126,7 +125,7 @@ const WPSITE_EXPECTED = [
 ];
 
 /** Line of the www→apex rule inside a text (the one skipped line). */
-function wpsite_www_line(string $text): int
+function wordpress_www_line(string $text): int
 {
     foreach (explode("\n", $text) as $i => $line) {
         if (str_starts_with(trim($line), 'RewriteRule ^(.*)$')) {
@@ -136,28 +135,21 @@ function wpsite_www_line(string $text): int
     return -1;
 }
 
-/** Checks one converted wp-site result (fixture or real file). */
-function check_wpsite(string $label, string $text): void
+/** Checks one converted WordPress result. */
+function check_wordpress(string $label, string $text): void
 {
     $result = Htaccess::convert($text);
-    expect(WPSITE_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
+    expect(WORDPRESS_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
     expect([], $result['partial'], "$label: no partial line");
     expect(1, count($result['skipped']), "$label: exactly one skipped line");
     $skip = $result['skipped'][0] ?? ['line' => -1, 'text' => '', 'reason' => ''];
     expect('condition', $skip['reason'], "$label: skipped reason is condition");
     holds(str_starts_with($skip['text'], 'RewriteRule ^(.*)$'), "$label: skipped text starts with RewriteRule ^(.*)\$");
     expect('RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]', $skip['text'], "$label: skipped text is the www rule");
-    expect(wpsite_www_line($text), $skip['line'], "$label: skipped line number");
+    expect(wordpress_www_line($text), $skip['line'], "$label: skipped line number");
 }
 
-check_wpsite('fixture', WPSITE_FIXTURE);
-
-$realWpsite = dirname(__DIR__, 2) . '/wp-site/public/.htaccess';
-if (is_file($realWpsite)) {
-    check_wpsite('real file', (string) file_get_contents($realWpsite));
-} else {
-    holds(true, 'real WordPress file not present (real file check skipped)');
-}
+check_wordpress('fixture', WORDPRESS_FIXTURE);
 
 /* ------------------------------------------------------------------------
  * Redirect / RedirectMatch
@@ -426,13 +418,13 @@ expect([[], []], [$r['entries'], $r['skipped']], 'unrelated directives are ignor
  * --------------------------------------------------------------------- */
 
 $entries = [
-    '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],
+    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],
     'alt' => 410,
     'produkte' => 'produkte',
     'x' => ['to' => 'y', 'status' => 302],
 ];
 expect("<?php\n/**\n * Header\n */\nreturn [\n"
-    . "    '?page_id=13' => ['to' => 'ueber-mich', 'query' => 'drop'],\n"
+    . "    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],\n"
     . "    'alt' => 410,\n"
     . "    'produkte' => 'produkte',\n"
     . "    'x' => ['to' => 'y', 'status' => 302],\n"
@@ -460,7 +452,7 @@ expect(['a' => 'b'], eval(substr($php, strlen('<?php'))), 'render: the hostile h
 holds(!isset($GLOBALS['hikkoshiInjected']), 'render: nothing from the header ran');
 expect("<?php\n/**\n * a\n * b\n */\nreturn [\n];\n", Htaccess::render([], "a\r\nb"), 'render: CR of a CRLF header is dropped');
 
-$converted = Htaccess::convert(WPSITE_FIXTURE)['entries'];
+$converted = Htaccess::convert(WORDPRESS_FIXTURE)['entries'];
 expect($converted, eval(substr(Htaccess::render($converted, 'x'), strlen('<?php'))), 'WordPress entries round-trip through render');
 
 finish('HtaccessTest');

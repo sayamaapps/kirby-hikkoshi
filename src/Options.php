@@ -5,7 +5,7 @@ namespace Hikkoshi;
 use Kirby\Cms\App;
 
 /**
- * Reads `hikkoshi.*` options. Shared file — owned by the architect (SPEC.md §4).
+ * Reads `hikkoshi.*` options (SPEC.md §4).
  *
  * `null` counts as "not set", like Kirby's own option(), so
  * `'hikkoshi.status' => null` falls back to the default.
@@ -94,7 +94,7 @@ final class Options
      * Kirby-free entry points (Validator, Resolver, the CLI): a single string
      * becomes a one-element list, entries are trimmed and lowercased, empty
      * ones dropped. settings() already returns this form; this makes a
-     * hand-written array (README → Testing a site) behave the same.
+     * hand-written array (README → Test helper for sites) behave the same.
      */
     public static function lists(array $settings): array
     {

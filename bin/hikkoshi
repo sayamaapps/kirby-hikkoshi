@@ -9,8 +9,7 @@
  * Run it from the project root: a relative FILE is taken from the current
  * directory. It never edits files: `convert` prints to stdout, skipped lines
  * go to stderr. Exit codes: 0 done, 1 findings/skipped lines, 2 usage.
- * Shared file — owned by the architect (SPEC.md §2); the commands live in
- * src/CheckCommand.php and src/ConvertCommand.php.
+ * The commands live in src/CheckCommand.php and src/ConvertCommand.php.
  */
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);

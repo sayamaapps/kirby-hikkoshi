@@ -28,18 +28,17 @@ use Hikkoshi\SiteCheck;
  * `'hikkoshi.active' => true` no route is registered and the site and page
  * methods return [].
  *
- * Shared file — owned by the architect (SPEC.md §2). Builders never edit it;
- * all logic lives in src/Redirects.php (Kirby glue) and the Kirby-free
- * classes Validator, Resolver, Path.
+ * This file only registers the plugin. All logic lives in src/Redirects.php
+ * (Kirby glue) and the Kirby-free classes Validator, Resolver, Path.
  *
  * Defaults are passed as fallback values directly at each option call, NOT
  * in an 'options' block (Kirby would file them under sayamaapps.hikkoshi.*
  * otherwise).
  *
- * The pre-1.0 copy, site/plugins/weiterleitungen (plugin id
- * weiterleitungen/kern), must be REMOVED when the package is installed: both
- * register routes for the same old paths, and the copy would answer first.
- * Hikkoshi reads the copy's list file (site/config/weiterleitungen.php)
+ * A plugin folder from the pre-1.0 release (plugin id weiterleitungen/kern,
+ * in site/plugins/) must be REMOVED when the package is installed: both
+ * register routes for the same old paths, and the old one would answer first.
+ * Hikkoshi reads the legacy list file site/config/weiterleitungen.php
  * unchanged, so only the plugin folder goes (SPEC.md §7).
  */
 

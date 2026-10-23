@@ -5,7 +5,7 @@
  * lowercase and transliterate off, query conditions (WordPress .htaccess), the
  * specificity order, conditionsMatch(), targetQuery(), appendQuery().
  *
- *   ASDF_PHP_VERSION=8.5.3 php tests/ResolverTest.php
+ *   php tests/ResolverTest.php
  *
  * Entries come from Validator::assert() with the default settings unless a
  * case says otherwise.
@@ -118,7 +118,7 @@ expect(null, rKey($exactCase, '/menue'), 'lowercase off: /menue does not hit');
 
 // ── Conditions, WordPress .htaccess (§8.2) ─────────────────────────────────────
 $wp = rResolver([
-    '?page_id=13' => 'ueber-mich',
+    '?page_id=13' => 'ueber-uns',
     '?page_id=14' => 'kontakt',
     '?p=14' => 'kontakt',
     '?pagename=contact' => 'kontakt',

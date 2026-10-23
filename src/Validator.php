@@ -10,7 +10,7 @@ namespace Hikkoshi;
  * Output is the list of normalised entries plus the findings (errors,
  * warnings, infos). Entries with an error are dropped from the list; the
  * caller decides whether errors are fatal (Validator::assert() throws
- * ConfigException, as the pre-1.0 copy did on every request).
+ * ConfigException, as the pre-1.0 release did on every request).
  *
  * Accepted value forms (SPEC.md §6):
  *   'old' => 'new'                                    page id, global status and query mode

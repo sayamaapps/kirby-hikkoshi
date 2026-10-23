@@ -1,13 +1,12 @@
 <?php
 /**
  * Validator (src/Validator.php) and ConfigException (src/ConfigException.php),
- * Kirby-free. Covers SPEC.md §8.1: every check of the pre-1.0 copy
- * (kirby-starter/tests/WeiterleitungenTest.php, rules of Liste.php) with the
- * adaptations of §8.1 (normalised keys accepted, chains are warnings, 410 and
- * array forms, external hosts, duplicates, query conditions), plus the two
- * real site lists (Jimdo, Wix) and config/hikkoshi.example.php.
+ * Kirby-free. Covers SPEC.md §8.1: every check of the pre-1.0 validator test
+ * with the adaptations of §8.1 (normalised keys accepted, chains are warnings,
+ * 410 and array forms, external hosts, duplicates, query conditions), plus two
+ * sample lists and config/hikkoshi.example.php.
  *
- *   ASDF_PHP_VERSION=8.5.3 php tests/ValidatorTest.php
+ *   php tests/ValidatorTest.php
  *
  * German expectations run after I18n::setLanguage('de'); the language is reset
  * to 'en' before finish().
@@ -58,38 +57,36 @@ expect($gueltig, array_column(Validator::assert($gueltig), 'target', 'key'), 'as
 expect([], Validator::assert([]), 'assert([]) returns []');
 expect([], Validator::validate([])['findings'], 'empty list: no findings');
 
-// ── Real lists, copied verbatim (§8.1, §0) ──────────────────────────────
-// A Jimdo site's list (14 entries)
+// ── Sample lists of 14 and 12 entries (§8.1) ────────────────────────────
+// A list in the style of a Jimdo export (14 entries)
 $jimdo_list = [
-    'menue' => 'speisekarte',
-    'cookie-einstellungen' => 'cookie-hinweise',
-    'ueber-uns' => 'team',
-    'produkte-alt' => 'produkte',
-    'shop' => 'produkte',
-    'produkt-e.html' => 'produkte',
-    'produkt-c.html' => 'produkt-c',
-    'produkt-d.html' => 'produkte',
+    'kurs-a.html' => 'produkte',
+    'kurs-b.html' => 'produkte',
+    'kurs-c.html' => 'produkt-c',
     'galerie-1.html' => 'team',
-    // Seite ist offline (Entwurf im Panel); zurück auf 'produkt-b',
-    // sobald sie wieder online geht.
-    'produkt-b.html' => 'produkte',
+    'galerie-2.html' => 'team',
+    'archiv-alt' => 'archiv',
+    'archiv/2019' => 'archiv',
+    'shop' => 'produkte',
+    'downloads/karte-1.pdf' => 'speisekarte',
+    'downloads/karte-2.pdf' => 'speisekarte',
     'impressum.html' => 'impressum',
-    'speisekarte/karte-1.pdf' => 'speisekarte',
-    'speisekarte/karte-2.pdf' => 'speisekarte',
+    'datenschutz.html' => 'datenschutz',
+    'kontakt.html' => 'kontakt',
     'index.html' => 'home',
 ];
 $result = Validator::validate($jimdo_list);
-expect([], $result['findings'], 'Jimdo list (14 entries): zero findings');
-expect(14, count($result['entries']), 'Jimdo list: 14 entries');
+expect([], $result['findings'], 'Jimdo-style list (14 entries): zero findings');
+expect(14, count($result['entries']), 'Jimdo-style list: 14 entries');
 
-// A Wix site's list (12 entries)
+// A list in the style of a Wix export (12 entries)
 $wix_list = [
-    'menus'                   => 'home',
-    'online-ordering'         => 'home',
-    'experiences'             => 'home',
-    'experience-details'      => 'home',
-    'tracker-page'            => 'home',
-    'reservations'            => 'home',
+    'news'                    => 'home',
+    'events'                  => 'home',
+    'event-details'           => 'home',
+    'team'                    => 'home',
+    'faq'                     => 'home',
+    'bookings'                => 'home',
     'about'                   => 'home',
     'contact'                 => 'home',
     'privacy-policy'          => 'datenschutz',
@@ -98,10 +95,10 @@ $wix_list = [
     'accessibility-statement' => 'home',
 ];
 $result = Validator::validate($wix_list);
-expect([], $result['findings'], 'Wix list (12 entries): zero findings');
-expect(12, count($result['entries']), 'Wix list: 12 entries');
+expect([], $result['findings'], 'Wix-style list (12 entries): zero findings');
+expect(12, count($result['entries']), 'Wix-style list: 12 entries');
 
-// config/hikkoshi.example.php must be valid (§6, §0).
+// config/hikkoshi.example.php must be valid (§6).
 $example = require __DIR__ . '/../config/hikkoshi.example.php';
 $result = Validator::validate($example);
 expect([], $result['findings'], 'config/hikkoshi.example.php: zero findings');
