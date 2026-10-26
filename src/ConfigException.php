@@ -18,7 +18,7 @@ final class ConfigException extends \LogicException
 	/** @var list<array{level:string, code:string, message:string, key:?string, values:array}> */
 	private array $findings;
 
-	/** @param list<array{level:string, code:string, message:string, key:?string, values:array}> $findings */
+	/** @param array<array-key, array{level:string, code:string, message:string, key:?string, values:array}> $findings */
 	public function __construct(array $findings)
 	{
 		$this->findings = array_values($findings);

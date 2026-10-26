@@ -2,8 +2,10 @@
 
 namespace Sayamaapps\Hikkoshi;
 
+use InvalidArgumentException;
 use Kirby\Cms\App;
 use Kirby\Cms\Helpers;
+use Throwable;
 
 /**
  * Reads the plugin's options (SPEC.md §4): `sayamaapps.hikkoshi.<key>`, falling
@@ -126,7 +128,7 @@ final class Options
 	public static function invalid(App $kirby, string $message): void
 	{
 		if ($kirby->option('debug') === true) {
-			throw new \InvalidArgumentException($message);
+			throw new InvalidArgumentException($message);
 		}
 		self::log($message);
 	}
@@ -143,7 +145,7 @@ final class Options
 		try {
 			$candidates[] = $kirby->language()?->code();
 			$candidates[] = $kirby->defaultLanguage()?->code();
-		} catch (\Throwable) {
+		} catch (Throwable) {
 			// No languages configured.
 		}
 		$locale = $kirby->option('locale');
@@ -233,6 +235,7 @@ final class Options
 	 * `indexFiles`). A single string is accepted; `[]` switches the feature
 	 * off; anything else is reported and the default is used.
 	 *
+	 * @param list<string> $default
 	 * @return list<string>
 	 */
 	public static function strings(App $kirby, string $key, array $default): array

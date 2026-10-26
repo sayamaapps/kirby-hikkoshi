@@ -350,7 +350,7 @@ final class Htaccess
 			? count($tokens) >= 3 || (count($tokens) === 2 && preg_match('/^(\d+|permanent|temp|gone)$/i', $tokens[0]) === 1)
 			: count($tokens) >= 2 && !str_starts_with($tokens[0], '/');
 		if ($hasToken) {
-			$token = array_shift($tokens);
+			$token = (string)array_shift($tokens);
 		}
 		$status = self::statusOf($token);
 		if ($status === null) {

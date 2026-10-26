@@ -130,6 +130,7 @@ final class Resolver
 	{
 		$remaining = $query;
 		foreach (array_keys($entry['conditions']) as $name) {
+			/** @var array-key $name */
 			unset($remaining[$name]);
 		}
 		return ['entry' => $entry, 'pass' => $pass, 'path' => $path, 'remaining' => $remaining];

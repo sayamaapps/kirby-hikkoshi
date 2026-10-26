@@ -282,6 +282,7 @@ final class Validator
 	public static function validate(mixed $config, array $settings = []): array
 	{
 		$settings = Options::lists($settings + Options::DEFAULTS);
+		/** @var list<array{level: string, code: string, message: string, key: string|null, values: array<array-key, mixed>}> $findings */
 		$findings = [];
 
 		if (!is_array($config)) {
@@ -289,6 +290,7 @@ final class Validator
 			return ['entries' => [], 'findings' => $findings];
 		}
 
+		/** @var list<array{key: string, source: string, conditions: array<string, string|null>, target: string|null, status: int, query: string, external: bool}> $entries */
 		$entries = [];
 		$seen = [];   // identity => index into $entries
 		foreach ($config as $key => $value) {
@@ -300,7 +302,6 @@ final class Validator
 				$findings[] = self::finding(self::ERROR, 'source.numeric', ['entry' => $entryText], null);
 				continue;
 			}
-			$key = (string)$key;
 
 			$split = Path::split($key);
 			$source = Path::normalize($split['path'], $settings['lowercase'], $settings['transliterate']);
@@ -351,7 +352,11 @@ final class Validator
 
 		self::chains($entries, $settings, $findings);
 
-		return ['entries' => array_values($entries), 'findings' => $findings];
+		/**
+		 * @var list<array{key: string, source: string, conditions: array<string, string|null>, target: string|null, status: int, query: string, external: bool}> $entries
+		 * @var list<array{level: string, code: string, message: string, key: string|null, values: array<array-key, mixed>}> $findings
+		 */
+		return ['entries' => $entries, 'findings' => $findings];
 	}
 }
 

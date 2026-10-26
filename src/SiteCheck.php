@@ -44,8 +44,12 @@ final class SiteCheck
 
 			// Responder: what Kirby's core routes and $kirby->response()->redirect() return.
 			if ($result instanceof Responder) {
-				$location = $result->headers()['Location'] ?? null;
-				return [$result->code() ?? 200, $location === null ? null : (string)$location];
+				/** @var array<string, string> $headers */
+				$headers = $result->headers();
+				$location = $headers['Location'] ?? null;
+				/** @var int|null $code */
+				$code = $result->code();
+				return [$code ?? 200, $location === null ? null : (string)$location];
 			}
 			if ($result instanceof Response) {
 				$location = $result->headers()['Location'] ?? null;
@@ -54,9 +58,13 @@ final class SiteCheck
 			if ($result instanceof Page) {
 				$result->render();
 				$responder = $kirby->response();
-				$location = $responder->headers()['Location'] ?? null;
+				/** @var array<string, string> $headers */
+				$headers = $responder->headers();
+				$location = $headers['Location'] ?? null;
+				/** @var int|null $code */
+				$code = $responder->code();
 				return [
-					$responder->code() ?? ($result->isErrorPage() ? 404 : 200),
+					$code ?? ($result->isErrorPage() ? 404 : 200),
 					$location === null ? null : (string)$location,
 				];
 			}
@@ -78,6 +86,7 @@ final class SiteCheck
 	private static function resetResponder(App $kirby): void
 	{
 		(function (): void {
+			/** @psalm-suppress InvalidScope Closure::call() binds $this to the App; Psalm does not follow call(). */
 			$this->response = null;
 		})->call($kirby);
 	}
@@ -117,7 +126,9 @@ final class SiteCheck
 
 			$page = null;
 			if ($entry['status'] !== 410 && !$entry['external']) {
-				$page = Redirects::targetPage($kirby, $entry['target']);
+				/** @var string $target */
+				$target = $entry['target'];
+				$page = Redirects::targetPage($kirby, $target);
 				if ($page === null || $page->isDraft()) {
 					$findings[] = Validator::finding(
 						Validator::ERROR,
@@ -165,6 +176,7 @@ final class SiteCheck
 					$expected = Redirects::resolve($kirby, $entry['source'], $kirby->request()->query()->toArray())['location'] ?? null;
 					// Kirby sends Locations punycoded (Response::redirect → Url::unIdn).
 					// Url::unIdn() returns a Uri object: cast it, or the comparison fails for every redirect.
+					/** @psalm-suppress UndefinedMagicMethod Url::unIdn() is provided through Kirby's __callStatic(). */
 					$expected = $expected === null ? null : (string)Url::unIdn($expected);
 					if ($location !== $expected) {
 						$findings[] = Validator::finding(

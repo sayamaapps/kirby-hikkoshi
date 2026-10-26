@@ -6,6 +6,7 @@ use Kirby\Cms\App;
 use Kirby\Cms\Page;
 use Kirby\Http\Response;
 use Kirby\Http\Route;
+use WeakMap;
 
 /**
  * The Kirby glue (SPEC.md §3.4): reads the list, validates it once per App
@@ -20,7 +21,7 @@ final class Redirects
 	 * Validated state per App instance, so the two site methods and the route
 	 * do not validate the list three times per request.
 	 *
-	 * @var \WeakMap<App, array{entries: list<array>, resolver: Resolver}>|null
+	 * @var WeakMap<App, array{entries: list<array>, resolver: Resolver}>|null
 	 */
 	private static \WeakMap|null $cache = null;
 
@@ -86,9 +87,13 @@ final class Redirects
 		// Every call sets the language: the text of messages depends on it.
 		Options::applyLanguage($kirby);
 
-		self::$cache ??= new \WeakMap();
+		// Psalm cannot infer the generics of ??=; the property type above is the contract.
+		/** @psalm-suppress PropertyTypeCoercion */
+		self::$cache ??= new WeakMap();
 		if (isset(self::$cache[$kirby])) {
-			return self::$cache[$kirby];
+			/** @var array{entries: list<array>, resolver: Resolver} $cached */
+			$cached = self::$cache[$kirby];
+			return $cached;
 		}
 
 		$settings = Options::settings($kirby);
@@ -106,10 +111,12 @@ final class Redirects
 			throw new ConfigException($result['findings']);
 		}
 
+		/** @var array{entries: list<array>, resolver: Resolver} $loaded */
 		$loaded = [
 			'entries'  => $result['entries'],
 			'resolver' => new Resolver($result['entries'], $settings),
 		];
+		/** @psalm-suppress PropertyTypeCoercion The WeakMap generics of the property are not inferred from the assignment. */
 		self::$cache[$kirby] = $loaded;
 		return $loaded;
 	}
@@ -247,6 +254,7 @@ final class Redirects
 	public static function targetPage(App $kirby, string $target): Page|null
 	{
 		$site = $kirby->site();
+		/** @var Page|null $page */
 		$page = $site->find($target);
 		if ($page === null && $target === 'home') {
 			$page = $site->homePage();

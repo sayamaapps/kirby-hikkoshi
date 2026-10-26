@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<ruleset name="Hikkoshi"
+	xmlns="http://pmd.sf.net/ruleset/1.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+	xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
+	<description>PHP Mess Detector rules for Hikkoshi (TST-10). Every exclusion and raised threshold has its reason here.</description>
+
+	<rule ref="rulesets/cleancode.xml">
+		<!-- Options and I18n are static helpers, as in Kirby's own code. -->
+		<exclude name="StaticAccess" />
+		<!-- The query and CLI switches are public API (VER-3), so their flags stay. -->
+		<exclude name="BooleanArgumentFlag" />
+		<!-- The else branches of the matchers read in the order of the rules. -->
+		<exclude name="ElseExpression" />
+		<!-- Closure::call() binds $this to the App in SiteCheck; PHPMD cannot follow the binding. -->
+		<exclude name="UndefinedVariable" />
+	</rule>
+
+	<rule ref="rulesets/codesize.xml/CyclomaticComplexity">
+		<!-- Open (refactor follow-up): the parsers Htaccess::rule(), Validator::parseValue() and the CLI run() branch on purpose. Default 10.
+		     NPathComplexity is not used: it multiplies the same branches and grows past any useful limit. -->
+		<properties>
+			<property name="reportLevel" value="26" />
+		</properties>
+	</rule>
+	<rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
+		<!-- Htaccess and Validator hold the whole conversion and validation rules; splitting them is a follow-up. -->
+		<properties>
+			<property name="maximum" value="140" />
+		</properties>
+	</rule>
+	<rule ref="rulesets/codesize.xml/ExcessiveMethodLength">
+		<!-- SiteCheck::run() is one loop over the entries with the findings; splitting it is a follow-up. -->
+		<properties>
+			<property name="minimum" value="130" />
+		</properties>
+	</rule>
+	<rule ref="rulesets/codesize.xml/ExcessiveParameterList" />
+
+	<rule ref="rulesets/design.xml">
+		<!-- Redirects, Options, Validator and Resolver are public entry points; splitting them changes the API (VER-3). -->
+		<exclude name="TooManyPublicMethods" />
+		<exclude name="TooManyMethods" />
+		<exclude name="CouplingBetweenObjects" />
+	</rule>
+
+	<rule ref="rulesets/naming.xml">
+		<!-- Short names are the loop and array keys of the matchers. -->
+		<exclude name="ShortVariable" />
+		<!-- I18n::t() is the translation shorthand used in snippets and tests. -->
+		<exclude name="ShortMethodName" />
+	</rule>
+
+	<rule ref="rulesets/unusedcode.xml" />
+</ruleset>
