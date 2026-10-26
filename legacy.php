@@ -28,3 +28,16 @@ foreach ($hikkoshiLegacyClasses as $hikkoshiLegacyClass) {
 	}
 }
 unset($hikkoshiLegacyClasses, $hikkoshiLegacyClass);
+
+if (Kirby\Cms\Helpers::hasOverride('hikkoshi_option') === false) {
+	/** Reads `hikkoshi.<key>`. Deprecated: use Sayamaapps\Hikkoshi\Options::get(). */
+	function hikkoshi_option(string $key, mixed $default = null): mixed
+	{
+		Kirby\Cms\Helpers::deprecated(
+			'hikkoshi_option() is deprecated, use Sayamaapps\Hikkoshi\Options::get()',
+			'hikkoshi-function'
+		);
+
+		return Sayamaapps\Hikkoshi\Options::get(Kirby\Cms\App::instance(), $key, $default);
+	}
+}
