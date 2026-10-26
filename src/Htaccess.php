@@ -14,6 +14,11 @@ namespace Sayamaapps\Hikkoshi;
  * to an absolute URL without R, which Apache answers with a redirect too.
  * Prefix rules (Redirect, or a regex without its closing `$`) are converted
  * for the exact path and reported as partial.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class Htaccess
 {

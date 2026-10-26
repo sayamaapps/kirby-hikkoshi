@@ -12,6 +12,11 @@ namespace Sayamaapps\Hikkoshi;
  * `impressum`, `blog/index.php` → `blog`, `index.php` → `` = home). Within a
  * pass, entries with more query conditions win over entries with fewer; an
  * entry without conditions matches any query.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class Resolver
 {

@@ -12,6 +12,11 @@ namespace Sayamaapps\Hikkoshi;
  * warnings) for a test suite or the CLI.
  *
  * Kirby-free (SPEC.md §2).
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class ConfigException extends \LogicException
 {

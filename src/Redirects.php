@@ -14,6 +14,11 @@ use WeakMap;
  *
  * Everything that decides a request lives in Validator, Resolver and Path;
  * this class only wires them to Kirby.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class Redirects
 {

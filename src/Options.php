@@ -23,6 +23,11 @@ use Throwable;
  * there would hide the 1.x spelling. The CLI (no Kirby) reads DEFAULTS directly;
  * the file loads without Kirby because App and Helpers are only used in
  * signatures or in methods the CLI does not call.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class Options
 {

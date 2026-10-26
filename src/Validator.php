@@ -19,6 +19,11 @@ namespace Sayamaapps\Hikkoshi;
  *   'old' => ['to' => 'new', 'status' => 302, 'query' => 'drop']
  *   'old' => ['status' => 410]
  * Accepted key forms: 'path', 'path?k=v', '?page_id=82', 'index.php?p=1&feed'.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class Validator
 {

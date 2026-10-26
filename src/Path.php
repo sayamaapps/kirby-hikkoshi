@@ -11,6 +11,11 @@ namespace Sayamaapps\Hikkoshi;
  * is what makes `/Über-Uns/`, `/%C3%BCber-uns` and `ueber-uns` one path.
  *
  * A path here never has a leading or trailing slash; the home page is ''.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class Path
 {

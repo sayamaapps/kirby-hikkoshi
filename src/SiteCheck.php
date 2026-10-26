@@ -20,6 +20,11 @@ use Kirby\Http\Url;
  * (and after the last one, so nothing leaks into the caller's process), and
  * a Page is read back from it the way App::io() does: a template that sets
  * `$kirby->response()->code(503)` or `->redirect(...)` counts.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class SiteCheck
 {

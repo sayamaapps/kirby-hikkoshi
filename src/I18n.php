@@ -14,6 +14,11 @@ namespace Sayamaapps\Hikkoshi;
  * The language is set once per request (Options::applyLanguage()) or once
  * per CLI run (--lang) and defaults to English. Missing keys fall back to
  * English, then to the key itself.
+ *
+ * @author    Simon Räder
+ * @link      https://github.com/sayamaapps/kirby-hikkoshi
+ * @copyright Simon Räder
+ * @license   https://opensource.org/licenses/MIT
  */
 final class I18n
 {
