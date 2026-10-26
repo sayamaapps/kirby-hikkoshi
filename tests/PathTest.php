@@ -6,6 +6,7 @@
  */
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
 require_once __DIR__ . '/../src/Path.php';
@@ -56,7 +57,7 @@ final class PathTest extends TestCase
 		expect('leistungen/beratung', Path::normalize('/Leistungen/Beratung/'), 'nested path');
 
 		if (class_exists(Normalizer::class)) {
-		    expect('ueber-uns', Path::normalize("u\u{0308}ber-uns"), 'NFD umlaut composed, then transliterated');
+			expect('ueber-uns', Path::normalize("u\u{0308}ber-uns"), 'NFD umlaut composed, then transliterated');
 		}
 
 		// ── split ───────────────────────────────────────────────────────────────
@@ -107,23 +108,23 @@ final class PathTest extends TestCase
 
 		// ── isValidSource (after normalisation) ─────────────────────────────────
 		foreach (['menue', 'produkt-c.html', 'speisekarte/karte-1.pdf', 'index.html',
-		          'alt/tief/seite', 'archiv/2024', 'wp_content', 'Menue', 'a.b'] as $ok) {
-		    holds(Path::isValidSource($ok), "valid source: $ok");
+			'alt/tief/seite', 'archiv/2024', 'wp_content', 'Menue', 'a.b'] as $ok) {
+			holds(Path::isValidSource($ok), "valid source: $ok");
 		}
 
 		foreach (['../secret', 'a/../secret', '.hidden', 'a..html', 'a.b.c', 'a%2ehtml', '%c3%bcber-uns', 'a(*)', '(:all)',
-		          'blog/(:any)', 'https://example.org', '/menue', 'menue/', 'a//b', 'mit leerzeichen', 'über-uns', 'a?b=1', ''] as $bad) {
-		    holds(!Path::isValidSource($bad), 'invalid source: ' . var_export($bad, true));
+			'blog/(:any)', 'https://example.org', '/menue', 'menue/', 'a//b', 'mit leerzeichen', 'über-uns', 'a?b=1', ''] as $bad) {
+			holds(!Path::isValidSource($bad), 'invalid source: ' . var_export($bad, true));
 		}
 
 		// ── isValidTarget ───────────────────────────────────────────────────────
 		foreach (['home', 'produkte', 'leistungen/beratung', 'archiv/2024', 'in-erinnerung'] as $ok) {
-		    holds(Path::isValidTarget($ok), "valid target: $ok");
+			holds(Path::isValidTarget($ok), "valid target: $ok");
 		}
 
 		foreach (['https://example.org', '//example.org', '/produkte', 'produkte/', 'produkte.html', '../produkte',
-		          'produkte?x=1', '', '(:all)', 'javascript:alert(1)', 'mailto:a@b.c', 'tel:+49', 'Produkte'] as $bad) {
-		    holds(!Path::isValidTarget($bad), 'invalid target: ' . var_export($bad, true));
+			'produkte?x=1', '', '(:all)', 'javascript:alert(1)', 'mailto:a@b.c', 'tel:+49', 'Produkte'] as $bad) {
+			holds(!Path::isValidTarget($bad), 'invalid target: ' . var_export($bad, true));
 		}
 
 		// ── externalHost ────────────────────────────────────────────────────────

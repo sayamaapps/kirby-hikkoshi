@@ -7,6 +7,7 @@
  */
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
 use Hikkoshi\I18n;
@@ -17,10 +18,10 @@ final class I18nTest extends TestCase
 	public function testSuite(): void
 	{
 		$placeholders = function (string $text): array {
-		    preg_match_all('/\{(\w+)\}/', $text, $m);
-		    $names = array_unique($m[1]);
-		    sort($names);
-		    return $names;
+			preg_match_all('/\{(\w+)\}/', $text, $m);
+			$names = array_unique($m[1]);
+			sort($names);
+			return $names;
 		};
 
 		$en = I18n::table('en');
@@ -28,32 +29,32 @@ final class I18nTest extends TestCase
 		holds(count($en) > 30, 'English table loaded');
 
 		foreach (I18n::LANGUAGES as $language) {
-		    $table = I18n::table($language);
-		    expect([], array_values(array_diff(array_keys($en), array_keys($table))), "$language: no missing keys");
-		    expect([], array_values(array_diff(array_keys($table), array_keys($en))), "$language: no extra keys");
-		    foreach ($en as $key => $text) {
-		        holds(isset($table[$key]) && is_string($table[$key]) && trim($table[$key]) !== '', "$language.$key not empty");
-		        expect($placeholders($text), $placeholders($table[$key] ?? ''), "$language.$key: same placeholders as English");
-		    }
+			$table = I18n::table($language);
+			expect([], array_values(array_diff(array_keys($en), array_keys($table))), "$language: no missing keys");
+			expect([], array_values(array_diff(array_keys($table), array_keys($en))), "$language: no extra keys");
+			foreach ($en as $key => $text) {
+				holds(isset($table[$key]) && is_string($table[$key]) && trim($table[$key]) !== '', "$language.$key not empty");
+				expect($placeholders($text), $placeholders($table[$key] ?? ''), "$language.$key: same placeholders as English");
+			}
 		}
 
 		expect([], I18n::table('fr'), 'unknown language: no table');
 
 		// Every key the code relies on exists (SPEC.md §5).
 		foreach ([
-		    'finding.config.notArray', 'finding.source.numeric', 'finding.source.invalid', 'finding.source.empty',
-		    'finding.source.duplicate', 'finding.entry.invalid', 'finding.target.invalid', 'finding.target.missing',
-		    'finding.target.foreign', 'finding.target.self', 'finding.status.invalid', 'finding.query.invalid',
-		    'finding.loop', 'finding.chain', 'finding.chain.resolved',
-		    'finding.inactive', 'finding.page.missing', 'finding.check.noMatch', 'finding.check.status',
-		    'finding.check.location', 'finding.check.target', 'finding.check.hop',
-		    'gone.title', 'gone.text',
-		    'cli.usage', 'cli.file', 'cli.unknownCommand', 'cli.fileMissing', 'cli.noFile', 'cli.ok', 'cli.summary',
-		    'cli.skipped', 'cli.convertSummary', 'cli.partial', 'cli.partialSummary',
-		    'reason.pattern', 'reason.condition', 'reason.target', 'reason.status', 'reason.flag', 'reason.duplicate', 'reason.prefix',
-		    'level.error', 'level.warning', 'level.info',
+			'finding.config.notArray', 'finding.source.numeric', 'finding.source.invalid', 'finding.source.empty',
+			'finding.source.duplicate', 'finding.entry.invalid', 'finding.target.invalid', 'finding.target.missing',
+			'finding.target.foreign', 'finding.target.self', 'finding.status.invalid', 'finding.query.invalid',
+			'finding.loop', 'finding.chain', 'finding.chain.resolved',
+			'finding.inactive', 'finding.page.missing', 'finding.check.noMatch', 'finding.check.status',
+			'finding.check.location', 'finding.check.target', 'finding.check.hop',
+			'gone.title', 'gone.text',
+			'cli.usage', 'cli.file', 'cli.unknownCommand', 'cli.fileMissing', 'cli.noFile', 'cli.ok', 'cli.summary',
+			'cli.skipped', 'cli.convertSummary', 'cli.partial', 'cli.partialSummary',
+			'reason.pattern', 'reason.condition', 'reason.target', 'reason.status', 'reason.flag', 'reason.duplicate', 'reason.prefix',
+			'level.error', 'level.warning', 'level.info',
 		] as $key) {
-		    holds(isset($en[$key]), "key $key exists");
+			holds(isset($en[$key]), "key $key exists");
 		}
 
 		I18n::setLanguage('fr');

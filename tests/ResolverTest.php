@@ -13,6 +13,7 @@
  */
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
 require_once __DIR__ . '/../src/Options.php';
@@ -33,8 +34,8 @@ final class ResolverTest extends TestCase
 		$menue = rResolver(['menue' => 'speisekarte']);
 
 		foreach (['/menue', '/menue/', 'menue', '/MENUE', '/Menue/'] as $path) {
-		    expect('menue', rKey($menue, $path), "match $path: key menue");
-		    expect('exact', rHit($menue->match($path))['pass'] ?? null, "match $path: exact pass");
+			expect('menue', rKey($menue, $path), "match $path: key menue");
+			expect('exact', rHit($menue->match($path))['pass'] ?? null, "match $path: exact pass");
 		}
 
 		expect(null, rKey($menue, '/menue/unterseite'), '/menue/unterseite: no match');
@@ -67,16 +68,16 @@ final class ResolverTest extends TestCase
 		$suffix = rResolver(['impressum' => 'legal', 'blog' => 'news']);
 
 		foreach (['/impressum.html', '/Impressum.HTML', '/impressum.htm', '/impressum.php'] as $path) {
-		    $match = $suffix->match($path);
-		    expect('impressum', $match['entry']['key'] ?? null, "suffix $path: key impressum");
-		    expect('suffix', $match['pass'] ?? null, "suffix $path: suffix pass");
-		    expect('impressum', $match['path'] ?? null, "suffix $path: path impressum");
+			$match = $suffix->match($path);
+			expect('impressum', $match['entry']['key'] ?? null, "suffix $path: key impressum");
+			expect('suffix', $match['pass'] ?? null, "suffix $path: suffix pass");
+			expect('impressum', $match['path'] ?? null, "suffix $path: path impressum");
 		}
 
 		foreach (['/blog/index.php', '/blog/index.html'] as $path) {
-		    $match = $suffix->match($path);
-		    expect('blog', $match['entry']['key'] ?? null, "index file $path: key blog");
-		    expect('suffix', $match['pass'] ?? null, "index file $path: suffix pass");
+			$match = $suffix->match($path);
+			expect('blog', $match['entry']['key'] ?? null, "index file $path: key blog");
+			expect('suffix', $match['pass'] ?? null, "index file $path: suffix pass");
 		}
 
 		expect(null, rKey($suffix, '/impressum.pdf'), '/impressum.pdf: no match (pdf is no suffix)');
@@ -102,7 +103,7 @@ final class ResolverTest extends TestCase
 		$umlaut = rResolver(['ueber-uns' => 'about']);
 
 		foreach (['/über-uns', '/%C3%BCber-uns', '/Ü%62er-uns', '/%25C3%25BCber-uns'] as $path) {
-		    expect('ueber-uns', rKey($umlaut, $path), "umlaut/encoding $path: hit ueber-uns");
+			expect('ueber-uns', rKey($umlaut, $path), "umlaut/encoding $path: hit ueber-uns");
 		}
 
 		$noTranslit = rResolver(['ueber-uns' => 'about'], ['transliterate' => false]);
@@ -120,12 +121,12 @@ final class ResolverTest extends TestCase
 
 		// ── Conditions, WordPress .htaccess (§8.2) ─────────────────────────────────────
 		$wp = rResolver([
-		    '?page_id=13' => 'ueber-uns',
-		    '?page_id=14' => 'kontakt',
-		    '?p=14' => 'kontakt',
-		    '?pagename=contact' => 'kontakt',
-		    '?feed' => 'home',
-		    'index.php?p=1' => 'home',
+			'?page_id=13' => 'ueber-uns',
+			'?page_id=14' => 'kontakt',
+			'?p=14' => 'kontakt',
+			'?pagename=contact' => 'kontakt',
+			'?feed' => 'home',
+			'index.php?p=1' => 'home',
 		]);
 
 		expect(['key' => '?page_id=13', 'pass' => 'exact', 'path' => '', 'remaining' => []], rHit($wp->match('', ['page_id' => '13'])), "('', page_id=13): exact, condition key removed from remaining");
@@ -155,11 +156,11 @@ final class ResolverTest extends TestCase
 		$specificLast = rResolver(['a' => 'general', 'a?k=v' => 'specific']);
 
 		foreach (['first' => $specificFirst, 'last' => $specificLast] as $order => $resolver) {
-		    expect('a?k=v', rKey($resolver, '/a', ['k' => 'v']), "specificity ($order in config): k=v hits the specific entry");
-		    $match = $resolver->match('/a', ['k' => 'w']);
-		    expect('a', $match['entry']['key'] ?? null, "specificity ($order in config): k=w falls back to the general entry");
-		    expect(['k' => 'w'], $match['remaining'] ?? null, "specificity ($order in config): remaining of the general entry is the whole query");
-		    expect('a', rKey($resolver, '/a', []), "specificity ($order in config): no query gives the general entry");
+			expect('a?k=v', rKey($resolver, '/a', ['k' => 'v']), "specificity ($order in config): k=v hits the specific entry");
+			$match = $resolver->match('/a', ['k' => 'w']);
+			expect('a', $match['entry']['key'] ?? null, "specificity ($order in config): k=w falls back to the general entry");
+			expect(['k' => 'w'], $match['remaining'] ?? null, "specificity ($order in config): remaining of the general entry is the whole query");
+			expect('a', rKey($resolver, '/a', []), "specificity ($order in config): no query gives the general entry");
 		}
 
 		$two = rResolver(['a?k=1&l=2' => 'x']);
@@ -200,7 +201,7 @@ final class ResolverTest extends TestCase
 
 		$round = Resolver::appendQuery('http://h/p', ['probe' => ['1', '2'], 'x' => 'a b']);
 
-		parse_str((string) parse_url($round, PHP_URL_QUERY), $back);
+		parse_str((string)parse_url($round, PHP_URL_QUERY), $back);
 
 		expect(['probe' => ['1', '2'], 'x' => 'a b'], $back, 'appendQuery: array parameter round-trips through parse_str');
 
@@ -237,28 +238,28 @@ final class ResolverTest extends TestCase
  * The part of a match the cases compare: the key of the hit, the pass, the
  * normalised path that hit and the remaining query. Null for no match.
  */
-function rHit(?array $match): ?array
+function rHit(array|null $match): array|null
 {
-    if ($match === null) {
-        return null;
-    }
-    return [
-        'key' => $match['entry']['key'],
-        'pass' => $match['pass'],
-        'path' => $match['path'],
-        'remaining' => $match['remaining'],
-    ];
+	if ($match === null) {
+		return null;
+	}
+	return [
+		'key' => $match['entry']['key'],
+		'pass' => $match['pass'],
+		'path' => $match['path'],
+		'remaining' => $match['remaining'],
+	];
 }
 
 /** Shorthand for the key of the hit, or null. */
-function rKey(Resolver $resolver, string $path, array $query = []): ?string
+function rKey(Resolver $resolver, string $path, array $query = []): string|null
 {
-    $match = $resolver->match($path, $query);
-    return $match === null ? null : $match['entry']['key'];
+	$match = $resolver->match($path, $query);
+	return $match === null ? null : $match['entry']['key'];
 }
 
 /** A resolver over a list with the given validation and matching settings. */
 function rResolver(array $list, array $settings = []): Resolver
 {
-    return new Resolver(Validator::assert($list, $settings), $settings);
+	return new Resolver(Validator::assert($list, $settings), $settings);
 }

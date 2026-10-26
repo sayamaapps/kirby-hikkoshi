@@ -15,31 +15,31 @@ namespace Hikkoshi;
  */
 final class ConfigException extends \LogicException
 {
-    /** @var list<array{level:string, code:string, message:string, key:?string, values:array}> */
-    private array $findings;
+	/** @var list<array{level:string, code:string, message:string, key:?string, values:array}> */
+	private array $findings;
 
-    /** @param list<array{level:string, code:string, message:string, key:?string, values:array}> $findings */
-    public function __construct(array $findings)
-    {
-        $this->findings = array_values($findings);
-        $messages = [];
-        foreach ($this->findings as $finding) {
-            if (($finding['level'] ?? '') === Validator::ERROR) {
-                $messages[] = $finding['message'];
-            }
-        }
-        parent::__construct(implode("\n", $messages));
-    }
+	/** @param list<array{level:string, code:string, message:string, key:?string, values:array}> $findings */
+	public function __construct(array $findings)
+	{
+		$this->findings = array_values($findings);
+		$messages = [];
+		foreach ($this->findings as $finding) {
+			if (($finding['level'] ?? '') === Validator::ERROR) {
+				$messages[] = $finding['message'];
+			}
+		}
+		parent::__construct(implode("\n", $messages));
+	}
 
-    /** All findings of the validation run, errors and warnings, in order. */
-    public function findings(): array
-    {
-        return $this->findings;
-    }
+	/** Only the error-level findings. */
+	public function errors(): array
+	{
+		return array_values(array_filter($this->findings, static fn (array $f) => $f['level'] === Validator::ERROR));
+	}
 
-    /** Only the error-level findings. */
-    public function errors(): array
-    {
-        return array_values(array_filter($this->findings, static fn (array $f) => $f['level'] === Validator::ERROR));
-    }
+	/** All findings of the validation run, errors and warnings, in order. */
+	public function findings(): array
+	{
+		return $this->findings;
+	}
 }

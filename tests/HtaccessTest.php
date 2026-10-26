@@ -7,6 +7,7 @@
  */
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
 require_once __DIR__ . '/../src/Options.php';
@@ -16,6 +17,7 @@ require_once __DIR__ . '/../src/Validator.php';
 require_once __DIR__ . '/../src/Htaccess.php';
 use Hikkoshi\Htaccess;
 use Hikkoshi\I18n;
+
 /**
  * A WordPress rewrite section: query-string redirects, the www rule and the
  * Kirby catch-all, written out here so the test needs no other file.
@@ -106,20 +108,20 @@ HTACCESS;
  * order (SPEC §3.7).
  */
 const WORDPRESS_EXPECTED = [
-    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],
-    '?page_id=36' => ['to' => 'galerie', 'query' => 'drop'],
-    '?page_id=14' => ['to' => 'kontakt', 'query' => 'drop'],
-    '?p=14' => ['to' => 'kontakt', 'query' => 'drop'],
-    '?pagename=contact' => ['to' => 'kontakt', 'query' => 'drop'],
-    '?page_id=80' => ['to' => 'datenschutz', 'query' => 'drop'],
-    '?page_id=82' => ['to' => 'impressum', 'query' => 'drop'],
-    '?page_id=2' => ['to' => 'home', 'query' => 'drop'],
-    '?page_id=12' => ['to' => 'home', 'query' => 'drop'],
-    '?page_id=15' => ['to' => 'home', 'query' => 'drop'],
-    '?page_id=16' => ['to' => 'home', 'query' => 'drop'],
-    '?page_id=17' => ['to' => 'home', 'query' => 'drop'],
-    '?p=1' => ['to' => 'home', 'query' => 'drop'],
-    '?feed' => ['to' => 'home', 'query' => 'drop'],
+	'?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],
+	'?page_id=36' => ['to' => 'galerie', 'query' => 'drop'],
+	'?page_id=14' => ['to' => 'kontakt', 'query' => 'drop'],
+	'?p=14' => ['to' => 'kontakt', 'query' => 'drop'],
+	'?pagename=contact' => ['to' => 'kontakt', 'query' => 'drop'],
+	'?page_id=80' => ['to' => 'datenschutz', 'query' => 'drop'],
+	'?page_id=82' => ['to' => 'impressum', 'query' => 'drop'],
+	'?page_id=2' => ['to' => 'home', 'query' => 'drop'],
+	'?page_id=12' => ['to' => 'home', 'query' => 'drop'],
+	'?page_id=15' => ['to' => 'home', 'query' => 'drop'],
+	'?page_id=16' => ['to' => 'home', 'query' => 'drop'],
+	'?page_id=17' => ['to' => 'home', 'query' => 'drop'],
+	'?p=1' => ['to' => 'home', 'query' => 'drop'],
+	'?feed' => ['to' => 'home', 'query' => 'drop'],
 ];
 
 #[CoversNothing]
@@ -214,42 +216,42 @@ final class HtaccessTest extends TestCase
 
 		expect([['line' => 1, 'text' => 'RedirectMatch 303 ^/alt$ /neu', 'reason' => 'status']], $r['skipped'], 'RedirectMatch 303 → skipped status');
 
-		/* Partial: converted for the exact path, but Apache matched the paths below as well */
+		// Partial: converted for the exact path, but Apache matched the paths below as well
 		foreach ([
-		    'Redirect permanent /a /b' => 'Redirect permanent',
-		    'Redirect /a /b' => 'Redirect without token (302)',
-		    'Redirect temp /a /b' => 'Redirect temp',
-		    'Redirect gone /alt' => 'Redirect gone',
-		    'Redirect 301 /alt/ /neu/' => 'Redirect with slashes',
-		    'RedirectPermanent /a /b' => 'RedirectPermanent',
-		    'RedirectTemp /a /b' => 'RedirectTemp',
-		    'RedirectMatch 301 ^/alt /neu' => 'RedirectMatch ^ without $',
-		    'RedirectMatch 301 ^/alt/? /neu' => 'RedirectMatch ^ with /? but without $',
-		    'RewriteRule ^alt /neu [R=301]' => 'RewriteRule ^ without $',
-		    'RewriteRule ^alt/ /neu [R=301]' => 'RewriteRule ^alt/ without $',
-		    'RewriteRule ^alt - [G]' => 'RewriteRule G ^ without $',
+			'Redirect permanent /a /b' => 'Redirect permanent',
+			'Redirect /a /b' => 'Redirect without token (302)',
+			'Redirect temp /a /b' => 'Redirect temp',
+			'Redirect gone /alt' => 'Redirect gone',
+			'Redirect 301 /alt/ /neu/' => 'Redirect with slashes',
+			'RedirectPermanent /a /b' => 'RedirectPermanent',
+			'RedirectTemp /a /b' => 'RedirectTemp',
+			'RedirectMatch 301 ^/alt /neu' => 'RedirectMatch ^ without $',
+			'RedirectMatch 301 ^/alt/? /neu' => 'RedirectMatch ^ with /? but without $',
+			'RewriteRule ^alt /neu [R=301]' => 'RewriteRule ^ without $',
+			'RewriteRule ^alt/ /neu [R=301]' => 'RewriteRule ^alt/ without $',
+			'RewriteRule ^alt - [G]' => 'RewriteRule G ^ without $',
 		] as $rule => $label) {
-		    $r = Htaccess::convert($rule);
-		    expect(1, count($r['entries']), "$label → one entry");
-		    expect([], $r['skipped'], "$label → nothing skipped");
-		    expect([['line' => 1, 'text' => $rule, 'reason' => 'prefix']], $r['partial'], "$label → partial prefix");
+			$r = Htaccess::convert($rule);
+			expect(1, count($r['entries']), "$label → one entry");
+			expect([], $r['skipped'], "$label → nothing skipped");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'prefix']], $r['partial'], "$label → partial prefix");
 		}
 
 		expect(['alt' => 'neu'], Htaccess::convert('RewriteRule ^alt/ /neu [R=301]')['entries'], 'RewriteRule ^alt/ → entry alt');
 
 		foreach ([
-		    'RedirectMatch 301 ^/alt$ /neu',
-		    'RedirectMatch 301 ^/alt/?$ /neu',
-		    'RedirectMatch 301 ^/alt\.html$ /neu',
-		    'RewriteRule ^alt$ /neu [R=301]',
-		    'RewriteRule ^alt/?$ /neu [R=301]',
-		    'RewriteRule ^alt\/?$ /neu [R=301]',
-		    'RewriteRule ^alt$ - [G]',
-		    'Redirect 303 /a /b',
-		    'Redirect 301 /a b',
-		    'Redirect 301 a /b',
+			'RedirectMatch 301 ^/alt$ /neu',
+			'RedirectMatch 301 ^/alt/?$ /neu',
+			'RedirectMatch 301 ^/alt\.html$ /neu',
+			'RewriteRule ^alt$ /neu [R=301]',
+			'RewriteRule ^alt/?$ /neu [R=301]',
+			'RewriteRule ^alt\/?$ /neu [R=301]',
+			'RewriteRule ^alt$ - [G]',
+			'Redirect 303 /a /b',
+			'Redirect 301 /a b',
+			'Redirect 301 a /b',
 		] as $rule) {
-		    expect([], Htaccess::convert($rule)['partial'], "$rule → no partial note");
+			expect([], Htaccess::convert($rule)['partial'], "$rule → no partial note");
 		}
 
 		$r = Htaccess::convert("RewriteCond %{QUERY_STRING} ^p=1\$\nRewriteRule ^(index\\.php)?\$ /x? [R=301]");
@@ -257,16 +259,16 @@ final class HtaccessTest extends TestCase
 		expect([], $r['partial'], 'WordPress home form is anchored → no partial note');
 
 		foreach ([
-		    'RedirectMatch 301 /alt /neu',
-		    'RedirectMatch 301 alt$ /neu',
-		    'RewriteRule alt /neu [R=301]',
-		    'RewriteRule alt$ /neu [R]',
-		    'RewriteRule /alt$ /neu [R=301]',
+			'RedirectMatch 301 /alt /neu',
+			'RedirectMatch 301 alt$ /neu',
+			'RewriteRule alt /neu [R=301]',
+			'RewriteRule alt$ /neu [R]',
+			'RewriteRule /alt$ /neu [R=301]',
 		] as $rule) {
-		    $r = Htaccess::convert($rule);
-		    expect([], $r['entries'], "$rule → no entry");
-		    expect([['line' => 1, 'text' => $rule, 'reason' => 'pattern']], $r['skipped'], "$rule → skipped pattern (no ^: may match anywhere)");
-		    expect([], $r['partial'], "$rule → no partial note");
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$rule → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'pattern']], $r['skipped'], "$rule → skipped pattern (no ^: may match anywhere)");
+			expect([], $r['partial'], "$rule → no partial note");
 		}
 
 		$r = Htaccess::convert("Redirect 301 /alt /neu\nRedirect 301 /alt /other\nRedirectMatch 301 ^/alt /third");
@@ -340,7 +342,7 @@ final class HtaccessTest extends TestCase
 
 		expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu [R=301,QSD,L]')['entries'], 'QSD flag → query drop');
 
-		/* RewriteRule flags: QSD discards the query, flags the list cannot express are skipped */
+		// RewriteRule flags: QSD discards the query, flags the list cannot express are skipped
 		expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R=301,QSD,L]')['entries'], 'QSD → query drop');
 
 		expect(['old' => ['to' => 'produkte', 'query' => 'drop']], Htaccess::convert('RewriteRule ^old$ /produkte [R=301,qsdiscard,L]')['entries'], 'qsdiscard (lowercase, long name) → query drop');
@@ -362,23 +364,23 @@ final class HtaccessTest extends TestCase
 		expect(['alt' => ['to' => 'neu', 'query' => 'drop']], Htaccess::convert('RewriteRule ^alt$ /neu? [R=301]')['entries'], 'trailing ? without QSA → drop');
 
 		foreach (['RewriteRule ^alt\/?$ /neu [R=301,L]', 'RedirectMatch 301 ^/alt\/?$ /neu'] as $rule) {
-		    $r = Htaccess::convert($rule);
-		    expect(['alt' => 'neu'], $r['entries'], "$rule → entry alt");
-		    expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
+			$r = Htaccess::convert($rule);
+			expect(['alt' => 'neu'], $r['entries'], "$rule → entry alt");
+			expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
 		}
 
 		expect(['old' => 410], Htaccess::convert('RewriteRule ^old$ - [G,QSD]')['entries'], '410 rule with QSD → 410');
 
 		foreach ([
-		    'RewriteRule ^old$ /produkte [R=301,CO=name:value:example.com]' => 'cookie flag CO',
-		    'RewriteRule ^old$ /produkte [R=301,S=1]' => 'skip flag S',
-		    'RewriteRule ^old$ /produkte [R=301,XYZ]' => 'unknown flag XYZ',
-		    'RewriteRule ^old$ /produkte [R=301,P]' => 'proxy flag P',
-		    'RewriteRule ^old$ - [G,T=text/html]' => 'type flag T on a 410 rule',
+			'RewriteRule ^old$ /produkte [R=301,CO=name:value:example.com]' => 'cookie flag CO',
+			'RewriteRule ^old$ /produkte [R=301,S=1]' => 'skip flag S',
+			'RewriteRule ^old$ /produkte [R=301,XYZ]' => 'unknown flag XYZ',
+			'RewriteRule ^old$ /produkte [R=301,P]' => 'proxy flag P',
+			'RewriteRule ^old$ - [G,T=text/html]' => 'type flag T on a 410 rule',
 		] as $rule => $label) {
-		    $r = Htaccess::convert($rule);
-		    expect([], $r['entries'], "$label → no entry");
-		    expect([['line' => 1, 'text' => $rule, 'reason' => 'flag']], $r['skipped'], "$label → skipped flag");
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$label → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'flag']], $r['skipped'], "$label → skipped flag");
 		}
 
 		expect(['old' => 'produkte'], Htaccess::convert('RewriteRule ^old$ /produkte [NC,R=301,NE,L,END,QSA,E=VAR:1]')['entries'], 'ignorable flags (NC, NE, L, END, QSA, E) → converted');
@@ -391,86 +393,107 @@ final class HtaccessTest extends TestCase
 
 		expect(['alt' => ['to' => 'neu', 'status' => 307]], Htaccess::convert('RewriteRule ^alt$ /neu [R=307,L]')['entries'], 'R=307');
 
-		/* An external target with a query of its own: Apache replaces the request's query unless QSA appends it */
+		// An external target with a query of its own: Apache replaces the request's query unless QSA appends it
 		$r = Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R=301,L]');
 
 		expect(['replace' => ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop']], $r['entries'], 'external target with its own query, no QSA → query drop');
 
 		expect([[], []], [$r['skipped'], $r['partial']], 'external target with its own query → nothing skipped, no partial note');
 
-		expect(['replace' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
-		    Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R,L]')['entries'],
-		    'external target with its own query, R (302), no QSA → 302 array with drop');
+		expect(
+			['replace' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+			Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R,L]')['entries'],
+			'external target with its own query, R (302), no QSA → 302 array with drop'
+		);
 
-		expect(['append' => 'https://target.example/new?mode=fixed'],
-		    Htaccess::convert('RewriteRule ^append$ https://target.example/new?mode=fixed [R=301,QSA,L]')['entries'],
-		    'external target with its own query and QSA → plain string (request query appended)');
+		expect(
+			['append' => 'https://target.example/new?mode=fixed'],
+			Htaccess::convert('RewriteRule ^append$ https://target.example/new?mode=fixed [R=301,QSA,L]')['entries'],
+			'external target with its own query and QSA → plain string (request query appended)'
+		);
 
-		expect(['discard' => ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop']],
-		    Htaccess::convert('RewriteRule ^discard$ https://target.example/new?mode=fixed [R=301,QSD,L]')['entries'],
-		    'external target with its own query and QSD → drop (unchanged)');
+		expect(
+			['discard' => ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop']],
+			Htaccess::convert('RewriteRule ^discard$ https://target.example/new?mode=fixed [R=301,QSD,L]')['entries'],
+			'external target with its own query and QSD → drop (unchanged)'
+		);
 
-		expect(['plain' => 'https://target.example/new'],
-		    Htaccess::convert('RewriteRule ^plain$ https://target.example/new [R=301,L]')['entries'],
-		    'external target without a query → plain string (unchanged)');
+		expect(
+			['plain' => 'https://target.example/new'],
+			Htaccess::convert('RewriteRule ^plain$ https://target.example/new [R=301,L]')['entries'],
+			'external target without a query → plain string (unchanged)'
+		);
 
-		expect(['alt' => ['to' => 'https://target.example/new', 'query' => 'drop']],
-		    Htaccess::convert('RewriteRule ^alt$ https://target.example/new? [R=301,L]')['entries'],
-		    'external target with a trailing ? → drop (unchanged)');
+		expect(
+			['alt' => ['to' => 'https://target.example/new', 'query' => 'drop']],
+			Htaccess::convert('RewriteRule ^alt$ https://target.example/new? [R=301,L]')['entries'],
+			'external target with a trailing ? → drop (unchanged)'
+		);
 
-		/* Redirect family: mod_alias replaces the request's query with a target query of its own, too (no QSA here) */
+		// Redirect family: mod_alias replaces the request's query with a target query of its own, too (no QSA here)
 		$own = ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop'];
 
 		foreach ([
-		    'Redirect 301 /a https://target.example/new?mode=fixed' => ['a' => $own],
-		    'RedirectPermanent /a https://target.example/new?mode=fixed' => ['a' => $own],
-		    'RedirectTemp /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
-		    'Redirect /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
-		    'RedirectMatch 301 ^/a$ https://target.example/new?mode=fixed' => ['a' => $own],
-		    'RedirectMatch 308 ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 308, 'query' => 'drop']],
-		    'RedirectMatch ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
-		    'Redirect 301 /a https://target.example/new' => ['a' => 'https://target.example/new'],
-		    'RedirectMatch 301 ^/a$ https://target.example/new' => ['a' => 'https://target.example/new'],
+			'Redirect 301 /a https://target.example/new?mode=fixed' => ['a' => $own],
+			'RedirectPermanent /a https://target.example/new?mode=fixed' => ['a' => $own],
+			'RedirectTemp /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+			'Redirect /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+			'RedirectMatch 301 ^/a$ https://target.example/new?mode=fixed' => ['a' => $own],
+			'RedirectMatch 308 ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 308, 'query' => 'drop']],
+			'RedirectMatch ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+			'Redirect 301 /a https://target.example/new' => ['a' => 'https://target.example/new'],
+			'RedirectMatch 301 ^/a$ https://target.example/new' => ['a' => 'https://target.example/new'],
 		] as $rule => $expected) {
-		    expect($expected, Htaccess::convert($rule)['entries'], "$rule → own target query dropped, plain target kept");
+			expect($expected, Htaccess::convert($rule)['entries'], "$rule → own target query dropped, plain target kept");
 		}
 
 		/* ------------------------------------------------------------------------
 		 * RewriteCond (%{QUERY_STRING}) groups
 		 * --------------------------------------------------------------------- */
-		$rule = "RewriteRule ^(index\\.php)?$ /x? [R=301,L]";
+		$rule = 'RewriteRule ^(index\\.php)?$ /x? [R=301,L]';
 
-		expect(['?page_id=13' => ['to' => 'x', 'query' => 'drop']],
-		    Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|\$)\n$rule")['entries'],
-		    'single QUERY_STRING cond → key');
+		expect(
+			['?page_id=13' => ['to' => 'x', 'query' => 'drop']],
+			Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|\$)\n$rule")['entries'],
+			'single QUERY_STRING cond → key'
+		);
 
 		$r = Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=14(&|\$) [OR]\n"
-		    . "RewriteCond %{QUERY_STRING} (^|&)p=14(&|\$) [OR]\n"
-		    . "RewriteCond %{QUERY_STRING} (^|&)pagename=contact(&|\$)\n"
-		    . "RewriteRule ^(index\\.php)?\$ /kontakt? [R=301,L]");
+			. "RewriteCond %{QUERY_STRING} (^|&)p=14(&|\$) [OR]\n"
+			. "RewriteCond %{QUERY_STRING} (^|&)pagename=contact(&|\$)\n"
+			. 'RewriteRule ^(index\\.php)?$ /kontakt? [R=301,L]');
 
 		expect(['?page_id=14', '?p=14', '?pagename=contact'], array_keys($r['entries']), 'three [OR] conds → three keys');
 
 		expect(['to' => 'kontakt', 'query' => 'drop'], $r['entries']['?p=14'] ?? null, 'three keys share the value');
 
-		expect(['?page_id=2', '?page_id=12'],
-		    array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=(2|12)(&|\$)\n$rule")['entries']),
-		    'alternation → one key per alternative');
+		expect(
+			['?page_id=2', '?page_id=12'],
+			array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=(2|12)(&|\$)\n$rule")['entries']),
+			'alternation → one key per alternative'
+		);
 
-		expect(['?feed' => ['to' => 'home', 'query' => 'drop']],
-		    Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)feed=\nRewriteRule ^(index\\.php)?\$ /? [R=301,L]")['entries'],
-		    'feed= → bare name key');
+		expect(
+			['?feed' => ['to' => 'home', 'query' => 'drop']],
+			Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)feed=\nRewriteRule ^(index\\.php)?\$ /? [R=301,L]")['entries'],
+			'feed= → bare name key'
+		);
 
 		expect(['?p=1'], array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} ^p=1\$\n$rule")['entries']), 'anchored ^p=1$ → ?p=1');
 
 		expect(['?p=1'], array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} p=1\n$rule")['entries']), 'unanchored p=1 → ?p=1');
 
-		expect(['?a=1&b=2'], array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)a=1(&|\$)\nRewriteCond %{QUERY_STRING} (^|&)b=2(&|\$)\n$rule")['entries']),
-		    'two conds without OR are ANDed');
+		expect(
+			['?a=1&b=2'],
+			array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)a=1(&|\$)\nRewriteCond %{QUERY_STRING} (^|&)b=2(&|\$)\n$rule")['entries']),
+			'two conds without OR are ANDed'
+		);
 
-		expect(['?a=1&c=3', '?b=2&c=3'],
-		    array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)a=1(&|\$) [OR]\nRewriteCond %{QUERY_STRING} (^|&)b=2(&|\$)\nRewriteCond %{QUERY_STRING} (^|&)c=3(&|\$)\n$rule")['entries']),
-		    '(A OR B) AND C gives two keys');
+		expect(
+			['?a=1&c=3', '?b=2&c=3'],
+			array_keys(Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)a=1(&|\$) [OR]\nRewriteCond %{QUERY_STRING} (^|&)b=2(&|\$)\nRewriteCond %{QUERY_STRING} (^|&)c=3(&|\$)\n$rule")['entries']),
+			'(A OR B) AND C gives two keys'
+		);
 
 		$r = Htaccess::convert("RewriteCond %{HTTP_HOST} ^www\\.x\\.de\$\nRewriteRule ^(.*)\$ https://x.de/\$1 [R=301,L]\nRewriteRule ^alt\$ /neu [R=301]");
 
@@ -482,9 +505,11 @@ final class HtaccessTest extends TestCase
 
 		expect([['line' => 2, 'text' => $rule, 'reason' => 'condition']], $r['skipped'], 'regex cond page_id=.* → condition');
 
-		expect(['?page_id=13' => ['to' => 'x', 'query' => 'drop']],
-		    Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|\$) [NC]\n$rule")['entries'],
-		    '[NC] on a cond accepted');
+		expect(
+			['?page_id=13' => ['to' => 'x', 'query' => 'drop']],
+			Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|\$) [NC]\n$rule")['entries'],
+			'[NC] on a cond accepted'
+		);
 
 		$r = Htaccess::convert("RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|\$)\nRewriteRule ^(index\\.php)?\$ /x [L]\nRewriteRule ^(index\\.php)?\$ /y? [R=301]");
 
@@ -529,39 +554,48 @@ final class HtaccessTest extends TestCase
 		 * render()
 		 * --------------------------------------------------------------------- */
 		$entries = [
-		    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],
-		    'alt' => 410,
-		    'produkte' => 'produkte',
-		    'x' => ['to' => 'y', 'status' => 302],
+			'?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],
+			'alt' => 410,
+			'produkte' => 'produkte',
+			'x' => ['to' => 'y', 'status' => 302],
 		];
 
 		expect("<?php\n/**\n * Header\n */\nreturn [\n"
-		    . "    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],\n"
-		    . "    'alt' => 410,\n"
-		    . "    'produkte' => 'produkte',\n"
-		    . "    'x' => ['to' => 'y', 'status' => 302],\n"
-		    . "];\n", Htaccess::render($entries, 'Header'), 'render with header, exact text');
+			. "    '?page_id=13' => ['to' => 'ueber-uns', 'query' => 'drop'],\n"
+			. "    'alt' => 410,\n"
+			. "    'produkte' => 'produkte',\n"
+			. "    'x' => ['to' => 'y', 'status' => 302],\n"
+			. "];\n", Htaccess::render($entries, 'Header'), 'render with header, exact text');
 
 		expect("<?php\n\nreturn [\n];\n", Htaccess::render([]), 'render of an empty list');
 
-		expect("<?php\n/**\n * First line\n * Second line\n */\nreturn [\n];\n",
-		    Htaccess::render([], "First line\nSecond line"), 'two header lines → two " * " lines');
+		expect(
+			"<?php\n/**\n * First line\n * Second line\n */\nreturn [\n];\n",
+			Htaccess::render([], "First line\nSecond line"),
+			'two header lines → two " * " lines'
+		);
 
 		// eval() is deliberate here: it runs only the PHP that render() just produced// from our own arrays, to prove the file returns the same list (SPEC §8.5).
-		$php = Htaccess::render($entries, "Header");
+		$php = Htaccess::render($entries, 'Header');
 
 		expect($entries, eval(substr($php, strlen('<?php'))), 'rendered code evaluates back to the same array');
 
 		// The header is a doc comment: a star-slash in it (a directory `a*` in the// path of `hikkoshi convert`) must not end it, or the rest runs as code.
 		$php = Htaccess::render(['a' => 'b'], "From a*/ \$GLOBALS['hikkoshiInjected'] = 1; __halt_compiler();\x1b[2J.htaccess");
 
-		expect("<?php\n/**\n * From a*\\/ \$GLOBALS['hikkoshiInjected'] = 1; __halt_compiler();[2J.htaccess\n */\nreturn [\n    'a' => 'b',\n];\n",
-		    $php, 'render: star-slash broken up, control character dropped');
+		expect(
+			"<?php\n/**\n * From a*\\/ \$GLOBALS['hikkoshiInjected'] = 1; __halt_compiler();[2J.htaccess\n */\nreturn [\n    'a' => 'b',\n];\n",
+			$php,
+			'render: star-slash broken up, control character dropped'
+		);
 
 		$significant = array_values(array_filter(token_get_all($php), static fn ($t) => !is_array($t) || $t[0] !== T_WHITESPACE));
 
-		expect([T_OPEN_TAG, T_DOC_COMMENT, T_RETURN], array_map(static fn ($t) => is_array($t) ? $t[0] : $t, array_slice($significant, 0, 3)),
-		    'render: the whole header is one doc comment, the code starts with return');
+		expect(
+			[T_OPEN_TAG, T_DOC_COMMENT, T_RETURN],
+			array_map(static fn ($t) => is_array($t) ? $t[0] : $t, array_slice($significant, 0, 3)),
+			'render: the whole header is one doc comment, the code starts with return'
+		);
 
 		expect(['a' => 'b'], eval(substr($php, strlen('<?php'))), 'render: the hostile header file still returns the list');
 
@@ -578,24 +612,24 @@ final class HtaccessTest extends TestCase
 /** Line of the www→apex rule inside a text (the one skipped line). */
 function wordpress_www_line(string $text): int
 {
-    foreach (explode("\n", $text) as $i => $line) {
-        if (str_starts_with(trim($line), 'RewriteRule ^(.*)$')) {
-            return $i + 1;
-        }
-    }
-    return -1;
+	foreach (explode("\n", $text) as $i => $line) {
+		if (str_starts_with(trim($line), 'RewriteRule ^(.*)$')) {
+			return $i + 1;
+		}
+	}
+	return -1;
 }
 
 /** Checks one converted WordPress result. */
 function check_wordpress(string $label, string $text): void
 {
-    $result = Htaccess::convert($text);
-    expect(WORDPRESS_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
-    expect([], $result['partial'], "$label: no partial line");
-    expect(1, count($result['skipped']), "$label: exactly one skipped line");
-    $skip = $result['skipped'][0] ?? ['line' => -1, 'text' => '', 'reason' => ''];
-    expect('condition', $skip['reason'], "$label: skipped reason is condition");
-    holds(str_starts_with($skip['text'], 'RewriteRule ^(.*)$'), "$label: skipped text starts with RewriteRule ^(.*)\$");
-    expect('RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]', $skip['text'], "$label: skipped text is the www rule");
-    expect(wordpress_www_line($text), $skip['line'], "$label: skipped line number");
+	$result = Htaccess::convert($text);
+	expect(WORDPRESS_EXPECTED, $result['entries'], "$label: the 14 entries in file order");
+	expect([], $result['partial'], "$label: no partial line");
+	expect(1, count($result['skipped']), "$label: exactly one skipped line");
+	$skip = $result['skipped'][0] ?? ['line' => -1, 'text' => '', 'reason' => ''];
+	expect('condition', $skip['reason'], "$label: skipped reason is condition");
+	holds(str_starts_with($skip['text'], 'RewriteRule ^(.*)$'), "$label: skipped text starts with RewriteRule ^(.*)\$");
+	expect('RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]', $skip['text'], "$label: skipped text is the www rule");
+	expect(wordpress_www_line($text), $skip['line'], "$label: skipped line number");
 }

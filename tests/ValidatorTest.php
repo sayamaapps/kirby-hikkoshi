@@ -14,6 +14,7 @@
  */
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
 require_once __DIR__ . '/../src/Options.php';
@@ -32,11 +33,11 @@ final class ValidatorTest extends TestCase
 	{
 		// ── Valid lists ─────────────────────────────────────────────────────────// "valid list unchanged" (§8.1): keys, sources and targets come back as written.
 		$gueltig = [
-		    'menue' => 'speisekarte',
-		    'produkt-c.html' => 'produkte',
-		    'speisekarte/karte-1.pdf' => 'speisekarte',
-		    'index.html' => 'home',
-		    'alt/tief/seite' => 'leistungen/beratung',
+			'menue' => 'speisekarte',
+			'produkt-c.html' => 'produkte',
+			'speisekarte/karte-1.pdf' => 'speisekarte',
+			'index.html' => 'home',
+			'alt/tief/seite' => 'leistungen/beratung',
 		];
 
 		$result = Validator::validate($gueltig);
@@ -65,20 +66,20 @@ final class ValidatorTest extends TestCase
 
 		// ── Sample lists of 14 and 12 entries (§8.1) ────────────────────────────// A list in the style of a Jimdo export (14 entries)
 		$jimdo_list = [
-		    'kurs-a.html' => 'produkte',
-		    'kurs-b.html' => 'produkte',
-		    'kurs-c.html' => 'produkt-c',
-		    'galerie-1.html' => 'team',
-		    'galerie-2.html' => 'team',
-		    'archiv-alt' => 'archiv',
-		    'archiv/2019' => 'archiv',
-		    'shop' => 'produkte',
-		    'downloads/karte-1.pdf' => 'speisekarte',
-		    'downloads/karte-2.pdf' => 'speisekarte',
-		    'impressum.html' => 'impressum',
-		    'datenschutz.html' => 'datenschutz',
-		    'kontakt.html' => 'kontakt',
-		    'index.html' => 'home',
+			'kurs-a.html' => 'produkte',
+			'kurs-b.html' => 'produkte',
+			'kurs-c.html' => 'produkt-c',
+			'galerie-1.html' => 'team',
+			'galerie-2.html' => 'team',
+			'archiv-alt' => 'archiv',
+			'archiv/2019' => 'archiv',
+			'shop' => 'produkte',
+			'downloads/karte-1.pdf' => 'speisekarte',
+			'downloads/karte-2.pdf' => 'speisekarte',
+			'impressum.html' => 'impressum',
+			'datenschutz.html' => 'datenschutz',
+			'kontakt.html' => 'kontakt',
+			'index.html' => 'home',
 		];
 
 		$result = Validator::validate($jimdo_list);
@@ -89,18 +90,18 @@ final class ValidatorTest extends TestCase
 
 		// A list in the style of a Wix export (12 entries)
 		$wix_list = [
-		    'news'                    => 'home',
-		    'events'                  => 'home',
-		    'event-details'           => 'home',
-		    'team'                    => 'home',
-		    'faq'                     => 'home',
-		    'bookings'                => 'home',
-		    'about'                   => 'home',
-		    'contact'                 => 'home',
-		    'privacy-policy'          => 'datenschutz',
-		    'terms-and-conditions'    => 'impressum',
-		    'refund-policy'           => 'impressum',
-		    'accessibility-statement' => 'home',
+			'news'                    => 'home',
+			'events'                  => 'home',
+			'event-details'           => 'home',
+			'team'                    => 'home',
+			'faq'                     => 'home',
+			'bookings'                => 'home',
+			'about'                   => 'home',
+			'contact'                 => 'home',
+			'privacy-policy'          => 'datenschutz',
+			'terms-and-conditions'    => 'impressum',
+			'refund-policy'           => 'impressum',
+			'accessibility-statement' => 'home',
 		];
 
 		$result = Validator::validate($wix_list);
@@ -143,49 +144,49 @@ final class ValidatorTest extends TestCase
 
 		// ── Still rejected sources (§8.1 a) ─────────────────────────────────────// Each key with its code. The pre-1.0 rule for a segment: [a-z0-9-], one dot.
 		$rejected = [
-		    '../secret' => 'source.invalid',
-		    'a/../secret' => 'source.invalid',
-		    '.hidden' => 'source.invalid',
-		    'a..html' => 'source.invalid',
-		    'a.b.c' => 'source.invalid',
-		    'a(*)' => 'source.invalid',
-		    '(:all)' => 'source.invalid',
-		    'blog/(:any)' => 'source.invalid',
-		    'https://example.org' => 'source.invalid',
-		    'mit leerzeichen' => 'source.invalid',
-		    '' => 'source.empty',
+			'../secret' => 'source.invalid',
+			'a/../secret' => 'source.invalid',
+			'.hidden' => 'source.invalid',
+			'a..html' => 'source.invalid',
+			'a.b.c' => 'source.invalid',
+			'a(*)' => 'source.invalid',
+			'(:all)' => 'source.invalid',
+			'blog/(:any)' => 'source.invalid',
+			'https://example.org' => 'source.invalid',
+			'mit leerzeichen' => 'source.invalid',
+			'' => 'source.empty',
 		];
 
 		foreach ($rejected as $key => $code) {
-		    $result = Validator::validate([$key => 'produkte']);
-		    expect([$code], codes($result['findings']), 'rejected source ' . var_export($key, true) . ': ' . $code);
-		    expect([], $result['entries'], 'rejected source ' . var_export($key, true) . ': entry dropped');
+			$result = Validator::validate([$key => 'produkte']);
+			expect([$code], codes($result['findings']), 'rejected source ' . var_export($key, true) . ': ' . $code);
+			expect([], $result['entries'], 'rejected source ' . var_export($key, true) . ': entry dropped');
 		}
 
 		// The message of an invalid old path names the entry (§5: Ungültiger alter Pfad).
 		$result = Validator::validate(['../secret' => 'produkte']);
 
-		expect("Ungültiger alter Pfad: '../secret' => 'produkte'", $result['findings'][0]['message'], "German message of source.invalid");
+		expect("Ungültiger alter Pfad: '../secret' => 'produkte'", $result['findings'][0]['message'], 'German message of source.invalid');
 
 		// ── Now accepted with their normalised source (§8.1 b) ──────────────────
 		$normalised = [
-		    'Menue' => ['menue', []],
-		    'Impressum.HTML' => ['impressum.html', []],
-		    'über-uns' => ['ueber-uns', []],
-		    '%c3%bcber-uns' => ['ueber-uns', []],
-		    'a%2ehtml' => ['a.html', []],
-		    '/menue' => ['menue', []],
-		    'menue/' => ['menue', []],
-		    'a//b' => ['a/b', []],
-		    'a?b=1' => ['a', ['b' => '1']],
+			'Menue' => ['menue', []],
+			'Impressum.HTML' => ['impressum.html', []],
+			'über-uns' => ['ueber-uns', []],
+			'%c3%bcber-uns' => ['ueber-uns', []],
+			'a%2ehtml' => ['a.html', []],
+			'/menue' => ['menue', []],
+			'menue/' => ['menue', []],
+			'a//b' => ['a/b', []],
+			'a?b=1' => ['a', ['b' => '1']],
 		];
 
 		foreach ($normalised as $key => [$source, $conditions]) {
-		    $result = Validator::validate([$key => 'produkte']);
-		    expect([], $result['findings'], 'accepted key ' . var_export($key, true) . ': no findings');
-		    expect($source, $result['entries'][0]['source'] ?? null, 'accepted key ' . var_export($key, true) . ': source ' . $source);
-		    expect($conditions, $result['entries'][0]['conditions'] ?? null, 'accepted key ' . var_export($key, true) . ': conditions');
-		    expect($key, $result['entries'][0]['key'] ?? null, 'accepted key ' . var_export($key, true) . ': key as written');
+			$result = Validator::validate([$key => 'produkte']);
+			expect([], $result['findings'], 'accepted key ' . var_export($key, true) . ': no findings');
+			expect($source, $result['entries'][0]['source'] ?? null, 'accepted key ' . var_export($key, true) . ': source ' . $source);
+			expect($conditions, $result['entries'][0]['conditions'] ?? null, 'accepted key ' . var_export($key, true) . ': conditions');
+			expect($key, $result['entries'][0]['key'] ?? null, 'accepted key ' . var_export($key, true) . ': key as written');
 		}
 
 		// Lowercase off: the case is kept (pre-1.0 behaviour).
@@ -200,9 +201,9 @@ final class ValidatorTest extends TestCase
 
 		// ── Invalid targets (§8.1) ──────────────────────────────────────────────
 		foreach (['/produkte', 'produkte/', 'produkte.html', '../produkte', 'Produkte', 'produkte?x=1', '', '(:all)', null] as $target) {
-		    $result = Validator::validate(['menue' => $target]);
-		    expect(['target.invalid'], codes($result['findings']), 'invalid target ' . var_export($target, true) . ': target.invalid');
-		    expect([], $result['entries'], 'invalid target ' . var_export($target, true) . ': entry dropped');
+			$result = Validator::validate(['menue' => $target]);
+			expect(['target.invalid'], codes($result['findings']), 'invalid target ' . var_export($target, true) . ': target.invalid');
+			expect([], $result['entries'], 'invalid target ' . var_export($target, true) . ': entry dropped');
 		}
 
 		$result = Validator::validate(['menue' => ['produkte']]);
@@ -217,17 +218,17 @@ final class ValidatorTest extends TestCase
 
 		// External targets without the allow-list (§8.1).
 		foreach (['https://example.org', '//example.org'] as $target) {
-		    $result = Validator::validate(['menue' => $target]);
-		    expect(['target.foreign'], codes($result['findings']), 'foreign target ' . $target . ': target.foreign');
-		    expect('example.org', $result['findings'][0]['values']['host'] ?? null, 'foreign target ' . $target . ': host value');
+			$result = Validator::validate(['menue' => $target]);
+			expect(['target.foreign'], codes($result['findings']), 'foreign target ' . $target . ': target.foreign');
+			expect('example.org', $result['findings'][0]['values']['host'] ?? null, 'foreign target ' . $target . ': host value');
 		}
 
 		// A config that is not an array (§8.1).
 		foreach (['produkte', 1] as $config) {
-		    $result = Validator::validate($config);
-		    expect(['config.notArray'], codes($result['findings']), 'config ' . var_export($config, true) . ': config.notArray');
-		    expect([], $result['entries'], 'config ' . var_export($config, true) . ': no entries');
-		    expect(null, $result['findings'][0]['key'], 'config.notArray has no key');
+			$result = Validator::validate($config);
+			expect(['config.notArray'], codes($result['findings']), 'config ' . var_export($config, true) . ': config.notArray');
+			expect([], $result['entries'], 'config ' . var_export($config, true) . ': no entries');
+			expect(null, $result['findings'][0]['key'], 'config.notArray has no key');
 		}
 
 		expect('Die Weiterleitungsliste muss ein Array alt => neu sein.', Validator::validate('produkte')['findings'][0]['message'], 'config.notArray message (de)');
@@ -263,9 +264,9 @@ final class ValidatorTest extends TestCase
 		$threw = null;
 
 		try {
-		    Validator::assert(['a' => 'b', 'b' => 'a']);
+			Validator::assert(['a' => 'b', 'b' => 'a']);
 		} catch (ConfigException $e) {
-		    $threw = $e;
+			$threw = $e;
 		}
 
 		holds($threw instanceof ConfigException, 'assert(loop) throws ConfigException');
@@ -472,8 +473,8 @@ final class ValidatorTest extends TestCase
 
 		expect(['https://example.org/x', 'http://example.org/y'], array_column($result['entries'], 'target'), 'uppercase scheme is lowercased (Kirby throws on HTTPS:)');
 
-		foreach (["https://example.org/x\r\nSet-Cookie: a=b", "https://example.org/a b", "https://example.org/a\tb", "https://example.org/a\x00b", "https://example.org/a\x1bb"] as $target) {
-		    expect(['target.invalid'], codes(Validator::validate(['m' => $target], $settings)['findings']), 'URL with whitespace or a control character: target.invalid (' . json_encode($target) . ')');
+		foreach (["https://example.org/x\r\nSet-Cookie: a=b", 'https://example.org/a b', "https://example.org/a\tb", "https://example.org/a\x00b", "https://example.org/a\x1bb"] as $target) {
+			expect(['target.invalid'], codes(Validator::validate(['m' => $target], $settings)['findings']), 'URL with whitespace or a control character: target.invalid (' . json_encode($target) . ')');
 		}
 
 		expect([], Validator::validate(['m' => ' https://example.org/x '], $settings)['findings'], 'whitespace around a URL is trimmed, not an error');
@@ -544,10 +545,10 @@ final class ValidatorTest extends TestCase
 
 		// ── hasErrors / ofLevel / finding (§3.2) ────────────────────────────────
 		$mixed = [
-		    Validator::finding(Validator::WARNING, 'chain', ['chain' => 'a → b → c'], 'a'),
-		    Validator::finding(Validator::INFO, 'chain.resolved', ['chain' => 'x', 'target' => 'y'], 'x'),
-		    Validator::finding(Validator::ERROR, 'loop', ['chain' => 'a → b → a'], 'a'),
-		    Validator::finding(Validator::WARNING, 'chain', ['chain' => 'p → q → r'], 'p'),
+			Validator::finding(Validator::WARNING, 'chain', ['chain' => 'a → b → c'], 'a'),
+			Validator::finding(Validator::INFO, 'chain.resolved', ['chain' => 'x', 'target' => 'y'], 'x'),
+			Validator::finding(Validator::ERROR, 'loop', ['chain' => 'a → b → a'], 'a'),
+			Validator::finding(Validator::WARNING, 'chain', ['chain' => 'p → q → r'], 'p'),
 		];
 
 		expect(true, Validator::hasErrors($mixed), 'hasErrors: true with an error');
@@ -568,9 +569,9 @@ final class ValidatorTest extends TestCase
 
 		// ── ConfigException (§3.2.3) ────────────────────────────────────────────
 		$findings = [
-		    Validator::finding(Validator::WARNING, 'chain', ['chain' => 'a → b → c'], 'a'),
-		    Validator::finding(Validator::ERROR, 'loop', ['chain' => 'x → y → x'], 'x'),
-		    Validator::finding(Validator::ERROR, 'target.self', ['entry' => "'m' => 'm'"], 'm'),
+			Validator::finding(Validator::WARNING, 'chain', ['chain' => 'a → b → c'], 'a'),
+			Validator::finding(Validator::ERROR, 'loop', ['chain' => 'x → y → x'], 'x'),
+			Validator::finding(Validator::ERROR, 'target.self', ['entry' => "'m' => 'm'"], 'm'),
 		];
 
 		$exception = new ConfigException($findings);
@@ -588,12 +589,12 @@ final class ValidatorTest extends TestCase
 }
 
 /** The entry with this config key, or null. */
-function vEntry(array $entries, string $key): ?array
+function vEntry(array $entries, string $key): array|null
 {
-    foreach ($entries as $entry) {
-        if ($entry['key'] === $key) {
-            return $entry;
-        }
-    }
-    return null;
+	foreach ($entries as $entry) {
+		if ($entry['key'] === $key) {
+			return $entry;
+		}
+	}
+	return null;
 }
