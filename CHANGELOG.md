@@ -10,6 +10,10 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Fixed
+
+- **`convert` drops the request's query for a RewriteRule with a query on its external target.** `RewriteRule ^old$ https://other.example/new?mode=fixed [R=301,L]` makes Apache answer `…/new?mode=fixed` for `/old?campaign=x`: the target's query replaces the request's unless `QSA` is set. The converter kept the request's query (`query keep`), so the list sent `…?mode=fixed&campaign=x`. It now gives `'query' => 'drop'`, as `QSD` does; `QSA` still keeps the query. Lists converted earlier are not changed: convert the rule again.
+
 ### Removed
 
 - **`DATENSCHUTZ.md` and `PRIVACY.md`.** Hikkoshi processes no visitor data, so it has no place in a site's privacy policy. The README says so under "Privacy".

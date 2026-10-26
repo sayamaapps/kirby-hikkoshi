@@ -275,11 +275,13 @@ final class Htaccess
                 self::skip($state, $line, $body, 'target');
                 return;
             }
-            // QSD always discards the query. A trailing `?` empties the substitution's
-            // query, but QSA appends the request's query to it again: then nothing is dropped.
+            // QSD always discards the query. A substitution with a query of its own (an
+            // external target `…?x=1`, or a trailing `?` that empties it) replaces the
+            // request's query, unless QSA appends the request's query to it again.
+            $replaces = $destination['drop'] || str_contains($destination['to'], '?');
             $append = self::hasFlag($flags, 'QSA') || self::hasFlag($flags, 'QSAPPEND');
             $destination['drop'] = self::hasFlag($flags, 'QSD') || self::hasFlag($flags, 'QSDISCARD')
-                || ($destination['drop'] && !$append);
+                || ($replaces && !$append);
             $value = self::value($status, $destination);
         }
         if (self::store($state, self::keys($path, $chains), $value, $line, $body) && !$anchored) {
