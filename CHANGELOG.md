@@ -12,7 +12,7 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
-- **`convert` drops the request's query for a RewriteRule with a query on its external target.** `RewriteRule ^old$ https://other.example/new?mode=fixed [R=301,L]` makes Apache answer `…/new?mode=fixed` for `/old?campaign=x`: the target's query replaces the request's unless `QSA` is set. The converter kept the request's query (`query keep`), so the list sent `…?mode=fixed&campaign=x`. It now gives `'query' => 'drop'`, as `QSD` does; `QSA` still keeps the query. Lists converted earlier are not changed: convert the rule again.
+- **`convert` drops the request's query when an external target has a query of its own.** Apache replaces the request's query with the target's: `RewriteRule ^old$ https://other.example/new?mode=fixed [R=301,L]`, `Redirect 301 /old https://other.example/new?mode=fixed`, `RedirectPermanent`, `RedirectTemp` and `RedirectMatch` answer `/old?campaign=x` with `…/new?mode=fixed`. The converter kept the request's query (`query keep`), so the list sent `…?mode=fixed&campaign=x`. Such targets now give `'query' => 'drop'`, as `QSD` does; `QSA` still keeps the query in a RewriteRule. Targets without a query are unchanged. Lists converted earlier are not changed: convert the rules again.
 
 ### Removed
 

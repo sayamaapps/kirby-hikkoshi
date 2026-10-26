@@ -331,6 +331,10 @@ final class Htaccess
                 self::skip($state, $line, $body, 'target');
                 return;
             }
+            // mod_alias replaces the request's query with a query of the target's own (there is no QSA here).
+            if (str_contains($destination['to'], '?')) {
+                $destination['drop'] = true;
+            }
             $value = self::value($status, $destination);
         }
         if (self::store($state, [$path], $value, $line, $body) && !$anchored) {

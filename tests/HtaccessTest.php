@@ -359,6 +359,22 @@ expect(['alt' => ['to' => 'https://target.example/new', 'query' => 'drop']],
     Htaccess::convert('RewriteRule ^alt$ https://target.example/new? [R=301,L]')['entries'],
     'external target with a trailing ? → drop (unchanged)');
 
+/* Redirect family: mod_alias replaces the request's query with a target query of its own, too (no QSA here) */
+$own = ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop'];
+foreach ([
+    'Redirect 301 /a https://target.example/new?mode=fixed' => ['a' => $own],
+    'RedirectPermanent /a https://target.example/new?mode=fixed' => ['a' => $own],
+    'RedirectTemp /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+    'Redirect /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+    'RedirectMatch 301 ^/a$ https://target.example/new?mode=fixed' => ['a' => $own],
+    'RedirectMatch 308 ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 308, 'query' => 'drop']],
+    'RedirectMatch ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+    'Redirect 301 /a https://target.example/new' => ['a' => 'https://target.example/new'],
+    'RedirectMatch 301 ^/a$ https://target.example/new' => ['a' => 'https://target.example/new'],
+] as $rule => $expected) {
+    expect($expected, Htaccess::convert($rule)['entries'], "$rule → own target query dropped, plain target kept");
+}
+
 /* ------------------------------------------------------------------------
  * RewriteCond (%{QUERY_STRING}) groups
  * --------------------------------------------------------------------- */

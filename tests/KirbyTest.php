@@ -325,6 +325,14 @@ withSite(function (string $tmp): void {
     expect('https://target.example/new?mode=fixed',
         hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/replace')[2],
         'converted RewriteRule with target query, no QSA: request query not appended');
+    hikkoshi_write_config($tmp, Hikkoshi\Htaccess::convert('Redirect 301 /alt https://target.example/new?mode=fixed')['entries']
+        + Hikkoshi\Htaccess::convert('RedirectMatch 301 ^/match$ https://target.example/new?mode=fixed')['entries']);
+    expect('https://target.example/new?mode=fixed',
+        hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/alt')[2],
+        'converted Redirect with target query: request query not appended');
+    expect('https://target.example/new?mode=fixed',
+        hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/match')[2],
+        'converted RedirectMatch with target query: request query not appended');
 });
 
 /* --- 6. query conditions ------------------------------------------------- */
