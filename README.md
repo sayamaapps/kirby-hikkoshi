@@ -14,19 +14,31 @@ Checked redirects for [Kirby CMS](https://getkirby.com) after a site has moved.
 
 ## Requirements
 
-- PHP 8.2–8.4 with the `mbstring` extension, and Kirby 5
+Kirby 5 · PHP 8.2 to 8.5 · `mbstring` extension
+
+The `intl` extension is optional: with it, umlauts in paths are compared in their normalised form.
 
 ## Installation
+
+Pick one of three ways. Each puts the plugin into `site/plugins/hikkoshi/`.
+
+**Composer** (the folder is then managed by Composer; add it to `.gitignore` and deploy it like `vendor/`):
 
 ```sh
 composer require sayamaapps/kirby-hikkoshi
 ```
 
-Composer installs to `site/plugins/hikkoshi/`. Add that path to `.gitignore` and deploy it like `vendor/`.
+**ZIP:** download the release archive from the GitHub releases page and unpack it to `site/plugins/hikkoshi/`. The archive contains the runtime files only.
+
+**Git submodule:**
+
+```sh
+git submodule add https://github.com/sayamaapps/kirby-hikkoshi.git site/plugins/hikkoshi
+```
 
 ## Usage
 
-Hikkoshi is off until you set `'hikkoshi.active' => true` in `site/config/config.php`. Then create `site/config/hikkoshi.php`, which maps old address to new address (the package ships a template as `config/hikkoshi.example.php`):
+Hikkoshi is off until you set `'sayamaapps.hikkoshi.active' => true` in `site/config/config.php`. Then create `site/config/hikkoshi.php`, which maps old address to new address (the package ships a template as `config/hikkoshi.example.php`):
 
 ```php
 <?php
@@ -37,14 +49,14 @@ return [
     '?page_id=82'      => 'impressum',
     'aktion'           => ['to' => 'produkte', 'status' => 302, 'query' => 'drop'],
     'gewinnspiel-2019' => 410,
-    'partner'          => 'https://partner.example/start', // needs hikkoshi.allowedHosts
+    'partner'          => 'https://partner.example/start', // needs sayamaapps.hikkoshi.allowedHosts
 ];
 ```
 
 ### Keys and values
 
 - **Keys** are old paths such as `'ueber-uns'` or `'downloads/karte.pdf'`. **Query conditions** follow the `?`: `'?page_id=82'`, or `'?feed'` (parameter present, any value). The home page needs a query condition.
-- **Values** are a page id (`'team'`, `'home'`), `410`, an array with `to`, `status` and `query`, or an external URL whose host is listed in `hikkoshi.allowedHosts`. `410` answers with the snippet `hikkoshi/gone`; to restyle it, create `site/snippets/hikkoshi/gone.php`, which receives `$title` and `$text` (escape them).
+- **Values** are a page id (`'team'`, `'home'`), `410`, an array with `to`, `status` and `query`, or an external URL whose host is listed in `sayamaapps.hikkoshi.allowedHosts`. `410` answers with the snippet `hikkoshi/gone`; to restyle it, create `site/snippets/hikkoshi/gone.php`, which receives `$title` and `$text` (escape them).
 - Targets are lowercase page ids: `'/kontakt'` and `'kontakt.html'` are errors. Numeric keys such as `2024` are errors too; write `'archiv/2024'`.
 
 ### Matching
@@ -62,7 +74,7 @@ The exact pass comes first. If nothing matches, one suffix (`html`, `htm`, `php`
 - `$site->hikkoshiResolve($path, $query = [])`: the decision for a path and query (`status`, `location`, `page`), or `null`.
 - `$site->hikkoshiCheck($render = true)`: findings for the site test; `[]` when all is well.
 - `$page->hikkoshiSources()`: the old paths that redirect to this page.
-- `hikkoshi_option('language')` reads any `hikkoshi.*` option in your templates.
+- `Sayamaapps\Hikkoshi\Options::get($kirby, 'language')` reads any option in your templates (`hikkoshi_option()` is deprecated).
 
 ## Options
 
@@ -82,6 +94,18 @@ Each option is read as `hikkoshi.<name>`, flat or nested. `null` means "not set"
 | `suffixes` | `['html', 'htm', 'php']` | Suffixes removed in the second pass. `[]` turns it off. |
 | `indexFiles` | `['index.php', 'index.html', 'index.htm']` | Last segments removed in the second pass (`blog/index.php` becomes `blog`). `[]` turns it off. |
 | `language` | site language | `en` or `de`, for messages and the 410 page. Default: site language, then `locale`, then English. |
+
+## Deprecations
+
+Removed in 2.0; each still works in 1.x.
+
+| 1.x | Use instead |
+|---|---|
+| `hikkoshi.<option>` (every option) | `sayamaapps.hikkoshi.<option>` |
+| `hikkoshi_option($key, $default)` | `Sayamaapps\Hikkoshi\Options::get($kirby, $key, $default)` |
+| `Hikkoshi\*` classes (`Hikkoshi\Validator`, `Hikkoshi\ConfigException`, …) | `Sayamaapps\Hikkoshi\*` (same classes; the old names are aliases) |
+
+Deprecations are raised only with Kirby's `debug` option on, so a site sees them while it is set up.
 
 ## Validation
 
@@ -141,4 +165,4 @@ Tests: `composer test`. Issues and pull requests are welcome, without a support 
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE.md](LICENSE.md).
