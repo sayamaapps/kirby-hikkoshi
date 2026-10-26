@@ -49,7 +49,7 @@ final class KirbyTest extends TestCase
 			expect(404, $status, 'off by default: /menue is 404 even with a list file');
 			expect(null, $location, 'off by default: /menue has no Location');
 
-			$yes = hikkoshi_kirby($tmp, ['hikkoshi.active' => 'yes']);
+			$yes = hikkoshi_kirby($tmp, ['sayamaapps.hikkoshi.active' => 'yes']);
 			expect([], $yes->site()->hikkoshiRedirects(), '"yes" does not switch Hikkoshi on');
 			expect(404, hikkoshi_render($yes, '/menue')[0], '"yes": /menue is still 404');
 
@@ -200,12 +200,12 @@ final class KirbyTest extends TestCase
 			// The option hikkoshi.redirects, as an array and as a Closure, beats the files.
 			expect(
 				'http://example.invalid/speisekarte',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.redirects' => ['menue' => 'speisekarte']])), '/menue')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.redirects' => ['menue' => 'speisekarte']])), '/menue')[2],
 				'option array beats the files'
 			);
 			expect(
 				'http://example.invalid/speisekarte',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.redirects' => fn () => ['menue' => 'speisekarte']])), '/menue')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.redirects' => fn () => ['menue' => 'speisekarte']])), '/menue')[2],
 				'option Closure beats the files'
 			);
 
@@ -213,14 +213,14 @@ final class KirbyTest extends TestCase
 			hikkoshi_write_config($tmp, ['menue' => 'speisekarte'], 'liste.php');
 			expect(
 				'http://example.invalid/speisekarte',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.file' => 'liste.php'])), '/menue')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.file' => 'liste.php'])), '/menue')[2],
 				'hikkoshi.file relative to site/config'
 			);
 			@mkdir($tmp . '/elsewhere', 0700, true);
 			file_put_contents($tmp . '/elsewhere/absolut.php', '<?php return ' . var_export(['menue' => 'produkte'], true) . ';');
 			expect(
 				'http://example.invalid/produkte',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.file' => $tmp . '/elsewhere/absolut.php'])), '/menue')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.file' => $tmp . '/elsewhere/absolut.php'])), '/menue')[2],
 				'hikkoshi.file absolute'
 			);
 
@@ -231,7 +231,7 @@ final class KirbyTest extends TestCase
 			holds(str_contains($body, 'hikkoshi-gone-title'), '410 body uses the gone snippet');
 			holds(str_contains($body, 'Page removed'), '410 body is English by default');
 			expect(null, $location, '410 has no Location');
-			[$status, $body] = hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.language' => 'de'])), '/karte-alt');
+			[$status, $body] = hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.language' => 'de'])), '/karte-alt');
 			expect(410, $status, '410 with hikkoshi.language de');
 			holds(str_contains($body, 'Seite entfernt'), '410 body is German with hikkoshi.language de');
 
@@ -264,7 +264,7 @@ final class KirbyTest extends TestCase
 			hikkoshi_write_config($tmp, ['menue' => 'speisekarte']);
 			expect(
 				'http://example.invalid/speisekarte',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.query' => 'drop']), ktRequest(['utm_source' => 'qr'])), '/menue')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.query' => 'drop']), ktRequest(['utm_source' => 'qr'])), '/menue')[2],
 				'hikkoshi.query drop: no query on the target'
 			);
 
@@ -272,7 +272,7 @@ final class KirbyTest extends TestCase
 			hikkoshi_write_config($tmp, ['extern' => 'https://other.example/x']);
 			expect(
 				'https://other.example/x?utm_source=qr',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['other.example']]), ktRequest(['utm_source' => 'qr'])), '/extern')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.allowedHosts' => ['other.example']]), ktRequest(['utm_source' => 'qr'])), '/extern')[2],
 				'external target with allowedHosts: location exact, query kept'
 			);
 			// Without the allow-list the App cannot be built: every request is a 500.
@@ -288,7 +288,7 @@ final class KirbyTest extends TestCase
 			hikkoshi_write_config($tmp, ['extern' => 'HTTPS://other.example/x']);
 			expect(
 				[301, 'https://other.example/x'],
-				(static fn (array $r) => [$r[0], $r[2]])(hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => 'other.example']), ktRequest([])), '/extern')),
+				(static fn (array $r) => [$r[0], $r[2]])(hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.allowedHosts' => 'other.example']), ktRequest([])), '/extern')),
 				'external target with uppercase scheme and allowedHosts as a string: 301, lowercase location'
 			);
 
@@ -297,19 +297,19 @@ final class KirbyTest extends TestCase
 			hikkoshi_write_config($tmp, Sayamaapps\Hikkoshi\Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R=301,L]')['entries']);
 			expect(
 				'https://target.example/new?mode=fixed',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/replace')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/replace')[2],
 				'converted RewriteRule with target query, no QSA: request query not appended'
 			);
 			hikkoshi_write_config($tmp, Sayamaapps\Hikkoshi\Htaccess::convert('Redirect 301 /alt https://target.example/new?mode=fixed')['entries']
 				+ Sayamaapps\Hikkoshi\Htaccess::convert('RedirectMatch 301 ^/match$ https://target.example/new?mode=fixed')['entries']);
 			expect(
 				'https://target.example/new?mode=fixed',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/alt')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/alt')[2],
 				'converted Redirect with target query: request query not appended'
 			);
 			expect(
 				'https://target.example/new?mode=fixed',
-				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/match')[2],
+				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/match')[2],
 				'converted RedirectMatch with target query: request query not appended'
 			);
 		});
@@ -361,7 +361,7 @@ final class KirbyTest extends TestCase
 				expect($location, $actual, "$old: location");
 			}
 
-			$exact = hikkoshi_kirby($tmp, ktOn(['hikkoshi.lowercase' => false]));
+			$exact = hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.lowercase' => false]));
 			expect(404, hikkoshi_render($exact, '/Impressum.html')[0], 'hikkoshi.lowercase false: /Impressum.html is 404');
 		});
 
@@ -419,7 +419,7 @@ final class KirbyTest extends TestCase
 			hikkoshi_write_config($tmp, ['menue' => 'speisekarte']);
 			$kirby = null;
 			$logged = withErrorLog($tmp, function () use ($tmp, &$kirby): void {
-				$kirby = hikkoshi_kirby($tmp, ktOn(['hikkoshi.status' => 200]));
+				$kirby = hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.status' => 200]));
 			});
 			holds(str_contains($logged, 'hikkoshi.status'), 'status 200: the problem is in the error log');
 			expect(1, substr_count($logged, 'hikkoshi.status'), 'status 200: logged once');
@@ -429,7 +429,7 @@ final class KirbyTest extends TestCase
 			// With debug on, a broken option throws instead of being logged.
 			$thrown = null;
 			try {
-				hikkoshi_kirby($tmp, ktOn(['hikkoshi.status' => 200, 'debug' => true]));
+				hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.status' => 200, 'debug' => true]));
 			} catch (InvalidArgumentException $e) {
 				$thrown = $e;
 			}
@@ -455,7 +455,7 @@ function withErrorLog(string $tmp, callable $fn): string
 /** Options with the master switch on. */
 function ktOn(array $extra = []): array
 {
-	return array_merge(['hikkoshi.active' => true], $extra);
+	return array_merge(['sayamaapps.hikkoshi.active' => true], $extra);
 }
 
 /** A request with a query, for hikkoshi_kirby(). */

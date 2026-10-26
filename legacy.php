@@ -23,6 +23,9 @@ $hikkoshiLegacyClasses = [
 ];
 
 foreach ($hikkoshiLegacyClasses as $hikkoshiLegacyClass) {
+	// Loads the class first: some files declare their own alias when they load (see
+	// src/Validator.php), and a second alias of the same name would be an error.
+	class_exists('Sayamaapps\\Hikkoshi\\' . $hikkoshiLegacyClass);
 	if (class_exists('Hikkoshi\\' . $hikkoshiLegacyClass, false) === false) {
 		class_alias('Sayamaapps\\Hikkoshi\\' . $hikkoshiLegacyClass, 'Hikkoshi\\' . $hikkoshiLegacyClass);
 	}

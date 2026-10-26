@@ -3,20 +3,24 @@
 namespace Sayamaapps\Hikkoshi;
 
 use Kirby\Cms\App;
+use Kirby\Cms\Helpers;
 
 /**
- * Reads `hikkoshi.*` options (SPEC.md §4).
+ * Reads the plugin's options (SPEC.md §4): `sayamaapps.hikkoshi.<key>`, falling
+ * back to the 1.x name `hikkoshi.<key>` with a deprecation.
  *
  * `null` counts as "not set", like Kirby's own option(), so
- * `'hikkoshi.status' => null` falls back to the default.
+ * `'sayamaapps.hikkoshi.status' => null` falls back to the default.
  *
- * Both spellings work, flat (`'hikkoshi.active' => true`) and nested
- * (`'hikkoshi' => ['active' => true]`), because Kirby's option() finds both.
+ * Both spellings work, flat (`'sayamaapps.hikkoshi.active' => true`) and nested
+ * (`'sayamaapps' => ['hikkoshi' => ['active' => true]]`), because Kirby's
+ * option() finds both.
  *
- * Defaults live in DEFAULTS and are given at the call sites, never in an
- * `options` block of the plugin (Kirby would file them under
- * sayamaapps.hikkoshi.*). The CLI (no Kirby) reads DEFAULTS directly; the
- * file loads without Kirby because App is only a type in signatures.
+ * Defaults live in DEFAULTS and are given at the call sites. The `options`
+ * block of the plugin (config/options.php) lists the keys with null: a default
+ * there would hide the 1.x spelling. The CLI (no Kirby) reads DEFAULTS directly;
+ * the file loads without Kirby because App and Helpers are only used in
+ * signatures or in methods the CLI does not call.
  */
 final class Options
 {
@@ -38,7 +42,12 @@ final class Options
 
 	/** File names tried in site/config/ when `hikkoshi.redirects` and `hikkoshi.file` are not set, in this order. */
 	public const FILES = ['hikkoshi.php', 'weiterleitungen.php'];
-	public const PREFIX = 'hikkoshi.';
+
+	/** Option prefix of 1.x, read as a fallback until 2.0. */
+	public const LEGACY_PREFIX = 'hikkoshi.';
+
+	/** Option prefix since 2.0 (OPT-1). */
+	public const PREFIX = 'sayamaapps.hikkoshi.';
 
 	/** @var array<string, true> messages already written to the error log in this process */
 	private static array $logged = [];
@@ -72,7 +81,22 @@ final class Options
 
 	public static function get(App $kirby, string $key, mixed $default = null): mixed
 	{
-		return $kirby->option(self::PREFIX . $key) ?? $default;
+		$value = $kirby->option(self::PREFIX . $key);
+		if ($value !== null) {
+			return $value;
+		}
+
+		// The 1.x spelling still works, with a deprecation (README, Deprecations).
+		$legacy = $kirby->option(self::LEGACY_PREFIX . $key);
+		if ($legacy !== null) {
+			Helpers::deprecated(
+				'Hikkoshi: hikkoshi.' . $key . ' is deprecated, use ' . self::PREFIX . $key,
+				'option-prefix'
+			);
+			return $legacy;
+		}
+
+		return $default;
 	}
 
 	/**

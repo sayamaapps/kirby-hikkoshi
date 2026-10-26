@@ -70,7 +70,7 @@ final class SiteCheckTest extends TestCase
 			$GLOBALS['scList'] = ['menue' => 'speisekarte'];
 			$loop = null;
 			quietLog($tmp, function () use ($tmp, &$loop): void {
-				$loop = hikkoshi_kirby($tmp, ['hikkoshi.active' => true, 'hikkoshi.redirects' => fn () => $GLOBALS['scList']]);
+				$loop = hikkoshi_kirby($tmp, ['sayamaapps.hikkoshi.active' => true, 'sayamaapps.hikkoshi.redirects' => fn () => $GLOBALS['scList']]);
 			});
 			$GLOBALS['scList'] = ['a' => 'b', 'b' => 'a'];
 			expect(['loop'], codes($loop->site()->hikkoshiCheck()), 'loop: exactly [loop], no render checks');
@@ -90,7 +90,7 @@ final class SiteCheckTest extends TestCase
 
 		// --- closure list --------------------------------------------------------
 		withSite(function (string $tmp): void {
-			$kirby = hikkoshi_kirby($tmp, ['hikkoshi.active' => true, 'hikkoshi.redirects' => fn () => ['menue' => 'speisekarte']]);
+			$kirby = hikkoshi_kirby($tmp, ['sayamaapps.hikkoshi.active' => true, 'sayamaapps.hikkoshi.redirects' => fn () => ['menue' => 'speisekarte']]);
 			expect([], $kirby->site()->hikkoshiCheck(), "'hikkoshi.redirects' as a Closure works");
 		});
 
@@ -101,7 +101,7 @@ final class SiteCheckTest extends TestCase
 				'karte-alt' => 410,
 				'extern' => 'https://other.example/x',
 				'?page_id=82' => 'impressum',
-			], ['hikkoshi.allowedHosts' => ['other.example']]);
+			], ['sayamaapps.hikkoshi.allowedHosts' => ['other.example']]);
 			expect([], $kirby->site()->hikkoshiCheck(), 'a 410 entry, an allowed external target and a query condition give []');
 		});
 
@@ -172,7 +172,7 @@ final class SiteCheckTest extends TestCase
 			expect(['target' => 'gibtsnicht', 'entry' => "'menue' => 'gibtsnicht'"], $finding['values'], 'shape: values');
 			holds(str_contains($finding['message'], 'does not exist or is a draft'), 'shape: English message by default');
 
-			$german = scKirby($tmp, ['menue' => 'gibtsnicht'], ['hikkoshi.language' => 'de']);
+			$german = scKirby($tmp, ['menue' => 'gibtsnicht'], ['sayamaapps.hikkoshi.language' => 'de']);
 			$finding = $german->site()->hikkoshiCheck()[0] ?? [];
 			holds(str_contains((string)($finding['message'] ?? ''), 'existiert nicht oder ist ein Entwurf'), 'German message with hikkoshi.language de');
 			expect('page.missing', $finding['code'] ?? null, 'German: the same code');
@@ -198,7 +198,7 @@ function scKirby(string $tmp, array $list, array $extra = []): App
 	hikkoshi_write_config($tmp, $list);
 	$kirby = null;
 	quietLog($tmp, function () use ($tmp, $extra, &$kirby): void {
-		$kirby = hikkoshi_kirby($tmp, ['hikkoshi.active' => true] + $extra);
+		$kirby = hikkoshi_kirby($tmp, ['sayamaapps.hikkoshi.active' => true] + $extra);
 	});
 	return $kirby;
 }
