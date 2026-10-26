@@ -318,6 +318,21 @@ withSite(function (string $tmp): void {
     expect([301, 'https://other.example/x'],
         (static fn (array $r) => [$r[0], $r[2]])(hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => 'other.example']), ktRequest([])), '/extern')),
         'external target with uppercase scheme and allowedHosts as a string: 301, lowercase location');
+
+    // A converted RewriteRule with a query on its external target and no QSA: Apache replaces the
+    // request's query, so the route must not append it.
+    hikkoshi_write_config($tmp, Hikkoshi\Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R=301,L]')['entries']);
+    expect('https://target.example/new?mode=fixed',
+        hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/replace')[2],
+        'converted RewriteRule with target query, no QSA: request query not appended');
+    hikkoshi_write_config($tmp, Hikkoshi\Htaccess::convert('Redirect 301 /alt https://target.example/new?mode=fixed')['entries']
+        + Hikkoshi\Htaccess::convert('RedirectMatch 301 ^/match$ https://target.example/new?mode=fixed')['entries']);
+    expect('https://target.example/new?mode=fixed',
+        hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/alt')[2],
+        'converted Redirect with target query: request query not appended');
+    expect('https://target.example/new?mode=fixed',
+        hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/match')[2],
+        'converted RedirectMatch with target query: request query not appended');
 });
 
 /* --- 6. query conditions ------------------------------------------------- */

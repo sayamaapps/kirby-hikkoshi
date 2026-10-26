@@ -339,6 +339,42 @@ $r = Htaccess::convert('RewriteRule ^old$ /produkte?x=1 [R=301]');
 expect([[], 'target'], [$r['entries'], $r['skipped'][0]['reason'] ?? ''], 'target with its own query → target (the Validator accepts no ? in a page id)');
 expect(['alt' => ['to' => 'neu', 'status' => 307]], Htaccess::convert('RewriteRule ^alt$ /neu [R=307,L]')['entries'], 'R=307');
 
+/* An external target with a query of its own: Apache replaces the request's query unless QSA appends it */
+$r = Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R=301,L]');
+expect(['replace' => ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop']], $r['entries'], 'external target with its own query, no QSA → query drop');
+expect([[], []], [$r['skipped'], $r['partial']], 'external target with its own query → nothing skipped, no partial note');
+expect(['replace' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+    Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R,L]')['entries'],
+    'external target with its own query, R (302), no QSA → 302 array with drop');
+expect(['append' => 'https://target.example/new?mode=fixed'],
+    Htaccess::convert('RewriteRule ^append$ https://target.example/new?mode=fixed [R=301,QSA,L]')['entries'],
+    'external target with its own query and QSA → plain string (request query appended)');
+expect(['discard' => ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop']],
+    Htaccess::convert('RewriteRule ^discard$ https://target.example/new?mode=fixed [R=301,QSD,L]')['entries'],
+    'external target with its own query and QSD → drop (unchanged)');
+expect(['plain' => 'https://target.example/new'],
+    Htaccess::convert('RewriteRule ^plain$ https://target.example/new [R=301,L]')['entries'],
+    'external target without a query → plain string (unchanged)');
+expect(['alt' => ['to' => 'https://target.example/new', 'query' => 'drop']],
+    Htaccess::convert('RewriteRule ^alt$ https://target.example/new? [R=301,L]')['entries'],
+    'external target with a trailing ? → drop (unchanged)');
+
+/* Redirect family: mod_alias replaces the request's query with a target query of its own, too (no QSA here) */
+$own = ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop'];
+foreach ([
+    'Redirect 301 /a https://target.example/new?mode=fixed' => ['a' => $own],
+    'RedirectPermanent /a https://target.example/new?mode=fixed' => ['a' => $own],
+    'RedirectTemp /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+    'Redirect /a https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+    'RedirectMatch 301 ^/a$ https://target.example/new?mode=fixed' => ['a' => $own],
+    'RedirectMatch 308 ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 308, 'query' => 'drop']],
+    'RedirectMatch ^/a$ https://target.example/new?mode=fixed' => ['a' => ['to' => 'https://target.example/new?mode=fixed', 'status' => 302, 'query' => 'drop']],
+    'Redirect 301 /a https://target.example/new' => ['a' => 'https://target.example/new'],
+    'RedirectMatch 301 ^/a$ https://target.example/new' => ['a' => 'https://target.example/new'],
+] as $rule => $expected) {
+    expect($expected, Htaccess::convert($rule)['entries'], "$rule → own target query dropped, plain target kept");
+}
+
 /* ------------------------------------------------------------------------
  * RewriteCond (%{QUERY_STRING}) groups
  * --------------------------------------------------------------------- */

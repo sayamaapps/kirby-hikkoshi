@@ -474,8 +474,10 @@ accepted as 410 without target); **no `R` flag → ignored** (an internal
 rewrite is not a redirect: Kirby's own `index.php` rules produce no output).
 Flags of a redirect (R/G), case-insensitive: `QSD`/`QSDISCARD` → `query drop`
 (also with a trailing `?`: one drop; irrelevant for 410); a trailing `?` on
-the target drops too, unless `QSA`/`QSAPPEND` is set (it appends the request's
-query to the emptied one: `keep`; with QSD the drop wins); `L LAST END NC NOCASE
+the target drops too, and so does an external target with a query of its own
+(`https://…?x=1`) in RewriteRule, Redirect and RedirectMatch: Apache replaces the
+request's query with the target's. In a RewriteRule, `QSA`/`QSAPPEND` keeps the
+request's query (appended: `keep`); with QSD the drop wins. `L LAST END NC NOCASE
 NE NOESCAPE E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
 PASSTHROUGH` are ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
 unknown) → `flag`. Rules without R/G are not judged by their flags.
