@@ -3,7 +3,18 @@
     "description": "Checked redirects for Kirby CMS: old addresses, tolerant matching and 410 for removed pages.",
     "type": "kirby-plugin",
     "license": "MIT",
-    "keywords": ["kirby", "kirby-plugin", "kirby-5", "redirects", "301", "migration", "jimdo", "wix", "wordpress", "htaccess"],
+    "keywords": [
+        "kirby",
+        "kirby-plugin",
+        "kirby-5",
+        "redirects",
+        "301",
+        "migration",
+        "jimdo",
+        "wix",
+        "wordpress",
+        "htaccess"
+    ],
     "homepage": "https://github.com/sayamaapps/kirby-hikkoshi",
     "authors": [
         {
@@ -21,11 +32,14 @@
         "getkirby/composer-installer": "^1.2"
     },
     "require-dev": {
-        "getkirby/cms": "^5.0"
+        "getkirby/cms": "^5.0",
+        "phpunit/phpunit": "11.5.55"
     },
-    "bin": ["bin/hikkoshi"],
+    "bin": [
+        "bin/hikkoshi"
+    ],
     "scripts": {
-        "test": "sh tests/run.sh"
+        "test": "vendor/bin/phpunit"
     },
     "config": {
         "optimize-autoloader": true,

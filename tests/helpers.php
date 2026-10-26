@@ -5,39 +5,24 @@
  *   require_once __DIR__ . '/helpers.php';
  *
  * Loads NO src file: Kirby-free tests require the classes they need
- * themselves (src/I18n.php and src/Path.php first), Kirby tests load the
- * plugin through Kirby (hikkoshi_site()). That way a class is never declared
- * twice.
+ * themselves, Kirby tests load the plugin through Kirby (hikkoshi_site()).
  *
- * Every test file: call expect()/holds() as often as needed, then
- * finish('Suite name') at the end — it prints all failures and exits 1, or
- * prints the count and exits 0. A failing check does not stop the file, so
- * one run shows every problem.
+ * Every test class runs its checks in testSuite(): expect() and holds()
+ * are PHPUnit assertions, so one run reports every failing check.
  */
 
-$GLOBALS['hikkoshiChecks'] = 0;
-$GLOBALS['hikkoshiFailures'] = [];
+use PHPUnit\Framework\Assert;
 
-/** Strict comparison ($expected === $actual). */
+/** Strict comparison ($expected === $actual), counted as one PHPUnit assertion. */
 function expect(mixed $expected, mixed $actual, string $what): void
 {
-    $GLOBALS['hikkoshiChecks']++;
-    if ($expected !== $actual) {
-        $GLOBALS['hikkoshiFailures'][] = sprintf(
-            "  ✗ %s\n      expected: %s\n      actual:   %s",
-            $what,
-            var_export($expected, true),
-            var_export($actual, true)
-        );
-    }
+    Assert::assertSame($expected, $actual, $what);
 }
 
+/** A boolean check, counted as one PHPUnit assertion. */
 function holds(bool $ok, string $what): void
 {
-    $GLOBALS['hikkoshiChecks']++;
-    if (!$ok) {
-        $GLOBALS['hikkoshiFailures'][] = '  ✗ ' . $what;
-    }
+    Assert::assertTrue($ok, $what);
 }
 
 /** Only these keys of an array, in this order (for comparing parts of an entry or finding). */
@@ -56,17 +41,15 @@ function codes(array $findings): array
     return array_values(array_map(static fn (array $f) => $f['code'], $findings));
 }
 
-/** Prints the result and exits: 0 when every check passed, 1 otherwise. */
-function finish(string $suite): never
+/** Runs $fn with a fresh throwaway site directory, removes it afterwards. */
+function withSite(callable $fn): void
 {
-    $failures = $GLOBALS['hikkoshiFailures'];
-    $checks = $GLOBALS['hikkoshiChecks'];
-    if ($failures !== []) {
-        fwrite(STDERR, "$suite: " . count($failures) . " of $checks checks failed\n" . implode("\n", $failures) . "\n");
-        exit(1);
+    $tmp = hikkoshi_site();
+    try {
+        $fn($tmp);
+    } finally {
+        hikkoshi_remove_tree($tmp);
     }
-    echo "$suite: all $checks checks passed\n";
-    exit(0);
 }
 
 /* --------------------------------------------------------------------------
