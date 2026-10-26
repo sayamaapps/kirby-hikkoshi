@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * `hikkoshi check [FILE] [--lang=..] [--resolve-chains] [--allow-host=..] [--strict]`

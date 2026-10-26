@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * Path normalisation and the character rules for old paths and targets,
@@ -174,4 +174,9 @@ final class Path
 		}
 		return null;
 	}
+}
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\Path', false) === false) {
+	class_alias(Path::class, 'Hikkoshi\\Path');
 }

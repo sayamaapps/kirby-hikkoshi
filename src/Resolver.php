@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * Matches a request (path + query) against validated entries, Kirby-free

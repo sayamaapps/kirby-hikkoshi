@@ -15,8 +15,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
-use Hikkoshi\ConfigException;
 use Kirby\Cms\App;
+use Sayamaapps\Hikkoshi\ConfigException;
 
 /** The pre-1.0 list without the draft target and the team entry. */
 const SC_CLEAN_LIST = [
@@ -43,7 +43,7 @@ final class SiteCheckTest extends TestCase
 		withSite(function (string $tmp): void {
 			$kirby = scKirby($tmp, SC_CLEAN_LIST);
 			expect([], $kirby->site()->hikkoshiCheck(), 'the clean list (without the draft and team) gives []');
-			expect([], \Hikkoshi\SiteCheck::run($kirby), 'SiteCheck::run() gives [] as well');
+			expect([], \Sayamaapps\Hikkoshi\SiteCheck::run($kirby), 'SiteCheck::run() gives [] as well');
 		});
 
 		// --- missing and draft targets -------------------------------------------
@@ -64,7 +64,7 @@ final class SiteCheckTest extends TestCase
 			expect('warning', $findings[0]['level'] ?? null, 'chain: the chain finding is a warning');
 			expect('error', $findings[1]['level'] ?? null, 'chain: check.hop is an error');
 
-			expect(['chain'], codes(\Hikkoshi\SiteCheck::run($chain, false)), 'run(false) skips the render checks: [chain] only');
+			expect(['chain'], codes(\Sayamaapps\Hikkoshi\SiteCheck::run($chain, false)), 'run(false) skips the render checks: [chain] only');
 
 			// A loop is found when the App is built with a valid list, the list is then swapped.
 			$GLOBALS['scList'] = ['menue' => 'speisekarte'];

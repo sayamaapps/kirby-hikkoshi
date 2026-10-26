@@ -16,14 +16,9 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
-require_once __DIR__ . '/../src/Options.php';
-require_once __DIR__ . '/../src/Path.php';
-require_once __DIR__ . '/../src/ConfigException.php';
-require_once __DIR__ . '/../src/Validator.php';
-require_once __DIR__ . '/../src/Resolver.php';
-use Hikkoshi\Options;
-use Hikkoshi\Resolver;
-use Hikkoshi\Validator;
+use Sayamaapps\Hikkoshi\Options;
+use Sayamaapps\Hikkoshi\Resolver;
+use Sayamaapps\Hikkoshi\Validator;
 
 #[CoversNothing]
 final class ResolverTest extends TestCase

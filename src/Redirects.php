@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 use Kirby\Cms\App;
 use Kirby\Cms\Page;

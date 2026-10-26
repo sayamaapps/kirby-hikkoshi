@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 use Kirby\Cms\App;
 
@@ -229,4 +229,9 @@ final class Options
 		}
 		return array_values(array_unique($list));
 	}
+}
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\Options', false) === false) {
+	class_alias(Options::class, 'Hikkoshi\\Options');
 }

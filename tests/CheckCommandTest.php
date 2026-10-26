@@ -11,15 +11,8 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
-require_once __DIR__ . '/../src/Options.php';
-require_once __DIR__ . '/../src/Path.php';
-require_once __DIR__ . '/../src/ConfigException.php';
-require_once __DIR__ . '/../src/Validator.php';
-require_once __DIR__ . '/../src/Htaccess.php';
-require_once __DIR__ . '/../src/CheckCommand.php';
-require_once __DIR__ . '/../src/ConvertCommand.php';
-use Hikkoshi\CheckCommand;
-use Hikkoshi\I18n;
+use Sayamaapps\Hikkoshi\CheckCommand;
+use Sayamaapps\Hikkoshi\I18n;
 
 #[CoversNothing]
 final class CheckCommandTest extends TestCase

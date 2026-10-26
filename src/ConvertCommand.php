@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * `hikkoshi convert FILE [--lang=..]` — prints the Hikkoshi list as PHP to

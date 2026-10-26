@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * Converts Apache redirect rules into a Hikkoshi list, Kirby-free

@@ -25,8 +25,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
-use Hikkoshi\ConfigException;
 use Kirby\Cms\App;
+use Sayamaapps\Hikkoshi\ConfigException;
 
 /** Target paths of the pre-1.0 list render 200. */
 const KT_TARGET_PATHS = ['/speisekarte', '/produkte', '/leistungen/beratung', '/'];
@@ -294,14 +294,14 @@ final class KirbyTest extends TestCase
 
 			// A converted RewriteRule with a query on its external target and no QSA: Apache replaces the
 			// request's query, so the route must not append it.
-			hikkoshi_write_config($tmp, Hikkoshi\Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R=301,L]')['entries']);
+			hikkoshi_write_config($tmp, Sayamaapps\Hikkoshi\Htaccess::convert('RewriteRule ^replace$ https://target.example/new?mode=fixed [R=301,L]')['entries']);
 			expect(
 				'https://target.example/new?mode=fixed',
 				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/replace')[2],
 				'converted RewriteRule with target query, no QSA: request query not appended'
 			);
-			hikkoshi_write_config($tmp, Hikkoshi\Htaccess::convert('Redirect 301 /alt https://target.example/new?mode=fixed')['entries']
-				+ Hikkoshi\Htaccess::convert('RedirectMatch 301 ^/match$ https://target.example/new?mode=fixed')['entries']);
+			hikkoshi_write_config($tmp, Sayamaapps\Hikkoshi\Htaccess::convert('Redirect 301 /alt https://target.example/new?mode=fixed')['entries']
+				+ Sayamaapps\Hikkoshi\Htaccess::convert('RedirectMatch 301 ^/match$ https://target.example/new?mode=fixed')['entries']);
 			expect(
 				'https://target.example/new?mode=fixed',
 				hikkoshi_render(hikkoshi_kirby($tmp, ktOn(['hikkoshi.allowedHosts' => ['target.example']]), ktRequest(['campaign' => 'sample'])), '/alt')[2],

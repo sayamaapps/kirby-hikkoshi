@@ -8,7 +8,7 @@
  */
 $title ??= '';
 $text ??= '';
-$lang = \Hikkoshi\I18n::language();
+$lang = \Sayamaapps\Hikkoshi\I18n::language();
 ?><!DOCTYPE html>
 <html lang="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
 <head>

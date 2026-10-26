@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
-use Hikkoshi\I18n;
+use Sayamaapps\Hikkoshi\I18n;
 
 #[CoversNothing]
 final class I18nTest extends TestCase

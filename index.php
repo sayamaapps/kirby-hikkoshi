@@ -1,26 +1,15 @@
 <?php
 
 use Kirby\Cms\App;
+use Kirby\Filesystem\F;
 
-require_once __DIR__ . '/src/I18n.php';
-require_once __DIR__ . '/src/Options.php';
-require_once __DIR__ . '/src/Path.php';
-require_once __DIR__ . '/src/ConfigException.php';
-require_once __DIR__ . '/src/Validator.php';
-require_once __DIR__ . '/src/Resolver.php';
-require_once __DIR__ . '/src/Redirects.php';
-require_once __DIR__ . '/src/SiteCheck.php';
-// Kirby-free, also used by bin/hikkoshi; loaded here so a site's test suite
-// can call Hikkoshi\Htaccess::convert() without extra requires.
-require_once __DIR__ . '/src/Htaccess.php';
-// CLI commands (bin/hikkoshi); declared here too so every src file is loaded from one place.
-require_once __DIR__ . '/src/CheckCommand.php';
-require_once __DIR__ . '/src/ConvertCommand.php';
+F::loadClasses(require __DIR__ . '/autoload.php', __DIR__);
+require_once __DIR__ . '/legacy.php';
 
-use Hikkoshi\I18n;
-use Hikkoshi\Options;
-use Hikkoshi\Redirects;
-use Hikkoshi\SiteCheck;
+use Sayamaapps\Hikkoshi\I18n;
+use Sayamaapps\Hikkoshi\Options;
+use Sayamaapps\Hikkoshi\Redirects;
+use Sayamaapps\Hikkoshi\SiteCheck;
 
 /**
  * Hikkoshi (引っ越し — moving house): redirects from the old addresses of a
@@ -72,7 +61,7 @@ App::plugin('sayamaapps/hikkoshi', [
 	/**
 	 * One catch-all GET|HEAD route (SPEC.md §3.4) that answers for old paths
 	 * and calls $this->next() for everything else. [] while Hikkoshi is off.
-	 * A list with errors throws Hikkoshi\ConfigException here, so EVERY
+	 * A list with errors throws Sayamaapps\Hikkoshi\ConfigException here, so EVERY
 	 * request fails (500) instead of one entry being skipped silently — the
 	 * pre-1.0 behaviour, kept on purpose (SPEC.md §10).
 	 */

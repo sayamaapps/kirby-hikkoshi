@@ -10,13 +10,8 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
-require_once __DIR__ . '/../src/Options.php';
-require_once __DIR__ . '/../src/Path.php';
-require_once __DIR__ . '/../src/ConfigException.php';
-require_once __DIR__ . '/../src/Validator.php';
-require_once __DIR__ . '/../src/Htaccess.php';
-use Hikkoshi\Htaccess;
-use Hikkoshi\I18n;
+use Sayamaapps\Hikkoshi\Htaccess;
+use Sayamaapps\Hikkoshi\I18n;
 
 /**
  * A WordPress rewrite section: query-string redirects, the www rule and the

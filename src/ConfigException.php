@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * A redirect list with at least one error-level finding (SPEC.md §3.2.3).
@@ -42,4 +42,9 @@ final class ConfigException extends \LogicException
 	{
 		return $this->findings;
 	}
+}
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\ConfigException', false) === false) {
+	class_alias(ConfigException::class, 'Hikkoshi\\ConfigException');
 }

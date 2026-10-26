@@ -9,8 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
-require_once __DIR__ . '/../src/Path.php';
-use Hikkoshi\Path;
+use Sayamaapps\Hikkoshi\Path;
 
 #[CoversNothing]
 final class PathTest extends TestCase

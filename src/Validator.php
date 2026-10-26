@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * Validates and normalises a redirect list, Kirby-free (SPEC.md §3.2).
@@ -353,4 +353,9 @@ final class Validator
 
 		return ['entries' => array_values($entries), 'findings' => $findings];
 	}
+}
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\Validator', false) === false) {
+	class_alias(Validator::class, 'Hikkoshi\\Validator');
 }

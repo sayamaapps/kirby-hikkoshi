@@ -1,6 +1,6 @@
 <?php
 
-namespace Hikkoshi;
+namespace Sayamaapps\Hikkoshi;
 
 /**
  * Strings of the plugin, Kirby-free (SPEC.md §5).
@@ -93,4 +93,9 @@ final class I18n
 		}
 		return self::$tables[$language] ??= require dirname(__DIR__) . '/translations/' . $language . '.php';
 	}
+}
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\I18n', false) === false) {
+	class_alias(I18n::class, 'Hikkoshi\\I18n');
 }
