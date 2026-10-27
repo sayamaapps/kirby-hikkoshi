@@ -41,15 +41,47 @@ function codes(array $findings): array
 	return array_values(array_map(static fn (array $f) => $f['code'], $findings));
 }
 
-/** Runs $fn with a fresh throwaway site directory, removes it afterwards. */
+/** Site directories made by hikkoshi_site(), removed by hikkoshi_teardown(). */
+final class HikkoshiTestDirs
+{
+	/** @var list<string> */
+	private static array $dirs = [];
+
+	public static function add(string $dir): void
+	{
+		self::$dirs[] = $dir;
+	}
+
+	public static function removeAll(): void
+	{
+		foreach (self::$dirs as $dir) {
+			Kirby\Filesystem\Dir::remove($dir);
+		}
+		self::$dirs = [];
+	}
+}
+
+/**
+ * Runs $fn with a fresh throwaway site directory. The directory stays until
+ * hikkoshi_teardown() runs, so a test that fails inside $fn still cleans up.
+ */
 function withSite(callable $fn): void
 {
-	$tmp = hikkoshi_site();
-	try {
-		$fn($tmp);
-	} finally {
-		Kirby\Filesystem\Dir::remove($tmp);
-	}
+	$fn(hikkoshi_site());
+}
+
+/**
+ * Cleanup for a test class's tearDown(): destroys the Kirby app of the test and
+ * removes the site directories it made.
+ */
+function hikkoshi_teardown(): void
+{
+	Kirby\Cms\App::destroy();
+	// destroy() empties Kirby's plugin registry. Kirby includes a plugin file only once
+	// per process, and the site's symlinked plugin is the file already included, so the
+	// plugin file is loaded again here to register the plugin.
+	Kirby\Filesystem\F::load(dirname(__DIR__) . '/index.php', allowOutput: false);
+	HikkoshiTestDirs::removeAll();
 }
 
 /* --------------------------------------------------------------------------
@@ -61,7 +93,7 @@ function withSite(callable $fn): void
  * site/plugins/hikkoshi, templates (default prints "Page <id>", error prints
  * "Fixture 404"), a home page, an error page, and the pages of the pre-1.0
  * HTTP test: speisekarte, produkte, leistungen/beratung, team, and the DRAFT
- * produkt-b. Returns its path; removed by withSite() in a finally block.
+ * produkt-b. Returns its path; removed by hikkoshi_teardown().
  */
 function hikkoshi_site(): string
 {
@@ -78,6 +110,7 @@ function hikkoshi_site(): string
 		'site/config', 'site/plugins', 'site/snippets', 'site/templates', 'storage'] as $dir) {
 		mkdir($tmp . '/' . $dir, 0700, true);
 	}
+	HikkoshiTestDirs::add($tmp);
 	symlink($base, $tmp . '/site/plugins/hikkoshi');
 	file_put_contents($tmp . '/site/templates/default.php', '<?php echo "Page " . $page->id();');
 	file_put_contents($tmp . '/site/templates/error.php', 'Fixture 404');

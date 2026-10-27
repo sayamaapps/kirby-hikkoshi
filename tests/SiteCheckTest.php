@@ -32,6 +32,11 @@ const SC_CLEAN_LIST = [
 #[CoversClass(\Sayamaapps\Hikkoshi\Validator::class)]
 final class SiteCheckTest extends TestCase
 {
+	protected function tearDown(): void
+	{
+		hikkoshi_teardown();
+	}
+
 	public function testSuite(): void
 	{
 		// --- off -----------------------------------------------------------------

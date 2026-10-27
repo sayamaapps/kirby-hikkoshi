@@ -30,6 +30,11 @@ final class OptionsPrefixTest extends TestCase
 		return $messages;
 	}
 
+	protected function tearDown(): void
+	{
+		hikkoshi_teardown();
+	}
+
 	public function testDefaultWhenNotSet(): void
 	{
 		withSite(function (string $tmp): void {

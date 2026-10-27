@@ -42,6 +42,11 @@ const KT_TARGET_PATHS = ['/speisekarte', '/produkte', '/leistungen/beratung', '/
 #[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class KirbyTest extends TestCase
 {
+	protected function tearDown(): void
+	{
+		hikkoshi_teardown();
+	}
+
 	public function testSuite(): void
 	{
 		// --- 1. registered, off by default, translations, option helper -----------
