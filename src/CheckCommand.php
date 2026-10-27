@@ -34,7 +34,7 @@ class CheckCommand
 	 * @param resource $err
 	 * @return int exit code: 0 no errors, 1 errors (or warnings with --strict), 2 usage / file not found
 	 */
-	public static function run(array $args, $out, $err, string $cwd): int
+	public static function run(array $args, mixed $out, mixed $err, string $cwd): int
 	{
 		$file = null;
 		$resolveChains = false;

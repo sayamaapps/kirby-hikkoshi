@@ -21,7 +21,7 @@ class ConvertCommand
 	 * @param resource $err
 	 * @return int exit code: 0 all converted, 1 lines skipped or converted partially, 2 usage / file not found
 	 */
-	public static function run(array $args, $out, $err, string $cwd): int
+	public static function run(array $args, mixed $out, mixed $err, string $cwd): int
 	{
 		$file = null;
 		foreach ($args as $arg) {
