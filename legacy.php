@@ -6,23 +6,23 @@
  * Loaded once by index.php. Nothing here raises a deprecation at runtime: the
  * deprecations are in the README and in the docblocks (@deprecated).
  *
- * The `Hikkoshi\*` classes are aliased lazily: the first time a site uses such a
- * name, the class of the same name in Sayamaapps\Hikkoshi\ is loaded and aliased.
- * Loading this file therefore loads no class. A file that declares its own alias
- * (every src file does) is not aliased twice.
+ * The `Hikkoshi\*` names are declared eagerly. instanceof and catch do not
+ * autoload, so a name that is not declared yet would not match. Each class file
+ * declares its own alias when it loads (src/*.php), so each line only loads its
+ * class: a class_alias() here would run after that declaration and warn.
  */
 
-spl_autoload_register(static function (string $class): void {
-	if (str_starts_with($class, 'Hikkoshi\\') === false) {
-		return;
-	}
-
-	// Loading the new class runs its own alias declaration, when it has one.
-	$name = 'Sayamaapps\\' . $class;
-	if (class_exists($name) && class_exists($class, false) === false) {
-		class_alias($name, $class);
-	}
-});
+class_exists(\Sayamaapps\Hikkoshi\CheckCommand::class);
+class_exists(\Sayamaapps\Hikkoshi\ConfigException::class); // declares Hikkoshi\ConfigException itself
+class_exists(\Sayamaapps\Hikkoshi\ConvertCommand::class);
+class_exists(\Sayamaapps\Hikkoshi\Htaccess::class);
+class_exists(\Sayamaapps\Hikkoshi\I18n::class);
+class_exists(\Sayamaapps\Hikkoshi\Options::class);
+class_exists(\Sayamaapps\Hikkoshi\Path::class);
+class_exists(\Sayamaapps\Hikkoshi\Redirects::class);
+class_exists(\Sayamaapps\Hikkoshi\Resolver::class);
+class_exists(\Sayamaapps\Hikkoshi\SiteCheck::class);
+class_exists(\Sayamaapps\Hikkoshi\Validator::class);
 
 if (Kirby\Cms\Helpers::hasOverride('hikkoshi_option') === false) {
 	/**
