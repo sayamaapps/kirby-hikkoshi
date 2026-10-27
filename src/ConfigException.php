@@ -1,6 +1,8 @@
 <?php
 
-namespace Sayamaapps\Hikkoshi;
+namespace Hikkoshi;
+
+use Sayamaapps\Hikkoshi\Validator;
 
 /**
  * A redirect list with at least one error-level finding (docs/SPEC.md §3.2.3).
@@ -49,7 +51,8 @@ class ConfigException extends \LogicException
 	}
 }
 
-// 1.x name for sites that load this file directly, without the plugin (legacy.php).
-if (class_exists('Hikkoshi\\ConfigException', false) === false) {
-	class_alias(ConfigException::class, 'Hikkoshi\\ConfigException');
+// The class is thrown under its 1.x name, Hikkoshi\ConfigException (get_class(), uncaught output).
+// The 2.x-style name is an alias, declared when this file loads.
+if (class_exists('Sayamaapps\\Hikkoshi\\ConfigException', false) === false) {
+	class_alias(ConfigException::class, 'Sayamaapps\\Hikkoshi\\ConfigException');
 }

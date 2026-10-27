@@ -36,9 +36,9 @@ final class AutoloadTest extends TestCase
 		foreach (require dirname(__DIR__) . '/autoload.php' as $class => $path) {
 			$short = substr($class, strlen('sayamaapps\\hikkoshi\\'));
 			$this->assertSame(
-				strtolower('Sayamaapps\\Hikkoshi\\' . $short),
+				strtolower((new ReflectionClass('Sayamaapps\\Hikkoshi\\' . $short))->getName()),
 				strtolower((new ReflectionClass('Hikkoshi\\' . $short))->getName()),
-				'Hikkoshi\\' . $short . ' is an alias of the new class'
+				'Hikkoshi\\' . $short . ' and Sayamaapps\\Hikkoshi\\' . $short . ' are the same class'
 			);
 		}
 	}
@@ -57,5 +57,12 @@ final class AutoloadTest extends TestCase
 		}
 
 		$this->assertSame($expected, $map);
+	}
+
+	public function testTheExceptionKeepsItsOneXClassName(): void
+	{
+		require_once dirname(__DIR__) . '/legacy.php';
+
+		$this->assertSame('Hikkoshi\\ConfigException', (new ReflectionClass(\Sayamaapps\Hikkoshi\ConfigException::class))->getName());
 	}
 }
