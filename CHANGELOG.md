@@ -8,7 +8,7 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
-## [Unreleased]
+## [1.2.0] — 2026-10-27
 
 Compatible with 1.x: every 1.x name, option, message key and behaviour still works. The changes below that break a 1.x site are planned for 2.0 (see README).
 
