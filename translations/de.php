@@ -18,7 +18,7 @@ return [
 	'finding.entry.invalid'    => 'Ungültiger Eintrag: {entry}. Erlaubt sind eine Seiten-ID, 410 oder ein Array mit den Schlüsseln to, status und query.',
 	'finding.target.invalid'   => 'Ungültige Weiterleitung: {entry}',
 	'finding.target.missing'   => 'Eintrag ohne Ziel: {entry}',
-	'finding.target.foreign'   => 'Fremde Domain {host} ist als Ziel nicht erlaubt: {entry}. In sayamaapps.hikkoshi.allowedHosts eintragen.',
+	'finding.target.foreign'   => 'Fremde Domain {host} ist als Ziel nicht erlaubt: {entry}. In hikkoshi.allowedHosts eintragen.',
 	'finding.target.self'      => 'Weiterleitung auf sich selbst: {entry}',
 	'finding.status.invalid'   => 'Ungültiger Status {status}: {entry}. Erlaubt: 301, 302, 307, 308, 410.',
 	'finding.query.invalid'    => 'Ungültige Query-Einstellung {query}: {entry}. Erlaubt: keep, drop.',
@@ -26,7 +26,7 @@ return [
 	'finding.chain'            => 'Weiterleitungskette: {chain}. Das Ziel direkt eintragen.',
 	'finding.chain.resolved'   => 'Weiterleitungskette {chain} auf {target} aufgelöst.',
 
-	'finding.inactive'       => 'Hikkoshi ist aus: \'sayamaapps.hikkoshi.active\' => true setzen.',
+	'finding.inactive'       => 'Hikkoshi ist aus: \'hikkoshi.active\' => true setzen.',
 	'finding.page.missing'   => 'Zielseite {target} existiert nicht oder ist ein Entwurf: {entry}',
 	'finding.check.noMatch'  => 'Der alte Pfad {source} trifft seinen eigenen Eintrag nicht: {entry}',
 	'finding.check.status'   => '{source} antwortet mit {actual} statt {expected}',

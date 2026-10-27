@@ -25,7 +25,7 @@ return [
 	'finding.entry.invalid'    => 'Invalid entry: {entry}. Allowed are a page id, 410, or an array with the keys to, status and query.',
 	'finding.target.invalid'   => 'Invalid redirect: {entry}',
 	'finding.target.missing'   => 'Entry without target: {entry}',
-	'finding.target.foreign'   => 'Foreign domain {host} is not allowed as a target: {entry}. Add it to sayamaapps.hikkoshi.allowedHosts.',
+	'finding.target.foreign'   => 'Foreign domain {host} is not allowed as a target: {entry}. Add it to hikkoshi.allowedHosts.',
 	'finding.target.self'      => 'Redirect to itself: {entry}',
 	'finding.status.invalid'   => 'Invalid status {status}: {entry}. Allowed: 301, 302, 307, 308, 410.',
 	'finding.query.invalid'    => 'Invalid query setting {query}: {entry}. Allowed: keep, drop.',
@@ -34,7 +34,7 @@ return [
 	'finding.chain.resolved'   => 'Redirect chain {chain} resolved to {target}.',
 
 	// SiteCheck findings (docs/SPEC.md §3.6).
-	'finding.inactive'       => 'Hikkoshi is off: set \'sayamaapps.hikkoshi.active\' => true.',
+	'finding.inactive'       => 'Hikkoshi is off: set \'hikkoshi.active\' => true.',
 	'finding.page.missing'   => 'Target page {target} does not exist or is a draft: {entry}',
 	'finding.check.noMatch'  => 'The old path {source} does not match its own entry: {entry}',
 	'finding.check.status'   => '{source} answers {actual} instead of {expected}',
