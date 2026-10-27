@@ -180,6 +180,7 @@ The 1.x names (`Hikkoshi\Validator` and the others) are aliases in each class fi
 ## Design notes
 
 - The plugin's strings come from its own Kirby-free table (`src/I18n.php`), so a missing Kirby translation never shows English for a German message. The same strings are also registered as Kirby translations.
+- The 410 page takes its text from the same table, not from Kirby's `t()`. Kirby picks the translation by its own locale; Hikkoshi picks the language from `sayamaapps.hikkoshi.language`, then the site language, then the locale. The CLI and the validator need the same strings without Kirby. A site that wants its own 410 text uses `t('sayamaapps.hikkoshi.gone.title')` in its own snippet.
 - Defaults are passed at each option call, not in the `options` block of `config/options.php`. A default there would hide the 1.x spelling `hikkoshi.<name>`.
 
 ## Privacy
