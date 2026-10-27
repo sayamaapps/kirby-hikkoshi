@@ -11,7 +11,7 @@
  * Entries come from Validator::assert() with the default settings unless a
  * case says otherwise.
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
@@ -20,7 +20,9 @@ use Sayamaapps\Hikkoshi\Options;
 use Sayamaapps\Hikkoshi\Resolver;
 use Sayamaapps\Hikkoshi\Validator;
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\Resolver::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Validator::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Options::class)]
 final class ResolverTest extends TestCase
 {
 	public function testSuite(): void

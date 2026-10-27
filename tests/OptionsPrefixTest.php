@@ -1,6 +1,6 @@
 <?php
 
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Sayamaapps\Hikkoshi\Options;
 
@@ -9,7 +9,7 @@ use Sayamaapps\Hikkoshi\Options;
  * spelling hikkoshi.<key> is a fallback with a deprecation, and null counts as
  * not set.
  */
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\Options::class)]
 final class OptionsPrefixTest extends TestCase
 {
 	/** @return list<string> the messages of the E_USER_DEPRECATED errors raised by $fn */

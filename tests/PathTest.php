@@ -4,14 +4,14 @@
  * Path normalisation and character rules (src/Path.php), Kirby-free.
  *   php tests/PathTest.php
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
 use Sayamaapps\Hikkoshi\Path;
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\Path::class)]
 final class PathTest extends TestCase
 {
 	public function testSuite(): void

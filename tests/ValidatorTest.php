@@ -12,7 +12,7 @@
  * German expectations run after I18n::setLanguage('de'); the language is reset
  * to 'en' before finish().
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
@@ -21,7 +21,9 @@ use Sayamaapps\Hikkoshi\ConfigException;
 use Sayamaapps\Hikkoshi\I18n;
 use Sayamaapps\Hikkoshi\Validator;
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\Validator::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\ConfigException::class)]
 final class ValidatorTest extends TestCase
 {
 	public function testSuite(): void

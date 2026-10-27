@@ -5,14 +5,14 @@
  * English, no value is empty, and the helpers follow the language.
  *   php tests/I18nTest.php
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../src/I18n.php';
 use Sayamaapps\Hikkoshi\I18n;
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class I18nTest extends TestCase
 {
 	public function testSuite(): void

@@ -11,7 +11,7 @@
  * then), so the loop case builds the App with a valid list first and swaps
  * the list through a Closure option before the check runs.
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
@@ -27,7 +27,9 @@ const SC_CLEAN_LIST = [
 	'index.html' => 'home',
 ];
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\SiteCheck::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\ConfigException::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Validator::class)]
 final class SiteCheckTest extends TestCase
 {
 	public function testSuite(): void

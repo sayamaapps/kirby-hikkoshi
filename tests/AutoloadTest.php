@@ -1,13 +1,23 @@
 <?php
 
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * The class map in autoload.php matches src/: one entry per file, the file
  * name is the class name, and every class loads through the map.
  */
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\Options::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Validator::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Path::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Redirects::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Htaccess::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Resolver::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\SiteCheck::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\CheckCommand::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\ConvertCommand::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\ConfigException::class)]
 final class AutoloadTest extends TestCase
 {
 	public function testEveryEntryLoadsItsClass(): void

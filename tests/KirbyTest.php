@@ -21,7 +21,7 @@
  *
  *   php tests/KirbyTest.php
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
@@ -31,7 +31,15 @@ use Sayamaapps\Hikkoshi\ConfigException;
 /** Target paths of the pre-1.0 list render 200. */
 const KT_TARGET_PATHS = ['/speisekarte', '/produkte', '/leistungen/beratung', '/'];
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\Redirects::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Options::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Resolver::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Validator::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\SiteCheck::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\ConfigException::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Htaccess::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Path::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class KirbyTest extends TestCase
 {
 	public function testSuite(): void

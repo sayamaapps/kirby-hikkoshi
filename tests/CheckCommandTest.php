@@ -6,7 +6,7 @@
  * Runs CheckCommand::run() in-process on php://memory streams and a temp
  * directory, and the real bin/hikkoshi once per case through proc_open.
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
@@ -14,7 +14,9 @@ require_once __DIR__ . '/../src/I18n.php';
 use Sayamaapps\Hikkoshi\CheckCommand;
 use Sayamaapps\Hikkoshi\I18n;
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\CheckCommand::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Validator::class)]
 final class CheckCommandTest extends TestCase
 {
 	public function testSuite(): void

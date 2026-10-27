@@ -6,7 +6,7 @@
  * The converter must never write: every case checks that the temp directory
  * holds only the input file afterwards.
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
@@ -15,7 +15,9 @@ use Sayamaapps\Hikkoshi\ConvertCommand;
 use Sayamaapps\Hikkoshi\Htaccess;
 use Sayamaapps\Hikkoshi\I18n;
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\ConvertCommand::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\Htaccess::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class ConvertCommandTest extends TestCase
 {
 	public function testSuite(): void

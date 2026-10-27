@@ -5,7 +5,7 @@
  *
  *   php tests/HtaccessTest.php
  */
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/helpers.php';
@@ -119,7 +119,8 @@ const WORDPRESS_EXPECTED = [
 	'?feed' => ['to' => 'home', 'query' => 'drop'],
 ];
 
-#[CoversNothing]
+#[CoversClass(\Sayamaapps\Hikkoshi\Htaccess::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class HtaccessTest extends TestCase
 {
 	public function testSuite(): void

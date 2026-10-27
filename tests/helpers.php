@@ -48,7 +48,7 @@ function withSite(callable $fn): void
 	try {
 		$fn($tmp);
 	} finally {
-		hikkoshi_remove_tree($tmp);
+		Kirby\Filesystem\Dir::remove($tmp);
 	}
 }
 
@@ -61,8 +61,7 @@ function withSite(callable $fn): void
  * site/plugins/hikkoshi, templates (default prints "Page <id>", error prints
  * "Fixture 404"), a home page, an error page, and the pages of the pre-1.0
  * HTTP test: speisekarte, produkte, leistungen/beratung, team, and the DRAFT
- * produkt-b. Returns its path; remove it with hikkoshi_remove_tree() in a
- * finally block.
+ * produkt-b. Returns its path; removed by withSite() in a finally block.
  */
 function hikkoshi_site(): string
 {
@@ -163,16 +162,4 @@ function hikkoshi_page(string $tmp, string $dir, string $template, array $fields
 	}
 	@mkdir($tmp . '/content/' . $dir, 0700, true);
 	file_put_contents($tmp . '/content/' . $dir . '/' . $template . '.txt', implode("\n\n----\n\n", $lines) . "\n");
-}
-
-function hikkoshi_remove_tree(string $path): void
-{
-	if (!is_dir($path) || is_link($path)) {
-		return;
-	}
-	$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-	foreach ($it as $file) {
-		$file->isDir() && !$file->isLink() ? rmdir($file->getPathname()) : unlink($file->getPathname());
-	}
-	rmdir($path);
 }
