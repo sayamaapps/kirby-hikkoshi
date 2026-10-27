@@ -268,3 +268,8 @@ class Redirects
 		return $page;
 	}
 }
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\Redirects', false) === false) {
+	class_alias(Redirects::class, 'Hikkoshi\\Redirects');
+}

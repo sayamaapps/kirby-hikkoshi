@@ -239,3 +239,8 @@ class SiteCheck
 		return $findings;
 	}
 }
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\SiteCheck', false) === false) {
+	class_alias(SiteCheck::class, 'Hikkoshi\\SiteCheck');
+}

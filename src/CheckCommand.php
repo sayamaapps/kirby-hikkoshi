@@ -126,3 +126,8 @@ class CheckCommand
 		return 0;
 	}
 }
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\CheckCommand', false) === false) {
+	class_alias(CheckCommand::class, 'Hikkoshi\\CheckCommand');
+}

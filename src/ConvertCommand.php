@@ -80,3 +80,8 @@ class ConvertCommand
 		return $skipped > 0 || $partial > 0 ? 1 : 0;
 	}
 }
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\ConvertCommand', false) === false) {
+	class_alias(ConvertCommand::class, 'Hikkoshi\\ConvertCommand');
+}

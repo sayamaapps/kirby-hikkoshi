@@ -549,3 +549,8 @@ class Htaccess
 		return $value;
 	}
 }
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\Htaccess', false) === false) {
+	class_alias(Htaccess::class, 'Hikkoshi\\Htaccess');
+}

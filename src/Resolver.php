@@ -162,3 +162,8 @@ class Resolver
 		return $match['remaining'];
 	}
 }
+
+// 1.x name for sites that load this file directly, without the plugin (legacy.php).
+if (class_exists('Hikkoshi\\Resolver', false) === false) {
+	class_alias(Resolver::class, 'Hikkoshi\\Resolver');
+}
