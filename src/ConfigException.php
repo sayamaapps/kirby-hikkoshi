@@ -3,7 +3,7 @@
 namespace Sayamaapps\Hikkoshi;
 
 /**
- * A redirect list with at least one error-level finding (SPEC.md §3.2.3).
+ * A redirect list with at least one error-level finding (docs/SPEC.md §3.2.3).
  *
  * Extends LogicException on purpose: the pre-1.0 release threw LogicException,
  * and a site's own tests catch exactly that type. The message lists every error,
@@ -11,7 +11,7 @@ namespace Sayamaapps\Hikkoshi;
  * current I18n language; findings() gives the structured list (errors AND
  * warnings) for a test suite or the CLI.
  *
- * Kirby-free (SPEC.md §2).
+ * Kirby-free (docs/SPEC.md §2).
  *
  * @package   Kirby Hikkoshi
  * @author    Simon Räder

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Htaccess converter, SPEC.md §8.5. Kirby-free: no vendor/, no index.php.
+ * Htaccess converter, docs/SPEC.md §8.5. Kirby-free: no vendor/, no index.php.
  *
  *   php tests/HtaccessTest.php
  */

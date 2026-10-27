@@ -1,6 +1,6 @@
 <?php
 /**
- * The body of a 410 response (SPEC.md §3.5).
+ * The body of a 410 response (docs/SPEC.md §3.5).
  *
  * Receives $title and $text (already translated). Unstyled, only hikkoshi-*
  * classes, every value escaped. A site overrides it with

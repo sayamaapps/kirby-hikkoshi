@@ -3,7 +3,7 @@
 namespace Sayamaapps\Hikkoshi;
 
 /**
- * Validates and normalises a redirect list, Kirby-free (SPEC.md §3.2).
+ * Validates and normalises a redirect list, Kirby-free (docs/SPEC.md §3.2).
  *
  * Input is what site/config/hikkoshi.php (or the pre-1.0 file
  * site/config/weiterleitungen.php) returns: an array `old path => target`.
@@ -12,7 +12,7 @@ namespace Sayamaapps\Hikkoshi;
  * caller decides whether errors are fatal (Validator::assert() throws
  * ConfigException, as the pre-1.0 release did on every request).
  *
- * Accepted value forms (SPEC.md §6):
+ * Accepted value forms (docs/SPEC.md §6):
  *   'old' => 'new'                                    page id, global status and query mode
  *   'old' => 'https://other.example/x'                only when the host is in allowedHosts
  *   'old' => 410                                      gone
@@ -61,7 +61,7 @@ class Validator
 	 * conditional entry is not counted (with query `keep` it can still catch
 	 * a forwarded query; README → Validation names that limit). The target
 	 * `home` is never captured either: its redirect lands on `/`, which the
-	 * source `home` (`/home`) does not match (SPEC.md §3.2.2).
+	 * source `home` (`/home`) does not match (docs/SPEC.md §3.2.2).
 	 *
 	 * @param list<array> $entries modified in place when resolving
 	 */

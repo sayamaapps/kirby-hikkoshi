@@ -4,7 +4,7 @@ namespace Sayamaapps\Hikkoshi;
 
 /**
  * Path normalisation and the character rules for old paths and targets,
- * Kirby-free (SPEC.md §3.1).
+ * Kirby-free (docs/SPEC.md §3.1).
  *
  * Both sides of a match go through the same normalize(): the config keys at
  * load time (Validator) and the request path at run time (Resolver). That
@@ -148,7 +148,7 @@ class Path
 
 	/**
 	 * The fallback form of a request path for the second lookup pass
-	 * (SPEC.md §3.3): a trailing index file is removed, otherwise a known
+	 * (docs/SPEC.md §3.3): a trailing index file is removed, otherwise a known
 	 * suffix of the last segment. Null when neither applies.
 	 *
 	 *   stripSuffix('impressum.html', ['html','htm','php'], ['index.php','index.html','index.htm']) → 'impressum'

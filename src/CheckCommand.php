@@ -5,7 +5,7 @@ namespace Sayamaapps\Hikkoshi;
 /**
  * `hikkoshi check [FILE] [--lang=..] [--resolve-chains] [--allow-host=..] [--strict]`
  *
- * Kirby-free (SPEC.md §3.8). Loads a redirect list,
+ * Kirby-free (docs/SPEC.md §3.8). Loads a redirect list,
  * runs the Validator and prints the findings. Never writes a file.
  *
  * @package   Kirby Hikkoshi

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * `hikkoshi check`, SPEC.md §8.6. Kirby-free: no vendor/, no index.php.
+ * `hikkoshi check`, docs/SPEC.md §8.6. Kirby-free: no vendor/, no index.php.
  *
  * Runs CheckCommand::run() in-process on php://memory streams and a temp
  * directory, and the real bin/hikkoshi once per case through proc_open.

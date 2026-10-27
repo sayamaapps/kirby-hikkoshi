@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The plugin with real Kirby (SPEC.md §8.3), in throwaway site directories,
+ * The plugin with real Kirby (docs/SPEC.md §8.3), in throwaway site directories,
  * rendered in-process (no PHP server, no sockets, no outbound HTTP). Port of
  * the pre-1.0 HTTP test. Sections:
  *  1. registered, off by default, translations, hikkoshi_option();

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Resolver (src/Resolver.php), Kirby-free. Covers SPEC.md §8.2: path
+ * Resolver (src/Resolver.php), Kirby-free. Covers docs/SPEC.md §8.2: path
  * normalisation in the lookup, the suffix pass, umlauts and percent-encoding,
  * lowercase and transliterate off, query conditions (WordPress .htaccess), the
  * specificity order, conditionsMatch(), targetQuery(), appendQuery().

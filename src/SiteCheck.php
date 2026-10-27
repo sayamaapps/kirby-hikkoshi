@@ -10,7 +10,7 @@ use Kirby\Http\Response;
 use Kirby\Http\Url;
 
 /**
- * The test helper for sites (SPEC.md §3.6): every entry resolves in at most
+ * The test helper for sites (docs/SPEC.md §3.6): every entry resolves in at most
  * one hop to a 200 page. Used by `$site->hikkoshiCheck()`
  * in a site's test suite; never on a live request.
  *

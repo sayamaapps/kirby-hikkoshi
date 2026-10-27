@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The site test helper with real Kirby (SPEC.md §8.4): $site->hikkoshiCheck()
+ * The site test helper with real Kirby (docs/SPEC.md §8.4): $site->hikkoshiCheck()
  * and SiteCheck::run(), in throwaway site directories, in-process (no server,
  * no sockets, no outbound HTTP).
  *

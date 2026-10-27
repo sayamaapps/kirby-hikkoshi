@@ -8,7 +8,7 @@ use Kirby\Exception\InvalidArgumentException;
 use Throwable;
 
 /**
- * Reads the plugin's options (SPEC.md §4): `sayamaapps.hikkoshi.<key>`, falling
+ * Reads the plugin's options (docs/SPEC.md §4): `sayamaapps.hikkoshi.<key>`, falling
  * back to the 1.x name `hikkoshi.<key>` with a deprecation.
  *
  * `null` counts as "not set", like Kirby's own option(), so
@@ -33,7 +33,7 @@ use Throwable;
 class Options
 {
 	/**
-	 * The settings the Kirby-free classes receive (SPEC.md §4), with their
+	 * The settings the Kirby-free classes receive (docs/SPEC.md §4), with their
 	 * defaults. Validator and Resolver take this array (or a part of it) and
 	 * fill missing keys from here.
 	 */
@@ -208,7 +208,7 @@ class Options
 
 	/**
 	 * Every setting the Kirby-free classes need, normalised, with the
-	 * defaults of SPEC.md §4. A broken value is reported (invalid()) and the
+	 * defaults of docs/SPEC.md §4. A broken value is reported (invalid()) and the
 	 * default is used.
 	 *
 	 * @return array{

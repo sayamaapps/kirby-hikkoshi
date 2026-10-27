@@ -3,7 +3,7 @@
 namespace Sayamaapps\Hikkoshi;
 
 /**
- * Strings of the plugin, Kirby-free (SPEC.md §5).
+ * Strings of the plugin, Kirby-free (docs/SPEC.md §5).
  *
  * The tables live in translations/<language>.php and are also registered as
  * Kirby plugin translations under `sayamaapps.hikkoshi.<key>` and the 1.x name

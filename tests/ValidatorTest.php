@@ -2,7 +2,7 @@
 
 /**
  * Validator (src/Validator.php) and ConfigException (src/ConfigException.php),
- * Kirby-free. Covers SPEC.md §8.1: every check of the pre-1.0 validator test
+ * Kirby-free. Covers docs/SPEC.md §8.1: every check of the pre-1.0 validator test
  * with the adaptations of §8.1 (normalised keys accepted, chains are warnings,
  * 410 and array forms, external hosts, duplicates, query conditions), plus two
  * sample lists and config/hikkoshi.example.php.

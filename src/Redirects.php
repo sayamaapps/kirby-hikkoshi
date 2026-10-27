@@ -9,7 +9,7 @@ use Kirby\Http\Route;
 use WeakMap;
 
 /**
- * The Kirby glue (SPEC.md §3.4): reads the list, validates it once per App
+ * The Kirby glue (docs/SPEC.md §3.4): reads the list, validates it once per App
  * instance, registers the catch-all route and builds the Response.
  *
  * Everything that decides a request lives in Validator, Resolver and Path;
@@ -62,7 +62,7 @@ class Redirects
 	}
 
 	/**
-	 * The validated entries (SPEC.md §3.2.1), [] when Hikkoshi is off.
+	 * The validated entries (docs/SPEC.md §3.2.1), [] when Hikkoshi is off.
 	 *
 	 * @return list<array>
 	 * @throws ConfigException when the list has an error (every request then fails)
@@ -205,7 +205,7 @@ class Redirects
 	}
 
 	/**
-	 * The one catch-all GET|HEAD route (SPEC.md §3.4). [] while Hikkoshi is
+	 * The one catch-all GET|HEAD route (docs/SPEC.md §3.4). [] while Hikkoshi is
 	 * off. A broken list throws here, at route registration, so every
 	 * request fails with 500.
 	 *

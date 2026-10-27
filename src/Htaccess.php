@@ -4,7 +4,7 @@ namespace Sayamaapps\Hikkoshi;
 
 /**
  * Converts Apache redirect rules into a Hikkoshi list, Kirby-free
- * (SPEC.md §3.7).
+ * (docs/SPEC.md §3.7).
  *
  * Reads text and returns data; it never touches files. Handled: Redirect,
  * RedirectPermanent, RedirectTemp, RedirectMatch, RewriteCond
@@ -398,7 +398,7 @@ class Htaccess
 	}
 
 	/**
-	 * The PHP source of a config file returning $entries (SPEC.md §3.7).
+	 * The PHP source of a config file returning $entries (docs/SPEC.md §3.7).
 	 * The header goes into a doc comment: a star followed by a slash would
 	 * end it and turn the rest of the line into code (a directory named `a*`
 	 * puts one into the path of `hikkoshi convert`), so it is broken up with
@@ -530,7 +530,7 @@ class Htaccess
 		return true;
 	}
 
-	/** The value shape of SPEC.md §3.7. */
+	/** The value shape of docs/SPEC.md §3.7. */
 	private static function value(int $status, array $destination): mixed
 	{
 		if ($status === 410) {

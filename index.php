@@ -20,7 +20,7 @@ use Kirby\Filesystem\F;
  * in site/plugins/) must be REMOVED when the package is installed: both
  * register routes for the same old paths, and the old one would answer first.
  * Hikkoshi reads the legacy list file site/config/weiterleitungen.php
- * unchanged, so only the plugin folder goes (SPEC.md §7).
+ * unchanged, so only the plugin folder goes (docs/SPEC.md §7).
  */
 F::loadClasses(require __DIR__ . '/autoload.php', __DIR__);
 require_once __DIR__ . '/legacy.php';

@@ -40,7 +40,7 @@ final class I18nTest extends TestCase
 
 		expect([], I18n::table('fr'), 'unknown language: no table');
 
-		// Every key the code relies on exists (SPEC.md §5).
+		// Every key the code relies on exists (docs/SPEC.md §5).
 		foreach ([
 			'finding.config.notArray', 'finding.source.numeric', 'finding.source.invalid', 'finding.source.empty',
 			'finding.source.duplicate', 'finding.entry.invalid', 'finding.target.invalid', 'finding.target.missing',

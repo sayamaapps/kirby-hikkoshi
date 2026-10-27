@@ -4,7 +4,7 @@ namespace Sayamaapps\Hikkoshi;
 
 /**
  * Matches a request (path + query) against validated entries, Kirby-free
- * (SPEC.md §3.3). The Kirby glue (Redirects) turns a match into a Response;
+ * (docs/SPEC.md §3.3). The Kirby glue (Redirects) turns a match into a Response;
  * the CLI and a site's tests use it directly.
  *
  * Two passes: 1. the normalised request path as it is; 2. the same path with

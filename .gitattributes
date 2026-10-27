@@ -9,8 +9,9 @@
 /.php-cs-fixer.dist.php     export-ignore
 /CHANGELOG.md               export-ignore
 /CLAUDE.md                  export-ignore
-/SPEC.md                    export-ignore
+/docs                         export-ignore
 /composer-require-checker.json export-ignore
+/scripts                      export-ignore
 /composer-unused.php        export-ignore
 /phpmd.xml.dist             export-ignore
 /phpunit.xml.dist           export-ignore

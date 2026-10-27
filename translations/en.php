@@ -4,7 +4,7 @@
  * English strings — the default and the fallback for missing keys.
  * `{name}` placeholders are filled in by Hikkoshi\I18n::t(). tests/I18nTest.php
  * checks that every language file has the same keys and placeholders as this
- * one. Keys are the contract (SPEC.md §5); never rename one without a
+ * one. Keys are the contract (docs/SPEC.md §5); never rename one without a
  * CHANGELOG entry.
  *
  * `{entry}` is always the config entry as I18n::entry() prints it:
@@ -16,7 +16,7 @@ return [
 	'level.warning' => 'warning',
 	'level.info'    => 'info',
 
-	// Validator findings (SPEC.md §3.2). Code = key after "finding.".
+	// Validator findings (docs/SPEC.md §3.2). Code = key after "finding.".
 	'finding.config.notArray'  => 'The redirect list must be an array old path => target.',
 	'finding.source.numeric'   => 'Old path missing or purely numeric: {entry}',
 	'finding.source.invalid'   => 'Invalid old path: {entry}',
@@ -33,7 +33,7 @@ return [
 	'finding.chain'            => 'Redirect chain: {chain}. Enter the final target directly.',
 	'finding.chain.resolved'   => 'Redirect chain {chain} resolved to {target}.',
 
-	// SiteCheck findings (SPEC.md §3.6).
+	// SiteCheck findings (docs/SPEC.md §3.6).
 	'finding.inactive'       => 'Hikkoshi is off: set \'hikkoshi.active\' => true.',
 	'finding.page.missing'   => 'Target page {target} does not exist or is a draft: {entry}',
 	'finding.check.noMatch'  => 'The old path {source} does not match its own entry: {entry}',

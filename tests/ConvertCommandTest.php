@@ -1,7 +1,7 @@
 <?php
 
 /**
- * `hikkoshi convert`, SPEC.md §8.7. Kirby-free: no vendor/, no index.php.
+ * `hikkoshi convert`, docs/SPEC.md §8.7. Kirby-free: no vendor/, no index.php.
  *
  * The converter must never write: every case checks that the temp directory
  * holds only the input file afterwards.
