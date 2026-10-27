@@ -6,8 +6,9 @@ namespace Sayamaapps\Hikkoshi;
  * Strings of the plugin, Kirby-free (SPEC.md §5).
  *
  * The tables live in translations/<language>.php and are also registered as
- * Kirby plugin translations under `hikkoshi.<key>` (index.php), so a site's
- * own 410 snippet can use t('hikkoshi.gone.title'). Hikkoshi itself reads
+ * Kirby plugin translations under `sayamaapps.hikkoshi.<key>` and the 1.x name
+ * `hikkoshi.<key>` (config/translations.php), so a site's own 410 snippet can use
+ * t('sayamaapps.hikkoshi.gone.title'). Hikkoshi itself reads
  * its own tables: a missing Kirby translation must never silently turn a
  * German message English.
  *

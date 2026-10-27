@@ -65,6 +65,8 @@ final class KirbyTest extends TestCase
 			holds(array_key_exists('sayamaapps/hikkoshi', $on->plugins()), 'plugin is registered with the switch on, too');
 			expect('Page removed', $on->translation('en')->get('hikkoshi.gone.title'), 'translation hikkoshi.gone.title in English');
 			expect('Seite entfernt', $on->translation('de')->get('hikkoshi.gone.title'), 'translation hikkoshi.gone.title in German');
+			expect('Page removed', $on->translation('en')->get('sayamaapps.hikkoshi.gone.title'), 'translation sayamaapps.hikkoshi.gone.title in English');
+			expect('Seite entfernt', $on->translation('de')->get('sayamaapps.hikkoshi.gone.title'), 'translation sayamaapps.hikkoshi.gone.title in German');
 			holds(function_exists('hikkoshi_option'), 'hikkoshi_option() exists');
 			expect(true, hikkoshi_option('active'), 'hikkoshi_option() reads hikkoshi.active');
 			expect('fallback', hikkoshi_option('gibtsnicht', 'fallback'), 'hikkoshi_option() returns the fallback for an unset key');
