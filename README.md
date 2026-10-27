@@ -79,7 +79,7 @@ The exact pass comes first. If nothing matches, one suffix (`html`, `htm`, `php`
 
 ## Options
 
-Each option is read as `sayamaapps.hikkoshi.<name>`, flat or nested. The 1.x name `hikkoshi.<name>` is read as a fallback with a deprecation (see below). `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws `Kirby\Exception\InvalidArgumentException`.
+Each option is read as `sayamaapps.hikkoshi.<name>`, flat or nested. The 1.x name `hikkoshi.<name>` is read as a fallback with a deprecation (see below). `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws PHP's `InvalidArgumentException`.
 
 | Option | Default | Description |
 |---|---|---|
@@ -110,7 +110,6 @@ Deprecations are raised only with Kirby's `debug` option on, so a site sees them
 
 Changes that affect code, not only names:
 
-- With `debug` on, a broken option throws `Kirby\Exception\InvalidArgumentException`. 1.x threw PHP's `InvalidArgumentException`, which the new class does not extend: `catch` clauses for it must change. Without `debug`, nothing is thrown.
 - `Sayamaapps\Hikkoshi\ConfigException` still extends `LogicException`, as in 1.x, so a site's own `catch` for `Hikkoshi\ConfigException` keeps working. `get_class()` and stack traces show the new name.
 - Error messages name the option as `sayamaapps.hikkoshi.<name>`.
 

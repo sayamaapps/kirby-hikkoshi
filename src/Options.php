@@ -2,9 +2,9 @@
 
 namespace Sayamaapps\Hikkoshi;
 
+use InvalidArgumentException;
 use Kirby\Cms\App;
 use Kirby\Cms\Helpers;
-use Kirby\Exception\InvalidArgumentException;
 use Throwable;
 
 /**
@@ -146,7 +146,7 @@ class Options
 	public static function invalid(App $kirby, string $message): void
 	{
 		if ($kirby->option('debug') === true) {
-			throw new InvalidArgumentException(message: $message);
+			throw new InvalidArgumentException($message);
 		}
 		self::log($message);
 	}

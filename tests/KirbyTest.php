@@ -440,10 +440,10 @@ final class KirbyTest extends TestCase
 			$thrown = null;
 			try {
 				hikkoshi_kirby($tmp, ktOn(['sayamaapps.hikkoshi.status' => 200, 'debug' => true]));
-			} catch (\Kirby\Exception\InvalidArgumentException $e) {
+			} catch (\InvalidArgumentException $e) {
 				$thrown = $e;
 			}
-			holds($thrown instanceof \Kirby\Exception\InvalidArgumentException, 'debug on: an invalid option throws Kirby\Exception\InvalidArgumentException');
+			holds($thrown instanceof \InvalidArgumentException, 'debug on: an invalid option throws PHP\'s InvalidArgumentException, as in 1.x');
 		});
 	}
 }
