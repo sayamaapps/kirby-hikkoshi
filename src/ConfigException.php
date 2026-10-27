@@ -7,9 +7,8 @@ namespace Sayamaapps\Hikkoshi;
  *
  * Extends LogicException on purpose: the pre-1.0 release threw LogicException,
  * and a site's own tests catch exactly that type. The message lists every error,
- * one per line, in the
- * current I18n language; findings() gives the structured list (errors AND
- * warnings) for a test suite or the CLI.
+ * one per line, in the current I18n language; findings() gives the structured
+ * list (errors AND warnings) for a test suite or the CLI.
  *
  * Kirby-free (docs/SPEC.md §2).
  *
