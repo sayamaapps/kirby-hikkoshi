@@ -30,18 +30,17 @@
 			<property name="maximum" value="140" />
 		</properties>
 	</rule>
-	<rule ref="rulesets/codesize.xml/ExcessiveMethodLength">
-		<!-- SiteCheck::run() is one loop over the entries with the findings; splitting it is a follow-up. -->
+	<rule ref="rulesets/codesize.xml/ExcessiveMethodLength" />
+	<rule ref="rulesets/codesize.xml/ExcessiveParameterList" />
+	<!-- Options has 11 public methods, the default of 10 is one too few. -->
+	<rule ref="rulesets/codesize.xml/TooManyPublicMethods">
 		<properties>
-			<property name="minimum" value="130" />
+			<property name="maxmethods" value="15" />
 		</properties>
 	</rule>
-	<rule ref="rulesets/codesize.xml/ExcessiveParameterList" />
 
 	<rule ref="rulesets/design.xml">
 		<!-- Redirects, Options, Validator and Resolver are public entry points; splitting them changes the API (VER-3). -->
-		<exclude name="TooManyPublicMethods" />
-		<exclude name="TooManyMethods" />
 		<exclude name="CouplingBetweenObjects" />
 	</rule>
 

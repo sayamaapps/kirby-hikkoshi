@@ -125,101 +125,116 @@ class SiteCheck
 
 		$resolver = new Resolver($result['entries'], $settings);
 		$rendered = [];
-
 		foreach ($result['entries'] as $entry) {
-			$key = $entry['key'];
-			$text = I18n::entry($key, $entry['status'] === 410 ? 410 : $entry['target']);
+			array_push($findings, ...self::checkEntry($kirby, $resolver, $entry, $render, $rendered));
+		}
 
-			$page = null;
-			if ($entry['status'] !== 410 && !$entry['external']) {
-				/** @var string $target */
-				$target = $entry['target'];
-				$page = Redirects::targetPage($kirby, $target);
-				if ($page === null || $page->isDraft()) {
-					$findings[] = Validator::finding(
-						Validator::ERROR,
-						'page.missing',
-						['target' => $entry['target'], 'entry' => $text],
-						$key
-					);
-					continue;
-				}
-			}
+		// Nothing a target's template set on the Responder may leak to the caller.
+		self::resetResponder($kirby);
 
-			// Self-consistency: the entry's own old path must find this entry.
-			$query = [];
-			foreach ($entry['conditions'] as $name => $value) {
-				$query[$name] = $value ?? '1';
+		return $findings;
+	}
+
+	/**
+	 * The findings of one entry: its target page, its own old path and the
+	 * target page's answer. $rendered holds the page ids already requested in
+	 * this run, so a page shared by several entries is rendered once.
+	 *
+	 * @param array{key: string, source: string, conditions: array<string, string|null>, target: string|null, status: int, query: string, external: bool} $entry
+	 * @param array<string, true> $rendered
+	 * @return list<array{level:string, code:string, message:string, key:?string, values:array}>
+	 */
+	private static function checkEntry(App $kirby, Resolver $resolver, array $entry, bool $render, array &$rendered): array
+	{
+		$key = $entry['key'];
+		$text = I18n::entry($key, $entry['status'] === 410 ? 410 : $entry['target']);
+
+		$page = null;
+		if ($entry['status'] !== 410 && !$entry['external']) {
+			/** @var string $target */
+			$target = $entry['target'];
+			$page = Redirects::targetPage($kirby, $target);
+			if ($page === null || $page->isDraft()) {
+				return [Validator::finding(
+					Validator::ERROR,
+					'page.missing',
+					['target' => $entry['target'], 'entry' => $text],
+					$key
+				)];
 			}
-			$hit = $resolver->match($entry['source'], $query);
-			if ($hit === null || $hit['entry']['key'] !== $key) {
+		}
+
+		// Self-consistency: the entry's own old path must find this entry.
+		$query = [];
+		foreach ($entry['conditions'] as $name => $value) {
+			$query[$name] = $value ?? '1';
+		}
+		$hit = $resolver->match($entry['source'], $query);
+		if ($hit === null || $hit['entry']['key'] !== $key) {
+			return [Validator::finding(
+				Validator::ERROR,
+				'check.noMatch',
+				['source' => Validator::identity($entry['source'], $entry['conditions']), 'entry' => $text],
+				$key
+			)];
+		}
+
+		if (!$render) {
+			return [];
+		}
+
+		$findings = [];
+
+		// The old path itself, only for entries without query conditions.
+		if ($entry['conditions'] === []) {
+			$source = '/' . $entry['source'];
+			[$code, $location] = self::request($kirby, $source);
+			if ($code !== $entry['status']) {
 				$findings[] = Validator::finding(
 					Validator::ERROR,
-					'check.noMatch',
-					['source' => Validator::identity($entry['source'], $entry['conditions']), 'entry' => $text],
+					'check.status',
+					['source' => $source, 'actual' => $code, 'expected' => $entry['status']],
 					$key
 				);
-				continue;
-			}
-
-			if (!$render) {
-				continue;
-			}
-
-			// The old path itself, only for entries without query conditions.
-			if ($entry['conditions'] === []) {
-				$source = '/' . $entry['source'];
-				[$code, $location] = self::request($kirby, $source);
-				if ($code !== $entry['status']) {
+			} elseif ($entry['status'] !== 410) {
+				// The route appends the request's query; so does the expected location.
+				$expected = Redirects::resolve($kirby, $entry['source'], $kirby->request()->query()->toArray())['location'] ?? null;
+				// Kirby sends Locations punycoded (Response::redirect → Url::unIdn).
+				// Url::unIdn() returns a Uri object: cast it, or the comparison fails for every redirect.
+				/** @psalm-suppress UndefinedMagicMethod Url::unIdn() is provided through Kirby's __callStatic(). */
+				$expected = $expected === null ? null : (string)Url::unIdn($expected);
+				if ($location !== $expected) {
 					$findings[] = Validator::finding(
 						Validator::ERROR,
-						'check.status',
-						['source' => $source, 'actual' => $code, 'expected' => $entry['status']],
-						$key
-					);
-				} elseif ($entry['status'] !== 410) {
-					// The route appends the request's query; so does the expected location.
-					$expected = Redirects::resolve($kirby, $entry['source'], $kirby->request()->query()->toArray())['location'] ?? null;
-					// Kirby sends Locations punycoded (Response::redirect → Url::unIdn).
-					// Url::unIdn() returns a Uri object: cast it, or the comparison fails for every redirect.
-					/** @psalm-suppress UndefinedMagicMethod Url::unIdn() is provided through Kirby's __callStatic(). */
-					$expected = $expected === null ? null : (string)Url::unIdn($expected);
-					if ($location !== $expected) {
-						$findings[] = Validator::finding(
-							Validator::ERROR,
-							'check.location',
-							['source' => $source, 'actual' => (string)$location, 'expected' => (string)$expected],
-							$key
-						);
-					}
-				}
-			}
-
-			// The target page: rendered once, must answer 200 and not redirect again.
-			if ($page !== null && !isset($rendered[$page->id()])) {
-				$rendered[$page->id()] = true;
-				// The home page is requested as '' (SPEC §3.6): '/home' is Kirby's redirect to '/'.
-				[$code] = self::request($kirby, $page->isHomePage() ? '' : $page->uri());
-				if (in_array($code, self::REDIRECTS, true)) {
-					$findings[] = Validator::finding(
-						Validator::ERROR,
-						'check.hop',
-						['target' => $entry['target'], 'entry' => $text],
-						$key
-					);
-				} elseif ($code !== 200) {
-					$findings[] = Validator::finding(
-						Validator::ERROR,
-						'check.target',
-						['target' => $entry['target'], 'actual' => $code],
+						'check.location',
+						['source' => $source, 'actual' => (string)$location, 'expected' => (string)$expected],
 						$key
 					);
 				}
 			}
 		}
 
-		// Nothing a target's template set on the Responder may leak to the caller.
-		self::resetResponder($kirby);
+		// The target page: rendered once, must answer 200 and not redirect again.
+		if ($page !== null && !isset($rendered[$page->id()])) {
+			$rendered[$page->id()] = true;
+			// The home page is requested as '' (SPEC §3.6): '/home' is Kirby's redirect to '/'.
+			[$code] = self::request($kirby, $page->isHomePage() ? '' : $page->uri());
+			if (in_array($code, self::REDIRECTS, true)) {
+				$findings[] = Validator::finding(
+					Validator::ERROR,
+					'check.hop',
+					['target' => $entry['target'], 'entry' => $text],
+					$key
+				);
+			} elseif ($code !== 200) {
+				$findings[] = Validator::finding(
+					Validator::ERROR,
+					'check.target',
+					['target' => $entry['target'], 'actual' => $code],
+					$key
+				);
+			}
+		}
 
 		return $findings;
 	}
