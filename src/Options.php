@@ -55,7 +55,15 @@ class Options
 	public const LEGACY_PREFIX = 'hikkoshi.';
 
 	/** Option prefix since 2.0 (OPT-1). */
-	public const PREFIX = 'sayamaapps.hikkoshi.';
+	public const OPTION_PREFIX = 'sayamaapps.hikkoshi.';
+
+	/**
+	 * The 1.x prefix under its old name, so `Options::PREFIX . $key` still names the
+	 * 1.x option as it did before 2.0. Use OPTION_PREFIX.
+	 *
+	 * @deprecated 2.0 Use OPTION_PREFIX.
+	 */
+	public const PREFIX = self::LEGACY_PREFIX;
 
 	/** @var array<string, true> messages already written to the error log in this process */
 	private static array $logged = [];
@@ -83,7 +91,7 @@ class Options
 		if (is_bool($value)) {
 			return $value;
 		}
-		self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be true or false — using ' . var_export($default, true) . '.');
+		self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . $key . ' must be true or false — using ' . var_export($default, true) . '.');
 		return $default;
 	}
 
@@ -93,7 +101,7 @@ class Options
 	 */
 	public static function get(App $kirby, string $key, mixed $default = null): mixed
 	{
-		$value = $kirby->option(self::PREFIX . $key);
+		$value = $kirby->option(self::OPTION_PREFIX . $key);
 		if ($value !== null) {
 			return $value;
 		}
@@ -102,7 +110,7 @@ class Options
 		$legacy = $kirby->option(self::LEGACY_PREFIX . $key);
 		if ($legacy !== null) {
 			Helpers::deprecated(
-				'Hikkoshi: hikkoshi.' . $key . ' is deprecated, use ' . self::PREFIX . $key,
+				'Hikkoshi: hikkoshi.' . $key . ' is deprecated, use ' . self::OPTION_PREFIX . $key,
 				'option-prefix'
 			);
 			return $legacy;
@@ -220,12 +228,12 @@ class Options
 	{
 		$status = self::get($kirby, 'status', self::DEFAULTS['status']);
 		if (!is_int($status) || !in_array($status, [301, 302, 307, 308], true)) {
-			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . 'status must be 301, 302, 307 or 308 — using 301.');
+			self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . 'status must be 301, 302, 307 or 308 — using 301.');
 			$status = self::DEFAULTS['status'];
 		}
 		$query = self::get($kirby, 'query', self::DEFAULTS['query']);
 		if (!in_array($query, ['keep', 'drop'], true)) {
-			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . 'query must be "keep" or "drop" — using "keep".');
+			self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . 'query must be "keep" or "drop" — using "keep".');
 			$query = self::DEFAULTS['query'];
 		}
 		return [
@@ -255,7 +263,7 @@ class Options
 			$option = [$option];
 		}
 		if (!is_array($option)) {
-			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be a list of strings — using the default.');
+			self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . $key . ' must be a list of strings — using the default.');
 			return $default;
 		}
 		$list = [];

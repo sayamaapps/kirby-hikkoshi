@@ -83,4 +83,11 @@ final class OptionsPrefixTest extends TestCase
 			expect(302, Options::get($kirby, 'status', 301), 'null in the new spelling is not set');
 		});
 	}
+
+	public function testPrefixConstantsKeepTheirValues(): void
+	{
+		// PREFIX stayed 'hikkoshi.' in 1.x; code that builds option keys from it must keep working.
+		expect('hikkoshi.', Options::PREFIX, 'PREFIX keeps the 1.x value');
+		expect('sayamaapps.hikkoshi.', Options::OPTION_PREFIX, 'OPTION_PREFIX is the 2.0 prefix');
+	}
 }
