@@ -75,10 +75,11 @@ The exact pass comes first. If nothing matches, one suffix (`html`, `htm`, `php`
 - `$site->hikkoshiCheck($render = true)`: findings for the site test; `[]` when all is well.
 - `$page->hikkoshiSources()`: the old paths that redirect to this page.
 - `Sayamaapps\Hikkoshi\Options::get($kirby, 'language')` reads any option in your templates (`hikkoshi_option()` is deprecated).
+- `t('sayamaapps.hikkoshi.gone.title')` (and the 1.x key `t('hikkoshi.gone.title')`) reads the plugin's strings in your templates.
 
 ## Options
 
-Each option is read as `hikkoshi.<name>`, flat or nested. `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws.
+Each option is read as `sayamaapps.hikkoshi.<name>`, flat or nested. The 1.x name `hikkoshi.<name>` is read as a fallback with a deprecation (see below). `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws `Kirby\Exception\InvalidArgumentException`.
 
 | Option | Default | Description |
 |---|---|---|
@@ -105,7 +106,13 @@ Removed in 2.0; each still works in 1.x.
 | `hikkoshi_option($key, $default)` | `Sayamaapps\Hikkoshi\Options::get($kirby, $key, $default)` |
 | `Hikkoshi\*` classes (`Hikkoshi\Validator`, `Hikkoshi\ConfigException`, …) | `Sayamaapps\Hikkoshi\*` (same classes; the old names are aliases) |
 
-Deprecations are raised only with Kirby's `debug` option on, so a site sees them while it is set up.
+Deprecations are raised only with Kirby's `debug` option on, so a site sees them while it is set up. The `Hikkoshi\*` class names raise no notice; they stay as aliases until 2.0.
+
+Changes that affect code, not only names:
+
+- With `debug` on, a broken option throws `Kirby\Exception\InvalidArgumentException`. 1.x threw PHP's `InvalidArgumentException`, which the new class does not extend: `catch` clauses for it must change. Without `debug`, nothing is thrown.
+- `Sayamaapps\Hikkoshi\ConfigException` still extends `LogicException`, as in 1.x, so a site's own `catch` for `Hikkoshi\ConfigException` keeps working. `get_class()` and stack traces show the new name.
+- Error messages name the option as `sayamaapps.hikkoshi.<name>`.
 
 ## Validation
 
@@ -145,7 +152,7 @@ try {
         'content' => $base . '/content', 'site' => $base . '/site',
     ]]);
     $findings = $kirby->site()->hikkoshiCheck();   // hikkoshiCheck(false) skips rendering
-} catch (Hikkoshi\ConfigException $e) {          // a broken list stops Kirby while it starts
+} catch (Sayamaapps\Hikkoshi\ConfigException $e) {  // a broken list stops Kirby while it starts
     $findings = $e->findings();
 }
 
@@ -155,7 +162,26 @@ foreach ($findings as $f) {
 exit($findings === [] ? 0 : 1);
 ```
 
-Without Kirby, load `I18n`, `Options`, `Path`, `ConfigException` and `Validator` from `site/plugins/hikkoshi/src/`, then call `Hikkoshi\Validator::validate()` with the list and the same `allowedHosts`.
+Without Kirby, register the class map of `autoload.php` and call `Sayamaapps\Hikkoshi\Validator::validate()` with the list and the same `allowedHosts`:
+
+```php
+$root = __DIR__ . '/site/plugins/hikkoshi';
+$map = require $root . '/autoload.php';
+spl_autoload_register(static function (string $class) use ($map, $root): void {
+    if (isset($map[strtolower($class)])) {
+        require $root . '/' . $map[strtolower($class)];
+    }
+});
+
+$findings = Sayamaapps\Hikkoshi\Validator::validate($list, ['allowedHosts' => ['partner.example']])['findings'];
+```
+
+The 1.x names (`Hikkoshi\Validator` and the others) are aliases in each class file, so code written for 1.x that loads `src/` directly keeps working.
+
+## Design notes
+
+- The plugin's strings come from its own Kirby-free table (`src/I18n.php`), so a missing Kirby translation never shows English for a German message. The same strings are also registered as Kirby translations.
+- Defaults are passed at each option call, not in the `options` block of `config/options.php`. A default there would hide the 1.x spelling `hikkoshi.<name>`.
 
 ## Privacy
 

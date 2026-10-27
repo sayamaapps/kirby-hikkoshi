@@ -8,6 +8,18 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [Unreleased]
+
+### Changed
+
+- **Options are read as `sayamaapps.hikkoshi.<name>`.** The 1.x name `hikkoshi.<name>` still works as a fallback, with a deprecation in debug mode. Error messages name the new option.
+- **Classes live in the namespace `Sayamaapps\Hikkoshi\`.** The 1.x names `Hikkoshi\*` stay as class aliases. The `ConfigException` class name shows in `get_class()` and stack traces.
+- **With `debug` on, a broken option throws `Kirby\Exception\InvalidArgumentException`** instead of PHP's `InvalidArgumentException`. Without `debug` nothing changes.
+- **Translations are also registered as `sayamaapps.hikkoshi.<key>`.** The 1.x keys `hikkoshi.<key>` stay registered.
+- **The classes are no longer `final`.**
+- **The spec moved to `docs/SPEC.md`.** `docs/` and `scripts/` are no longer part of the dist archive.
+- **`composer ci` runs every check that CI runs.** CI also checks the platform requirements.
+
 ## [1.1.1] — 2026-10-26
 
 ### Fixed
