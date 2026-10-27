@@ -68,8 +68,8 @@
         "analyze:phpcpd": "phpcpd --fuzzy --exclude tests --exclude vendor .",
         "analyze:phpmd": "vendor/bin/phpmd src,config,index.php,legacy.php,autoload.php github phpmd.xml.dist",
         "analyze:psalm": "vendor/bin/psalm",
-        "analyze:require-checker": "vendor/bin/composer-require-checker check --config-file=composer-require-checker.json composer.json",
-        "analyze:unused": "vendor/bin/composer-unused",
+        "analyze:require-checker": "vendor/bin/composer-require-checker check --config-file=.github/composer-require-checker.json composer.json",
+        "analyze:unused": "vendor/bin/composer-unused --configuration=.github/composer-unused.php",
         "ci": [
             "@composer validate --strict --no-check-version --no-check-all",
             "@normalize:check",

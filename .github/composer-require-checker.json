@@ -18,6 +18,7 @@
         "Kirby\\Http\\Response",
         "Kirby\\Http\\Route",
         "Kirby\\Http\\Url",
-        "Normalizer"
+        "Normalizer",
+        "Sayamaapps\\Hikkoshi\\ConfigException"
     ]
 }

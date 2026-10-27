@@ -2,7 +2,6 @@
 
 # Not part of the installed package (composer dist archives)
 /.editorconfig              export-ignore
-/.git-blame-ignore-revs     export-ignore
 /.gitattributes             export-ignore
 /.gitignore                 export-ignore
 /.github                    export-ignore
@@ -10,10 +9,9 @@
 /CHANGELOG.md               export-ignore
 /CLAUDE.md                  export-ignore
 /docs                         export-ignore
-/composer-require-checker.json export-ignore
 /scripts                      export-ignore
-/composer-unused.php        export-ignore
 /phpmd.xml.dist             export-ignore
 /phpunit.xml.dist           export-ignore
 /psalm.xml.dist             export-ignore
 /tests                      export-ignore
+/composer.lock                export-ignore

@@ -45,6 +45,7 @@ composer global require sebastian/phpcpd:6.0.3
 - Classes live in `src/`, one class per file. The class map in `autoload.php` lists them, and `tests/AutoloadTest.php` checks it.
 - Keep public names stable. A rename keeps the old name as an alias or wrapper, marked `@deprecated` in the code and listed in the README under Deprecated. Nothing is raised at runtime.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `style:`, `chore:`).
+- To skip the style commit in `git blame`, run `git config blame.ignoreRevsFile .github/git-blame-ignore-revs`.
 
 ## Pull requests
 
