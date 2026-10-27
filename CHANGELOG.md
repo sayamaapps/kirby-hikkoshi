@@ -8,6 +8,30 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [Unreleased]
+
+Compatible with 1.x: every 1.x name, option, message key and behaviour still works. The changes below that break a 1.x site are planned for 2.0 (see README).
+
+### Changed
+
+- **Classes live in the namespace `Sayamaapps\Hikkoshi\`.** The 1.x names `Hikkoshi\*` stay as aliases, and an alias is declared when its class loads, so `Hikkoshi\Validator` works without a prior `require` of the file. The exception keeps its 1.x class name at runtime (`Hikkoshi\ConfigException`, also in `get_class()` and uncaught output). The other classes report `Sayamaapps\Hikkoshi\*` in `get_class()` and in stack traces.
+- **The classes are no longer `final`.** A site may extend them; nothing that worked before stops working.
+- **Translations are also registered as `sayamaapps.hikkoshi.<key>`.** The 1.x keys `hikkoshi.<key>` stay registered.
+- **The spec moved to `docs/SPEC.md`.** `docs/` and `scripts/` are no longer part of the dist archive.
+- **Long methods are split** (`CheckCommand::run`, `Validator::chains`, `Validator::parseValue`, `Validator::validate`). The output and the results do not change.
+- **Code style follows Kirby's rules** (`getkirby/php-cs`); `bin/hikkoshi` is checked too.
+- **`composer ci` runs every check that CI runs**, including `phpcpd` and the platform requirements.
+
+### Deprecated
+
+- `hikkoshi_option()` and the `Hikkoshi\*` class names: use `Sayamaapps\Hikkoshi\Options::get()` and `Sayamaapps\Hikkoshi\*`. Nothing is raised at runtime; the README lists them.
+
+### Planned for 2.0
+
+- Options are read as `sayamaapps.hikkoshi.<name>` only; the 1.x spelling `hikkoshi.<name>` is no longer read.
+- Broken options throw a Kirby exception instead of PHP's `InvalidArgumentException`.
+- The translation keys `hikkoshi.<key>` and the `Hikkoshi\*` aliases are removed, with `hikkoshi_option()`.
+
 ## [1.1.1] — 2026-10-26
 
 ### Fixed

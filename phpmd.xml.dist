@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<ruleset name="Hikkoshi"
+	xmlns="http://pmd.sf.net/ruleset/1.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+	xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
+	<description>PHP Mess Detector rules for Hikkoshi. Every exclusion and raised threshold has its reason here.</description>
+
+	<rule ref="rulesets/cleancode.xml">
+		<!-- Options and I18n are static helpers, as in Kirby's own code. -->
+		<exclude name="StaticAccess" />
+		<!-- The query and CLI switches are public API, so their flags stay. -->
+		<exclude name="BooleanArgumentFlag" />
+		<!-- The else branches of the matchers read in the order of the rules. -->
+		<exclude name="ElseExpression" />
+		<!-- Closure::call() binds $this to the App in SiteCheck; PHPMD cannot follow the binding. -->
+		<exclude name="UndefinedVariable" />
+	</rule>
+
+	<!-- Default threshold. Methods that branch on purpose carry @SuppressWarnings with their reason in the docblock. -->
+	<rule ref="rulesets/codesize.xml/CyclomaticComplexity" />
+	<rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
+		<!-- Htaccess holds the whole RewriteRule conversion in one class (overall complexity 130, default 80). Splitting it is a follow-up. -->
+		<properties>
+			<property name="maximum" value="140" />
+		</properties>
+	</rule>
+	<rule ref="rulesets/codesize.xml/ExcessiveMethodLength" />
+	<rule ref="rulesets/codesize.xml/ExcessiveParameterList" />
+	<!-- Options has 11 public methods, the default of 10 is one too few. -->
+	<rule ref="rulesets/codesize.xml/TooManyPublicMethods">
+		<properties>
+			<property name="maxmethods" value="15" />
+		</properties>
+	</rule>
+
+	<rule ref="rulesets/design.xml">
+		<!-- Redirects, Options, Validator and Resolver are public entry points; splitting them changes the API. -->
+		<exclude name="CouplingBetweenObjects" />
+	</rule>
+
+	<rule ref="rulesets/naming.xml">
+		<!-- Short names are the loop and array keys of the matchers. -->
+		<exclude name="ShortVariable" />
+		<!-- I18n::t() is the translation shorthand used in snippets and tests. -->
+		<exclude name="ShortMethodName" />
+	</rule>
+
+	<rule ref="rulesets/unusedcode.xml" />
+</ruleset>

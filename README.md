@@ -14,15 +14,27 @@ Checked redirects for [Kirby CMS](https://getkirby.com) after a site has moved.
 
 ## Requirements
 
-- PHP 8.2–8.4 with the `mbstring` extension, and Kirby 5
+Kirby 5 · PHP 8.2 to 8.5 · `mbstring` extension
+
+The `intl` extension is optional: with it, umlauts in paths are compared in their normalised form.
 
 ## Installation
+
+Pick one of three ways. Each puts the plugin into `site/plugins/hikkoshi/`.
+
+**Composer** (the folder is then managed by Composer; add it to `.gitignore` and deploy it like `vendor/`):
 
 ```sh
 composer require sayamaapps/kirby-hikkoshi
 ```
 
-Composer installs to `site/plugins/hikkoshi/`. Add that path to `.gitignore` and deploy it like `vendor/`.
+**ZIP:** download the release archive from the GitHub releases page and unpack it to `site/plugins/hikkoshi/`. The archive contains the runtime files only.
+
+**Git submodule:**
+
+```sh
+git submodule add https://github.com/sayamaapps/kirby-hikkoshi.git site/plugins/hikkoshi
+```
 
 ## Usage
 
@@ -63,10 +75,11 @@ The exact pass comes first. If nothing matches, one suffix (`html`, `htm`, `php`
 - `$site->hikkoshiCheck($render = true)`: findings for the site test; `[]` when all is well.
 - `$page->hikkoshiSources()`: the old paths that redirect to this page.
 - `hikkoshi_option('language')` reads any `hikkoshi.*` option in your templates.
+- `t('hikkoshi.gone.title')` and `t('sayamaapps.hikkoshi.gone.title')` read the plugin's strings in your templates.
 
 ## Options
 
-Each option is read as `hikkoshi.<name>`, flat or nested. `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws.
+Each option is read as `hikkoshi.<name>`, flat or nested. `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws PHP's `InvalidArgumentException`. That is PHP's class and not a Kirby exception on purpose: a site that catches `InvalidArgumentException` keeps working, and Kirby's own exception classes do not extend it. Kirby exceptions are planned for 2.0 (see below).
 
 | Option | Default | Description |
 |---|---|---|
@@ -82,6 +95,27 @@ Each option is read as `hikkoshi.<name>`, flat or nested. `null` means "not set"
 | `suffixes` | `['html', 'htm', 'php']` | Suffixes removed in the second pass. `[]` turns it off. |
 | `indexFiles` | `['index.php', 'index.html', 'index.htm']` | Last segments removed in the second pass (`blog/index.php` becomes `blog`). `[]` turns it off. |
 | `language` | site language | `en` or `de`, for messages and the 410 page. Default: site language, then `locale`, then English. |
+
+## Deprecated
+
+Deprecated in 1.x and removed in 2.0. Each still works. Nothing is raised at runtime: the deprecations are listed here and in the code (`@deprecated`).
+
+| 1.x | Use instead |
+|---|---|
+| `hikkoshi_option($key, $default)` | `Sayamaapps\Hikkoshi\Options::get($kirby, $key, $default)` |
+| `Hikkoshi\*` classes (`Hikkoshi\Validator`, `Hikkoshi\ConfigException`, …) | `Sayamaapps\Hikkoshi\*` (the same classes under both names; the exception keeps the name `Hikkoshi\ConfigException` at runtime) |
+
+## Planned for 2.0
+
+These change behaviour, so they wait for the next major version. In 1.x they are not done:
+
+- Options are read as `sayamaapps.hikkoshi.<name>` only, and the 1.x spelling `hikkoshi.<name>` is no longer read.
+- Broken options throw a Kirby exception instead of PHP's `InvalidArgumentException`.
+- The translation keys `hikkoshi.<key>` are removed. `sayamaapps.hikkoshi.<key>` stays.
+- `hikkoshi_option()` and the `Hikkoshi\*` aliases are removed.
+- Error messages name the option as `sayamaapps.hikkoshi.<name>`.
+
+`Hikkoshi\ConfigException` keeps extending `LogicException`, as in 1.x, so a site's own `catch` keeps working.
 
 ## Validation
 
@@ -131,7 +165,27 @@ foreach ($findings as $f) {
 exit($findings === [] ? 0 : 1);
 ```
 
-Without Kirby, load `I18n`, `Options`, `Path`, `ConfigException` and `Validator` from `site/plugins/hikkoshi/src/`, then call `Hikkoshi\Validator::validate()` with the list and the same `allowedHosts`.
+Without Kirby, register the class map of `autoload.php` and call `Sayamaapps\Hikkoshi\Validator::validate()` with the list and the same `allowedHosts`:
+
+```php
+$root = __DIR__ . '/site/plugins/hikkoshi';
+$map = require $root . '/autoload.php';
+spl_autoload_register(static function (string $class) use ($map, $root): void {
+    if (isset($map[strtolower($class)])) {
+        require $root . '/' . $map[strtolower($class)];
+    }
+});
+
+$findings = Sayamaapps\Hikkoshi\Validator::validate($list, ['allowedHosts' => ['partner.example']])['findings'];
+```
+
+The 1.x names (`Hikkoshi\Validator` and the others) are aliases in each class file, so code written for 1.x that loads `src/` directly keeps working.
+
+## Design notes
+
+- The plugin's strings come from its own Kirby-free table (`src/I18n.php`), so a missing Kirby translation never shows English for a German message. The same strings are also registered as Kirby translations.
+- The 410 page takes its text from the same table, not from Kirby's `t()`. Kirby picks the translation by its own locale; Hikkoshi picks the language from `hikkoshi.language`, then the site language, then the locale. The CLI and the validator need the same strings without Kirby. A site that wants its own 410 text uses `t('hikkoshi.gone.title')` in its own snippet.
+- Defaults are passed at each option call, never in an `options` block of the plugin: Kirby would file them under the plugin name, and the options would no longer be the 1.x names.
 
 ## Privacy
 
@@ -141,4 +195,4 @@ Tests: `composer test`. Issues and pull requests are welcome, without a support 
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE.md](LICENSE.md).

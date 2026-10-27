@@ -50,7 +50,7 @@ kirby-hikkoshi/
 ├── .gitignore, .gitattributes
 ├── LICENSE
 ├── .github/workflows/ci.yml
-├── SPEC.md
+├── docs/SPEC.md
 ├── index.php                        (complete registration, §3.11)
 ├── bin/hikkoshi                     (CLI entry, §3.11)
 ├── config/hikkoshi.example.php      (§6; ValidatorTest checks it is valid)
