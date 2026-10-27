@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 use Sayamaapps\Hikkoshi\Options;
 
 /**
- * The option prefix (OPT-1): sayamaapps.hikkoshi.<key> is read first, the 1.x
+ * The option prefix: sayamaapps.hikkoshi.<key> is read first, the 1.x
  * spelling hikkoshi.<key> is a fallback with a deprecation, and null counts as
  * not set.
  */

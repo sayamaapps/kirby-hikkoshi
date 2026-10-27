@@ -54,7 +54,7 @@ class Options
 	/** Option prefix of 1.x, read as a fallback until 2.0. */
 	public const LEGACY_PREFIX = 'hikkoshi.';
 
-	/** Option prefix since 2.0 (OPT-1). */
+	/** Option prefix since 2.0. */
 	public const OPTION_PREFIX = 'sayamaapps.hikkoshi.';
 
 	/**
