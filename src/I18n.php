@@ -15,6 +15,7 @@ namespace Sayamaapps\Hikkoshi;
  * per CLI run (--lang) and defaults to English. Missing keys fall back to
  * English, then to the key itself.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder
@@ -54,6 +55,7 @@ final class I18n
 		return '[' . implode(', ', $parts) . ']';
 	}
 
+	/** The language the plugin text is written in right now: `en` or `de`. */
 	public static function language(): string
 	{
 		return self::$language;
@@ -71,6 +73,7 @@ final class I18n
 		return (string)preg_replace('/[\x{00}-\x{08}\x{0B}-\x{1F}\x{7F}-\x{9F}]/u', '', mb_scrub($text, 'UTF-8'));
 	}
 
+	/** Sets the language of the plugin text; an unknown language falls back to English. */
 	public static function setLanguage(string $language): void
 	{
 		self::$language = in_array($language, self::LANGUAGES, true) ? $language : 'en';

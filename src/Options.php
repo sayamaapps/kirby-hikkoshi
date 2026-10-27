@@ -24,6 +24,7 @@ use Throwable;
  * the file loads without Kirby because App and Helpers are only used in
  * signatures or in methods the CLI does not call.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder
@@ -86,6 +87,10 @@ final class Options
 		return $default;
 	}
 
+	/**
+	 * Reads `sayamaapps.hikkoshi.<key>`, falling back to the 1.x name `hikkoshi.<key>`
+	 * (with a deprecation), and to `$default` when neither is set.
+	 */
 	public static function get(App $kirby, string $key, mixed $default = null): mixed
 	{
 		$value = $kirby->option(self::PREFIX . $key);

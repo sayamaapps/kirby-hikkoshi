@@ -13,6 +13,7 @@ namespace Sayamaapps\Hikkoshi;
  * pass, entries with more query conditions win over entries with fewer; an
  * entry without conditions matches any query.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder
@@ -141,6 +142,7 @@ final class Resolver
 		return ['entry' => $entry, 'pass' => $pass, 'path' => $path, 'remaining' => $remaining];
 	}
 
+	/** The resolver settings, as they were given to the constructor with the defaults filled in. */
 	public function settings(): array
 	{
 		return $this->settings;

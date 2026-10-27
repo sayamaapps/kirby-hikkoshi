@@ -8,6 +8,7 @@ namespace Sayamaapps\Hikkoshi;
  * Kirby-free (SPEC.md §3.8). Loads a redirect list,
  * runs the Validator and prints the findings. Never writes a file.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder

@@ -12,6 +12,7 @@ namespace Sayamaapps\Hikkoshi;
  *
  * A path here never has a leading or trailing slash; the home page is ''.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder

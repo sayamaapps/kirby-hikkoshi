@@ -13,6 +13,7 @@ namespace Sayamaapps\Hikkoshi;
  *
  * Kirby-free (SPEC.md §2).
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder

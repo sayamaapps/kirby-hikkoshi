@@ -20,6 +20,7 @@ namespace Sayamaapps\Hikkoshi;
  *   'old' => ['status' => 410]
  * Accepted key forms: 'path', 'path?k=v', '?page_id=82', 'index.php?p=1&feed'.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder
@@ -153,6 +154,7 @@ final class Validator
 		];
 	}
 
+	/** True when at least one finding has the error level. */
 	public static function hasErrors(array $findings): bool
 	{
 		foreach ($findings as $finding) {

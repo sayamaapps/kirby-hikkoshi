@@ -7,6 +7,7 @@ namespace Sayamaapps\Hikkoshi;
  * stdout, skipped and partly converted lines to stderr. Kirby-free (SPEC.md §3.9). Never
  * writes a file.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder

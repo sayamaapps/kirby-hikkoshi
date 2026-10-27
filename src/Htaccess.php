@@ -15,6 +15,7 @@ namespace Sayamaapps\Hikkoshi;
  * Prefix rules (Redirect, or a regex without its closing `$`) are converted
  * for the exact path and reported as partial.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder

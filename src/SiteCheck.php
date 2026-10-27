@@ -21,6 +21,7 @@ use Kirby\Http\Url;
  * a Page is read back from it the way App::io() does: a template that sets
  * `$kirby->response()->code(503)` or `->redirect(...)` counts.
  *
+ * @package   Kirby Hikkoshi
  * @author    Simon Räder
  * @link      https://github.com/sayamaapps/kirby-hikkoshi
  * @copyright Simon Räder
