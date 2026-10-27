@@ -15,6 +15,19 @@ use Sayamaapps\Hikkoshi\I18n;
 #[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class I18nTest extends TestCase
 {
+	/** The messages name the options with the 2.0 prefix; 1.x spellings stay in the code only as fallbacks. */
+	public function testMessagesNameOptionsWithTheCurrentPrefix(): void
+	{
+		foreach (['en', 'de'] as $language) {
+			foreach (I18n::table($language) as $key => $text) {
+				holds(
+					preg_match('/(?<!sayamaapps\.)hikkoshi\.(active|allowedHosts|status|query|redirects|file|language)\b/', $text) === 0,
+					$language . ' ' . $key . ' names no 1.x option'
+				);
+			}
+		}
+	}
+
 	public function testSuite(): void
 	{
 		$placeholders = function (string $text): array {
