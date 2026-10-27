@@ -16,10 +16,14 @@ namespace Sayamaapps\Hikkoshi;
 class ConvertCommand
 {
 	/**
+	 * The argument checks and the three outcomes (usage, file, lines) are sequential; one method reads top to bottom.
+	 *
 	 * @param list<string> $args
 	 * @param resource $out
 	 * @param resource $err
 	 * @return int exit code: 0 all converted, 1 lines skipped or converted partially, 2 usage / file not found
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public static function run(array $args, mixed $out, mixed $err, string $cwd): int
 	{

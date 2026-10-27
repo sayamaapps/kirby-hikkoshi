@@ -11,4 +11,6 @@ return Kirby\PhpCs\Config::create()
 		PhpCsFixer\Finder::create()
 			->exclude('vendor')
 			->in(__DIR__)
+			// The CLI has no .php extension, so the finder does not match it by name.
+			->append([__DIR__ . '/bin/hikkoshi'])
 	);

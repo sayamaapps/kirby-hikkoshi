@@ -129,7 +129,11 @@ class Htaccess
 	 * query, http(s) URLs verbatim. Null when the target cannot be converted
 	 * (also `//host/path`: protocol-relative, not a path of this site).
 	 *
+	 * The target forms (absolute, relative, query, flags) are one decision table; splitting it scatters the rule order.
+	 *
 	 * @return array{to: string, drop: bool}|null
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private static function destination(string $raw): array|null
 	{
@@ -254,6 +258,10 @@ class Htaccess
 	 * is a real pattern. The WordPress home forms become ''. Without a
 	 * leading `^` the regex may match anywhere in the path: null. Without a
 	 * closing `$` it matches the paths below as well: $anchored is false.
+	 *
+	 * One loop over the regex escapes and anchors; each branch is one escape rule.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private static function literal(string $pattern, bool &$anchored): string|null
 	{
@@ -308,7 +316,11 @@ class Htaccess
 	 * `name` ("present, any value"). Null when the pattern is not one of the
 	 * accepted forms (the group is then poisoned).
 	 *
+	 * One branch per query form of a RewriteCond; the forms are read in order.
+	 *
 	 * @return list<string>|null
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private static function queryOptions(string $pattern): array|null
 	{
@@ -344,7 +356,13 @@ class Htaccess
 		return $options;
 	}
 
-	/** Redirect and RedirectMatch: `[status] old target`. */
+	/**
+	 * Redirect and RedirectMatch: `[status] old target`.
+	 *
+	 * One guard per skip reason; the order of the guards decides which reason a line gets, so they stay in one method.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 */
 	private static function redirect(array &$state, int $line, string $body, string $rest, bool $regex): void
 	{
 		$tokens = preg_split('/\s+/', $rest, -1, PREG_SPLIT_NO_EMPTY) ?: [];
@@ -425,7 +443,13 @@ class Htaccess
 		return $out;
 	}
 
-	/** RewriteRule: a redirect only with an R or G flag; conditions apply to it, then the group resets. */
+	/**
+	 * RewriteRule: a redirect only with an R or G flag; conditions apply to it, then the group resets.
+	 *
+	 * One guard per skip reason; the order of the guards decides which reason a line gets, so they stay in one method.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 */
 	private static function rule(array &$state, int $line, string $body, string $rest): void
 	{
 		self::closeChain($state);

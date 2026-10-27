@@ -10,7 +10,7 @@
  *   php tests/ValidatorTest.php
  *
  * German expectations run after I18n::setLanguage('de'); the language is reset
- * to 'en' before finish().
+ * to 'en' at the end of the test.
  */
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +28,8 @@ final class ValidatorTest extends TestCase
 {
 	public function testSuite(): void
 	{
-		// ── Valid lists ─────────────────────────────────────────────────────────// "valid list unchanged" (§8.1): keys, sources and targets come back as written.
+		// ── Valid lists ─────────────────────────────────────────────────────────
+		// "valid list unchanged": keys, sources and targets come back as written.
 		$gueltig = [
 			'menue' => 'speisekarte',
 			'produkt-c.html' => 'produkte',
@@ -61,7 +62,8 @@ final class ValidatorTest extends TestCase
 
 		expect([], Validator::validate([])['findings'], 'empty list: no findings');
 
-		// ── Sample lists of 14 and 12 entries (§8.1) ────────────────────────────// A list in the style of a Jimdo export (14 entries)
+		// ── Sample lists of 14 and 12 entries ───────────────────────────────────
+		// A list in the style of a Jimdo export (14 entries)
 		$jimdo_list = [
 			'kurs-a.html' => 'produkte',
 			'kurs-b.html' => 'produkte',
@@ -139,7 +141,8 @@ final class ValidatorTest extends TestCase
 
 		expect('archiv/2024', $result['entries'][0]['key'] ?? null, "'archiv/2024' kept as key");
 
-		// ── Still rejected sources (§8.1 a) ─────────────────────────────────────// Each key with its code. The pre-1.0 rule for a segment: [a-z0-9-], one dot.
+		// ── Still rejected sources ──────────────────────────────────────────────
+		// Each key with its code. The pre-1.0 rule for a segment: [a-z0-9-], one dot.
 		$rejected = [
 			'../secret' => 'source.invalid',
 			'a/../secret' => 'source.invalid',

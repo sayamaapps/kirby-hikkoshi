@@ -65,6 +65,7 @@
         "kirby-cms-path": false
     },
     "scripts": {
+        "analyze:phpcpd": "phpcpd --fuzzy --exclude tests --exclude vendor .",
         "analyze:phpmd": "vendor/bin/phpmd src,config,index.php,legacy.php,autoload.php github phpmd.xml.dist",
         "analyze:psalm": "vendor/bin/psalm",
         "analyze:require-checker": "vendor/bin/composer-require-checker check --config-file=composer-require-checker.json composer.json",
@@ -74,6 +75,7 @@
             "@normalize:check",
             "@analyze:require-checker",
             "@analyze:unused",
+            "@analyze:phpcpd",
             "@composer check-platform-reqs",
             "@analyze:psalm",
             "@analyze:phpmd",

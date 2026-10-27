@@ -39,6 +39,64 @@ class Validator
 	public const WARNING = 'warning';
 
 	/**
+	 * The array form `['to' => …, 'status' => …, 'query' => …]`: only these keys,
+	 * with a valid status and query when given.
+	 *
+	 * @return array{target: string|null, status: int, query: string}|null
+	 */
+	private static function arrayForm(array $value, array $settings, string $entryText, string $key, array &$findings): array|null
+	{
+		foreach (array_keys($value) as $name) {
+			if (!in_array($name, self::ENTRY_KEYS, true)) {
+				$findings[] = self::finding(self::ERROR, 'entry.invalid', ['entry' => $entryText], $key);
+				return null;
+			}
+		}
+		$status = $settings['status'];
+		if (array_key_exists('status', $value)) {
+			if (!is_int($value['status']) || !in_array($value['status'], self::STATUSES, true)) {
+				$findings[] = self::finding(self::ERROR, 'status.invalid', ['status' => var_export($value['status'], true), 'entry' => $entryText], $key);
+				return null;
+			}
+			$status = $value['status'];
+		}
+		$query = $settings['query'];
+		if (array_key_exists('query', $value)) {
+			if (!is_string($value['query']) || !in_array($value['query'], self::QUERY_MODES, true)) {
+				$findings[] = self::finding(self::ERROR, 'query.invalid', ['query' => var_export($value['query'], true), 'entry' => $entryText], $key);
+				return null;
+			}
+			$query = $value['query'];
+		}
+		return self::arrayTarget($value, $status, $query, $entryText, $key, $findings);
+	}
+
+	/**
+	 * The `to` of the array form: none with status 410, a string otherwise.
+	 *
+	 * @return array{target: string|null, status: int, query: string}|null
+	 */
+	private static function arrayTarget(array $value, mixed $status, mixed $query, string $entryText, string $key, array &$findings): array|null
+	{
+		if ($status === 410) {
+			if (array_key_exists('to', $value)) {
+				$findings[] = self::finding(self::ERROR, 'entry.invalid', ['entry' => $entryText], $key);
+				return null;
+			}
+			return ['target' => null, 'status' => 410, 'query' => $query];
+		}
+		if (!array_key_exists('to', $value)) {
+			$findings[] = self::finding(self::ERROR, 'target.missing', ['entry' => $entryText], $key);
+			return null;
+		}
+		if (!is_string($value['to'])) {
+			$findings[] = self::finding(self::ERROR, 'target.invalid', ['entry' => $entryText], $key);
+			return null;
+		}
+		return ['target' => trim($value['to']), 'status' => $status, 'query' => $query];
+	}
+
+	/**
 	 * validate(), but throws ConfigException when any finding is an error.
 	 * Warnings and infos are left to the caller (ConfigException::findings()
 	 * is not reached then; use validate() to see them).
@@ -67,39 +125,17 @@ class Validator
 	 */
 	private static function chains(array &$entries, array $settings, array &$findings): void
 	{
-		$plain = [];   // source => index, entries without conditions
-		foreach ($entries as $index => $entry) {
-			if ($entry['conditions'] === []) {
-				$plain[$entry['source']] = $index;
-			}
-		}
+		$plain = self::plainSources($entries);
 
 		$inLoop = [];   // sources already reported as part of a loop
 		$resolved = [];
 		foreach ($entries as $index => $entry) {
-			if ($entry['external'] || $entry['target'] === null) {
+			$hops = self::follow($entries, $plain, $entry);
+			if ($hops === null) {
 				continue;
 			}
-			$start = $entry['conditions'] === [] ? $entry['source'] : $entry['key'];
-			$chain = [$start];
-			$visited = $entry['conditions'] === [] ? [$entry['source'] => true] : [];
-			$current = $entry['target'];
-			$final = $entry;
-			$loop = false;
-			while ($current !== 'home' && isset($plain[$current])) {
-				$chain[] = $current;
-				if (isset($visited[$current])) {
-					$loop = true;
-					break;
-				}
-				$visited[$current] = true;
-				$final = $entries[$plain[$current]];
-				if ($final['external'] || $final['target'] === null) {
-					break;
-				}
-				$current = $final['target'];
-			}
-			if ($loop) {
+			$chain = $hops['chain'];
+			if ($hops['loop']) {
 				if (isset($inLoop[$entry['source']])) {
 					continue;
 				}
@@ -113,6 +149,7 @@ class Validator
 				continue;   // the target is not a source: no chain
 			}
 			// The chain ends at the final target (a page id, a URL or 410).
+			$final = $hops['final'];
 			$chain[] = $final['target'] ?? '410';
 			$text = implode(' → ', $chain);
 			if ($settings['resolveChains'] === true) {
@@ -124,17 +161,34 @@ class Validator
 		}
 
 		// Loops make the list invalid; do not resolve anything then.
-		if ($inLoop !== []) {
-			return;
+		if ($inLoop === []) {
+			self::resolve($entries, $resolved);
 		}
-		foreach ($resolved as $index => $final) {
-			$entries[$index]['target'] = $final['target'];
-			$entries[$index]['external'] = $final['external'];
-			if ($final['target'] === null) {
-				$entries[$index]['status'] = 410;
-				$entries[$index]['query'] = 'drop';
-			}
+	}
+
+	/**
+	 * An external target: its host must be in allowedHosts, and the URL must be
+	 * usable as a Location header.
+	 *
+	 * @return array{target: string, status: int, query: string, external: bool}|null
+	 */
+	private static function externalValue(string $target, string $host, mixed $status, mixed $query, array $settings, string $entryText, string $key, array &$findings): array|null
+	{
+		$allowed = $settings['allowedHosts'];
+		if (!in_array($host, $allowed, true) && !in_array(preg_replace('/:\d+$/', '', $host), $allowed, true)) {
+			$findings[] = self::finding(self::ERROR, 'target.foreign', ['host' => $host, 'entry' => $entryText], $key);
+			return null;
 		}
+		// Whitespace or a control character inside the URL: Kirby would
+		// send a mangled Location (`x__Set-Cookie:…`) without complaint.
+		if (preg_match('/[\s\x00-\x1F\x7F]/', $target) === 1) {
+			$findings[] = self::finding(self::ERROR, 'target.invalid', ['entry' => $entryText], $key);
+			return null;
+		}
+		// Kirby's Uri accepts only a lowercase scheme: `HTTPS://…` would
+		// throw on every request to the old path.
+		$target = (string)preg_replace_callback('~^https?:~i', static fn (array $m) => strtolower($m[0]), $target);
+		return ['target' => $target, 'status' => $status, 'query' => $query, 'external' => true];
 	}
 
 	/**
@@ -152,6 +206,37 @@ class Validator
 			'key'     => $key,
 			'values'  => $values,
 		];
+	}
+
+	/**
+	 * The hops of the chain that starts at $entry, through entries without
+	 * conditions. Null when the entry has no local target (external or 410).
+	 *
+	 * @return array{chain: list<string>, loop: bool, final: array}|null
+	 */
+	private static function follow(array $entries, array $plain, array $entry): array|null
+	{
+		if (!self::isLocal($entry)) {
+			return null;
+		}
+		$start = $entry['conditions'] === [] ? $entry['source'] : $entry['key'];
+		$chain = [$start];
+		$visited = $entry['conditions'] === [] ? [$entry['source'] => true] : [];
+		$current = $entry['target'];
+		$final = $entry;
+		while ($current !== 'home' && isset($plain[$current])) {
+			$chain[] = $current;
+			if (isset($visited[$current])) {
+				return ['chain' => $chain, 'loop' => true, 'final' => $final];
+			}
+			$visited[$current] = true;
+			$final = $entries[$plain[$current]];
+			if (!self::isLocal($final)) {
+				break;
+			}
+			$current = $final['target'];
+		}
+		return ['chain' => $chain, 'loop' => false, 'final' => $final];
 	}
 
 	/** True when at least one finding has the error level. */
@@ -182,6 +267,18 @@ class Validator
 		return $source . '?' . implode('&', $parts);
 	}
 
+	/** A target on this site: neither external nor 410. */
+	private static function isLocal(array $entry): bool
+	{
+		return $entry['external'] === false && $entry['target'] !== null;
+	}
+
+	/** A local target that is the entry's own source, without conditions. */
+	private static function isSelf(array $parsed, string $source, array $conditions): bool
+	{
+		return self::isLocal($parsed) && $conditions === [] && $parsed['target'] === $source;
+	}
+
 	/** Only the findings of one level, in order. */
 	public static function ofLevel(array $findings, string $level): array
 	{
@@ -196,57 +293,11 @@ class Validator
 	 */
 	private static function parseValue(mixed $value, array $settings, string $entryText, string $key, array &$findings): array|null
 	{
-		$status = $settings['status'];
-		$query = $settings['query'];
-		$target = null;
-
-		if (is_string($value)) {
-			$target = trim($value);
-		} elseif (is_int($value)) {
-			if ($value !== 410) {
-				$findings[] = self::finding(self::ERROR, 'entry.invalid', ['entry' => $entryText], $key);
-				return null;
-			}
-			$status = 410;
-		} elseif (is_array($value)) {
-			foreach (array_keys($value) as $name) {
-				if (!in_array($name, self::ENTRY_KEYS, true)) {
-					$findings[] = self::finding(self::ERROR, 'entry.invalid', ['entry' => $entryText], $key);
-					return null;
-				}
-			}
-			if (array_key_exists('status', $value)) {
-				if (!is_int($value['status']) || !in_array($value['status'], self::STATUSES, true)) {
-					$findings[] = self::finding(self::ERROR, 'status.invalid', ['status' => var_export($value['status'], true), 'entry' => $entryText], $key);
-					return null;
-				}
-				$status = $value['status'];
-			}
-			if (array_key_exists('query', $value)) {
-				if (!is_string($value['query']) || !in_array($value['query'], self::QUERY_MODES, true)) {
-					$findings[] = self::finding(self::ERROR, 'query.invalid', ['query' => var_export($value['query'], true), 'entry' => $entryText], $key);
-					return null;
-				}
-				$query = $value['query'];
-			}
-			if ($status === 410) {
-				if (array_key_exists('to', $value)) {
-					$findings[] = self::finding(self::ERROR, 'entry.invalid', ['entry' => $entryText], $key);
-					return null;
-				}
-			} elseif (!array_key_exists('to', $value)) {
-				$findings[] = self::finding(self::ERROR, 'target.missing', ['entry' => $entryText], $key);
-				return null;
-			} elseif (!is_string($value['to'])) {
-				$findings[] = self::finding(self::ERROR, 'target.invalid', ['entry' => $entryText], $key);
-				return null;
-			} else {
-				$target = trim($value['to']);
-			}
-		} else {
-			$findings[] = self::finding(self::ERROR, 'target.invalid', ['entry' => $entryText], $key);
+		$form = self::valueForm($value, $settings, $entryText, $key, $findings);
+		if ($form === null) {
 			return null;
 		}
+		['target' => $target, 'status' => $status, 'query' => $query] = $form;
 
 		if ($status === 410) {
 			return ['target' => null, 'status' => 410, 'query' => 'drop', 'external' => false];
@@ -254,21 +305,7 @@ class Validator
 
 		$host = Path::externalHost((string)$target);
 		if ($host !== null) {
-			$allowed = $settings['allowedHosts'];
-			if (!in_array($host, $allowed, true) && !in_array(preg_replace('/:\d+$/', '', $host), $allowed, true)) {
-				$findings[] = self::finding(self::ERROR, 'target.foreign', ['host' => $host, 'entry' => $entryText], $key);
-				return null;
-			}
-			// Whitespace or a control character inside the URL: Kirby would
-			// send a mangled Location (`x__Set-Cookie:…`) without complaint.
-			if (preg_match('/[\s\x00-\x1F\x7F]/', (string)$target) === 1) {
-				$findings[] = self::finding(self::ERROR, 'target.invalid', ['entry' => $entryText], $key);
-				return null;
-			}
-			// Kirby's Uri accepts only a lowercase scheme: `HTTPS://…` would
-			// throw on every request to the old path.
-			$target = (string)preg_replace_callback('~^https?:~i', static fn (array $m) => strtolower($m[0]), (string)$target);
-			return ['target' => $target, 'status' => $status, 'query' => $query, 'external' => true];
+			return self::externalValue((string)$target, $host, $status, $query, $settings, $entryText, $key, $findings);
 		}
 
 		if (!Path::isValidTarget((string)$target)) {
@@ -276,6 +313,55 @@ class Validator
 			return null;
 		}
 		return ['target' => $target, 'status' => $status, 'query' => $query, 'external' => false];
+	}
+
+	/** Source => index of every entry without conditions. */
+	private static function plainSources(array $entries): array
+	{
+		$plain = [];
+		foreach ($entries as $index => $entry) {
+			if ($entry['conditions'] === []) {
+				$plain[$entry['source']] = $index;
+			}
+		}
+		return $plain;
+	}
+
+	/** Writes the resolved chains into the entries: each source gets the final target. */
+	private static function resolve(array &$entries, array $resolved): void
+	{
+		foreach ($resolved as $index => $final) {
+			$entries[$index]['target'] = $final['target'];
+			$entries[$index]['external'] = $final['external'];
+			if ($final['target'] === null) {
+				$entries[$index]['status'] = 410;
+				$entries[$index]['query'] = 'drop';
+			}
+		}
+	}
+
+	/**
+	 * The normalised source and the query conditions of an old path. Null, with a
+	 * finding, when the path cannot be a source.
+	 *
+	 * @return array{source: string, conditions: array<string, string|null>}|null
+	 */
+	private static function sourceOf(string $key, array $settings, string $entryText, array &$findings): array|null
+	{
+		$split = Path::split($key);
+		$source = Path::normalize($split['path'], $settings['lowercase'], $settings['transliterate']);
+		$conditions = $split['conditions'];
+
+		if ($source === '') {
+			if ($conditions === []) {
+				$findings[] = self::finding(self::ERROR, 'source.empty', ['entry' => $entryText], $key);
+				return null;
+			}
+		} elseif (!Path::isValidSource($source)) {
+			$findings[] = self::finding(self::ERROR, 'source.invalid', ['entry' => $entryText], $key);
+			return null;
+		}
+		return ['source' => $source, 'conditions' => $conditions];
 	}
 
 	/**
@@ -310,26 +396,18 @@ class Validator
 				continue;
 			}
 
-			$split = Path::split($key);
-			$source = Path::normalize($split['path'], $settings['lowercase'], $settings['transliterate']);
-			$conditions = $split['conditions'];
-
-			if ($source === '') {
-				if ($conditions === []) {
-					$findings[] = self::finding(self::ERROR, 'source.empty', ['entry' => $entryText], $key);
-					continue;
-				}
-			} elseif (!Path::isValidSource($source)) {
-				$findings[] = self::finding(self::ERROR, 'source.invalid', ['entry' => $entryText], $key);
+			$located = self::sourceOf($key, $settings, $entryText, $findings);
+			if ($located === null) {
 				continue;
 			}
+			['source' => $source, 'conditions' => $conditions] = $located;
 
 			$parsed = self::parseValue($value, $settings, $entryText, $key, $findings);
 			if ($parsed === null) {
 				continue;
 			}
 
-			if (!$parsed['external'] && $parsed['target'] !== null && $conditions === [] && $parsed['target'] === $source) {
+			if (self::isSelf($parsed, $source, $conditions)) {
 				$findings[] = self::finding(self::ERROR, 'target.self', ['entry' => $entryText], $key);
 				continue;
 			}
@@ -364,6 +442,31 @@ class Validator
 		 * @var list<array{level: string, code: string, message: string, key: string|null, values: array<array-key, mixed>}> $findings
 		 */
 		return ['entries' => $entries, 'findings' => $findings];
+	}
+
+	/**
+	 * The three value forms as target, status and query: a page id (string), 410
+	 * (int) or the array form. Null, with a finding, for anything else.
+	 *
+	 * @return array{target: string|null, status: int, query: string}|null
+	 */
+	private static function valueForm(mixed $value, array $settings, string $entryText, string $key, array &$findings): array|null
+	{
+		if (is_string($value)) {
+			return ['target' => trim($value), 'status' => $settings['status'], 'query' => $settings['query']];
+		}
+		if (is_int($value)) {
+			if ($value !== 410) {
+				$findings[] = self::finding(self::ERROR, 'entry.invalid', ['entry' => $entryText], $key);
+				return null;
+			}
+			return ['target' => null, 'status' => 410, 'query' => $settings['query']];
+		}
+		if (is_array($value)) {
+			return self::arrayForm($value, $settings, $entryText, $key, $findings);
+		}
+		$findings[] = self::finding(self::ERROR, 'target.invalid', ['entry' => $entryText], $key);
+		return null;
 	}
 }
 

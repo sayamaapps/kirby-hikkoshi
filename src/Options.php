@@ -4,25 +4,21 @@ namespace Sayamaapps\Hikkoshi;
 
 use InvalidArgumentException;
 use Kirby\Cms\App;
-use Kirby\Cms\Helpers;
 use Throwable;
 
 /**
- * Reads the plugin's options (docs/SPEC.md §4): `sayamaapps.hikkoshi.<key>`, falling
- * back to the 1.x name `hikkoshi.<key>` with a deprecation.
+ * Reads the plugin's options (docs/SPEC.md §4): `hikkoshi.<key>`.
  *
  * `null` counts as "not set", like Kirby's own option(), so
- * `'sayamaapps.hikkoshi.status' => null` falls back to the default.
+ * `'hikkoshi.status' => null` falls back to the default.
  *
- * Both spellings work, flat (`'sayamaapps.hikkoshi.active' => true`) and nested
- * (`'sayamaapps' => ['hikkoshi' => ['active' => true]]`), because Kirby's
- * option() finds both.
+ * Both spellings work, flat (`'hikkoshi.active' => true`) and nested
+ * (`'hikkoshi' => ['active' => true]`), because Kirby's option() finds both.
  *
- * Defaults live in DEFAULTS and are given at the call sites. The `options`
- * block of the plugin (config/options.php) lists the keys with null: a default
- * there would hide the 1.x spelling. The CLI (no Kirby) reads DEFAULTS directly;
- * the file loads without Kirby because App and Helpers are only used in
- * signatures or in methods the CLI does not call.
+ * Defaults live in DEFAULTS and are given at the call sites, never in an
+ * `options` block of the plugin (Kirby would file them under the plugin name).
+ * The CLI (no Kirby) reads DEFAULTS directly; the file loads without Kirby
+ * because App is only a type in signatures.
  *
  * @package   Kirby Hikkoshi
  * @author    Simon Räder
@@ -51,19 +47,8 @@ class Options
 	/** File names tried in site/config/ when `hikkoshi.redirects` and `hikkoshi.file` are not set, in this order. */
 	public const FILES = ['hikkoshi.php', 'weiterleitungen.php'];
 
-	/** Option prefix of 1.x, read as a fallback until 2.0. */
-	public const LEGACY_PREFIX = 'hikkoshi.';
-
-	/** Option prefix since 2.0. */
-	public const OPTION_PREFIX = 'sayamaapps.hikkoshi.';
-
-	/**
-	 * The 1.x prefix under its old name, so `Options::PREFIX . $key` still names the
-	 * 1.x option as it did before 2.0. Use OPTION_PREFIX.
-	 *
-	 * @deprecated 2.0 Use OPTION_PREFIX.
-	 */
-	public const PREFIX = self::LEGACY_PREFIX;
+	/** Option prefix: `hikkoshi.<key>`. */
+	public const PREFIX = 'hikkoshi.';
 
 	/** @var array<string, true> messages already written to the error log in this process */
 	private static array $logged = [];
@@ -91,32 +76,14 @@ class Options
 		if (is_bool($value)) {
 			return $value;
 		}
-		self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . $key . ' must be true or false — using ' . var_export($default, true) . '.');
+		self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be true or false — using ' . var_export($default, true) . '.');
 		return $default;
 	}
 
-	/**
-	 * Reads `sayamaapps.hikkoshi.<key>`, falling back to the 1.x name `hikkoshi.<key>`
-	 * (with a deprecation), and to `$default` when neither is set.
-	 */
+	/** Reads `hikkoshi.<key>`, or `$default` when it is not set. */
 	public static function get(App $kirby, string $key, mixed $default = null): mixed
 	{
-		$value = $kirby->option(self::OPTION_PREFIX . $key);
-		if ($value !== null) {
-			return $value;
-		}
-
-		// The 1.x spelling still works, with a deprecation (README, Deprecations).
-		$legacy = $kirby->option(self::LEGACY_PREFIX . $key);
-		if ($legacy !== null) {
-			Helpers::deprecated(
-				'Hikkoshi: hikkoshi.' . $key . ' is deprecated, use ' . self::OPTION_PREFIX . $key,
-				'option-prefix'
-			);
-			return $legacy;
-		}
-
-		return $default;
+		return $kirby->option(self::PREFIX . $key) ?? $default;
 	}
 
 	/**
@@ -142,6 +109,9 @@ class Options
 	 * A broken option: with Kirby's `debug` option on it throws, so the
 	 * developer sees it on the page; otherwise it is logged once per process
 	 * and the caller uses the default.
+	 *
+	 * The exception is PHP's \InvalidArgumentException, as in 1.x: Kirby's own
+	 * exception classes do not extend it, and a site's catch would miss them.
 	 */
 	public static function invalid(App $kirby, string $message): void
 	{
@@ -228,12 +198,12 @@ class Options
 	{
 		$status = self::get($kirby, 'status', self::DEFAULTS['status']);
 		if (!is_int($status) || !in_array($status, [301, 302, 307, 308], true)) {
-			self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . 'status must be 301, 302, 307 or 308 — using 301.');
+			self::invalid($kirby, 'Hikkoshi: hikkoshi.status must be 301, 302, 307 or 308 — using 301.');
 			$status = self::DEFAULTS['status'];
 		}
 		$query = self::get($kirby, 'query', self::DEFAULTS['query']);
 		if (!in_array($query, ['keep', 'drop'], true)) {
-			self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . 'query must be "keep" or "drop" — using "keep".');
+			self::invalid($kirby, 'Hikkoshi: hikkoshi.query must be "keep" or "drop" — using "keep".');
 			$query = self::DEFAULTS['query'];
 		}
 		return [
@@ -263,7 +233,7 @@ class Options
 			$option = [$option];
 		}
 		if (!is_array($option)) {
-			self::invalid($kirby, 'Hikkoshi: ' . self::OPTION_PREFIX . $key . ' must be a list of strings — using the default.');
+			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be a list of strings — using the default.');
 			return $default;
 		}
 		$list = [];

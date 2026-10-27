@@ -36,9 +36,13 @@ class SiteCheck
 	 * target page's answer. $rendered holds the page ids already requested in
 	 * this run, so a page shared by several entries is rendered once.
 	 *
+	 * One check per entry outcome (redirect, 410, chain, status); the checks depend on each other in order.
+	 *
 	 * @param array{key: string, source: string, conditions: array<string, string|null>, target: string|null, status: int, query: string, external: bool} $entry
 	 * @param array<string, true> $rendered
 	 * @return list<array{level:string, code:string, message:string, key:?string, values:array}>
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private static function checkEntry(App $kirby, Resolver $resolver, array $entry, bool $render, array &$rendered): array
 	{
@@ -143,7 +147,11 @@ class SiteCheck
 	 * For a Page the result mirrors App::io(): render, then the Responder's
 	 * code (404 for the error page when none is set) and its Location header.
 	 *
+	 * One branch per HTTP outcome of the probe; the probe is read top to bottom.
+	 *
 	 * @return array{0: int, 1: ?string}
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private static function request(App $kirby, string $path): array
 	{

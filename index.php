@@ -28,7 +28,6 @@ require_once __DIR__ . '/legacy.php';
 Kirby::plugin(
 	name: 'sayamaapps/hikkoshi',
 	extends: [
-		'options'      => require __DIR__ . '/config/options.php',
 		'translations' => require __DIR__ . '/config/translations.php',
 		'snippets'     => require __DIR__ . '/config/snippets.php',
 		'routes'       => require __DIR__ . '/config/routes.php',

@@ -12,17 +12,17 @@
  * The commands live in src/CheckCommand.php and src/ConvertCommand.php.
  */
 if (PHP_SAPI !== 'cli') {
-    http_response_code(404);
-    exit;
+	http_response_code(404);
+	exit;
 }
 
 // Kirby-free class loading from the same class map as index.php (autoload.php).
 $hikkoshiClasses = require dirname(__DIR__) . '/autoload.php';
 spl_autoload_register(static function (string $class) use ($hikkoshiClasses): void {
-    $file = $hikkoshiClasses[strtolower($class)] ?? null;
-    if ($file !== null) {
-        require_once dirname(__DIR__) . '/' . $file;
-    }
+	$file = $hikkoshiClasses[strtolower($class)] ?? null;
+	if ($file !== null) {
+		require_once dirname(__DIR__) . '/' . $file;
+	}
 });
 
 use Sayamaapps\Hikkoshi\CheckCommand;
@@ -33,27 +33,27 @@ use Sayamaapps\Hikkoshi\I18n;
 // remaining argument is the command.
 $args = [];
 foreach (array_slice($argv, 1) as $arg) {
-    if (str_starts_with($arg, '--lang=')) {
-        I18n::setLanguage(substr($arg, 7));
-    } else {
-        $args[] = $arg;
-    }
+	if (str_starts_with($arg, '--lang=')) {
+		I18n::setLanguage(substr($arg, 7));
+	} else {
+		$args[] = $arg;
+	}
 }
 $command = $args[0] ?? null;
 $rest = array_slice($args, 1);
 
 switch ($command) {
-    case 'check':
-        exit(CheckCommand::run($rest, STDOUT, STDERR, (string) getcwd()));
-    case 'convert':
-        exit(ConvertCommand::run($rest, STDOUT, STDERR, (string) getcwd()));
-    case null:
-    case '-h':
-    case '--help':
-    case 'help':
-        fwrite($command === null ? STDERR : STDOUT, I18n::t('cli.usage') . "\n");
-        exit($command === null ? 2 : 0);
-    default:
-        fwrite(STDERR, I18n::printable(I18n::t('cli.unknownCommand', ['command' => $command])) . "\n" . I18n::t('cli.usage') . "\n");
-        exit(2);
+	case 'check':
+		exit(CheckCommand::run($rest, STDOUT, STDERR, (string)getcwd()));
+	case 'convert':
+		exit(ConvertCommand::run($rest, STDOUT, STDERR, (string)getcwd()));
+	case null:
+	case '-h':
+	case '--help':
+	case 'help':
+		fwrite($command === null ? STDERR : STDOUT, I18n::t('cli.usage') . "\n");
+		exit($command === null ? 2 : 0);
+	default:
+		fwrite(STDERR, I18n::printable(I18n::t('cli.unknownCommand', ['command' => $command])) . "\n" . I18n::t('cli.usage') . "\n");
+		exit(2);
 }
