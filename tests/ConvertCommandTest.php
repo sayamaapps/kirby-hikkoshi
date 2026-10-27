@@ -168,30 +168,30 @@ final class ConvertCommandTest extends TestCase
 			$block = <<<'HTACCESS'
 		RewriteEngine on
 
-		# www.example.com ist dieselbe Seite, nur mit Vorsilbe. Ohne diese Regel
-		# liefert der Server beide Adressen als eigene Kopie aus (doppelte Inhalte für
-		# Suchmaschinen). Deshalb 301 auf die Hauptdomain — vor allen anderen Regeln,
-		# damit die Weiterleitungen der alten WordPress-Seite auch unter www greifen.
+		# www.example.com is the same site with a prefix. Without this rule
+		# the server serves both addresses as separate copies (duplicate content for
+		# search engines). So 301 to the main domain, before all other rules,
+		# so that the redirects of the old WordPress site also work under www.
 		RewriteCond %{HTTP_HOST} ^www\.example\.com$ [NC]
 		RewriteRule ^(.*)$ https://example.com/$1 [R=301,L]
 
-		# Die Standardseite des Hosters mit ausliefern zu lassen wäre unsauber:
-		# Sie steht nicht unter unserem Zugangsschutz und zeigt Fremdes an.
+		# Letting the host's default page be served too would be unclean:
+		# it is not behind our access protection and shows foreign content.
 		RewriteRule ^index\.html$ index.php [L]
 
-		# ---------- Weiterleitungen von der alten WordPress-Seite ----------
+		# ---------- Redirects from the old WordPress site ----------
 		#
-		# Die alte Seite lief mit "einfachen" Permalinks: Jede Seite war eine
-		# Query-String-URL (/?page_id=82), nicht ein Pfad. RewriteRule prüft aber nur
-		# den PFAD — und der ist hier immer leer bzw. "index.php". Die Unterscheidung
-		# muss deshalb ausdrücklich über %{QUERY_STRING} laufen.
+		# The old site used plain permalinks: every page was a
+		# query string URL (/?page_id=82), not a path. RewriteRule only checks
+		# the PATH, which is always empty or "index.php" here. The distinction
+		# therefore has to go through %{QUERY_STRING}.
 		#
-		# Das "?" am Ende jeder Zielangabe wirft den alten Query-String weg. Ohne es
-		# hinge "?page_id=82" auch noch an der neuen Adresse — und die Bedingung
-		# griffe erneut, was eine Weiterleitungsschleife ergäbe.
+		# The "?" at the end of each target drops the old query string. Without it
+		# "?page_id=82" would still be appended to the new address, and the condition
+		# would match again, which would be a redirect loop.
 		#
-		# Diese Regeln stehen VOR den Kirby-Regeln, sonst schluckt die Catch-all-Regel
-		# am Dateiende die Anfrage vorher.
+		# These rules come BEFORE the Kirby rules, or the catch-all rule
+		# at the end of the file would take the request first.
 
 		RewriteCond %{QUERY_STRING} (^|&)page_id=13(&|$)
 		RewriteRule ^(index\.php)?$ /ueber-uns? [R=301,L]
@@ -199,7 +199,7 @@ final class ConvertCommandTest extends TestCase
 		RewriteCond %{QUERY_STRING} (^|&)page_id=36(&|$)
 		RewriteRule ^(index\.php)?$ /galerie? [R=301,L]
 
-		# Kontakt hatte drei Formen: Im alten Menü stand ausgerechnet die dritte.
+		# The contact page had three forms; the old menu linked the third one.
 		RewriteCond %{QUERY_STRING} (^|&)page_id=14(&|$) [OR]
 		RewriteCond %{QUERY_STRING} (^|&)p=14(&|$) [OR]
 		RewriteCond %{QUERY_STRING} (^|&)pagename=contact(&|$)
@@ -211,36 +211,36 @@ final class ConvertCommandTest extends TestCase
 		RewriteCond %{QUERY_STRING} (^|&)page_id=82(&|$)
 		RewriteRule ^(index\.php)?$ /impressum? [R=301,L]
 
-		# Reste der Theme-Demo (Portfolio, Projekt-Details, Blog, Sample Page,
-		# "Hello world!"), die alte Startseiten-ID und die WordPress-Feeds. Nirgends
-		# verlinkt, aber vorhanden — auf die Startseite statt auf eine Fehlerseite.
+		# Leftovers of a theme demo (portfolio, project details, blog, sample page,
+		# "Hello world!"), the old front page ID and the WordPress feeds. Not linked
+		# anywhere, but still reachable: to the home page instead of an error page.
 		RewriteCond %{QUERY_STRING} (^|&)page_id=(2|12|15|16|17)(&|$) [OR]
 		RewriteCond %{QUERY_STRING} (^|&)p=1(&|$) [OR]
 		RewriteCond %{QUERY_STRING} (^|&)feed=
 		RewriteRule ^(index\.php)?$ /? [R=301,L]
 
-		# Alte Bild-URLs (/wordpress/wp-content/uploads/…) bekommen BEWUSST keine
-		# Weiterleitung: Kirby vergibt eigene Media-Hashes, eine 1:1-Zuordnung gibt es
-		# nicht. Ein Bild auf die Startseite umzuleiten wertet Google als Soft-404 —
-		# ein ehrlicher 404 ist besser.
+		# Old image URLs (/wordpress/wp-content/uploads/…) deliberately get no redirect:
+		# Kirby assigns its own media hashes, so there is no 1:1 mapping.
+		# Redirecting an image to the home page counts as a soft 404 for Google;
+		# an honest 404 is better.
 
-		# Falls die Seite in einem Unterordner läuft, hier setzen:
+		# If the site runs in a subfolder, set it here:
 		# RewriteBase /
 
-		# Punkt-Dateien und -Ordner sperren (.git, .env …), außer .well-known
+		# Block dot files and folders (.git, .env …), except .well-known
 		RewriteRule (^|/)\.(?!well-known\/) index.php [L]
 
-		# Bilder bewusst durch PHP leiten. Ohne diese Zeile liefert der Webserver die
-		# generierten Bildgrößen direkt aus — am Zugangsschutz vorbei. Ein geschütztes Bild
-		# wäre dann mit der richtigen URL ohne Passwort abrufbar.
+		# Route images through PHP on purpose. Without this line the web server serves the
+		# generated image sizes directly, bypassing access protection. A protected image
+		# would then be reachable without a password via the right URL.
 		RewriteRule ^media/(.*) index.php [L]
 
-		# Inhalte, Templates und Kirby selbst nicht direkt ausliefern
+		# Do not serve content, templates or Kirby itself directly
 		RewriteRule ^content/(.*) index.php [L]
 		RewriteRule ^site/(.*)    index.php [L]
 		RewriteRule ^kirby/(.*)   index.php [L]
 
-		# Alles Übrige an Kirby übergeben, sofern es keine echte Datei ist
+		# Pass everything else to Kirby, unless it is a real file
 		RewriteCond %{REQUEST_FILENAME} !-f
 		RewriteCond %{REQUEST_FILENAME} !-d
 		RewriteRule ^(.*) index.php [L]
