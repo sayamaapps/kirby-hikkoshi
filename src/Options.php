@@ -83,7 +83,7 @@ class Options
 		if (is_bool($value)) {
 			return $value;
 		}
-		self::invalid($kirby, 'Hikkoshi: hikkoshi.' . $key . ' must be true or false — using ' . var_export($default, true) . '.');
+		self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be true or false — using ' . var_export($default, true) . '.');
 		return $default;
 	}
 
@@ -220,12 +220,12 @@ class Options
 	{
 		$status = self::get($kirby, 'status', self::DEFAULTS['status']);
 		if (!is_int($status) || !in_array($status, [301, 302, 307, 308], true)) {
-			self::invalid($kirby, 'Hikkoshi: hikkoshi.status must be 301, 302, 307 or 308 — using 301.');
+			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . 'status must be 301, 302, 307 or 308 — using 301.');
 			$status = self::DEFAULTS['status'];
 		}
 		$query = self::get($kirby, 'query', self::DEFAULTS['query']);
 		if (!in_array($query, ['keep', 'drop'], true)) {
-			self::invalid($kirby, 'Hikkoshi: hikkoshi.query must be "keep" or "drop" — using "keep".');
+			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . 'query must be "keep" or "drop" — using "keep".');
 			$query = self::DEFAULTS['query'];
 		}
 		return [
@@ -255,7 +255,7 @@ class Options
 			$option = [$option];
 		}
 		if (!is_array($option)) {
-			self::invalid($kirby, 'Hikkoshi: hikkoshi.' . $key . ' must be a list of strings — using the default.');
+			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be a list of strings — using the default.');
 			return $default;
 		}
 		$list = [];

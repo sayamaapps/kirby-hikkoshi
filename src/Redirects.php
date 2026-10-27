@@ -46,7 +46,7 @@ class Redirects
 		if (is_string($file) && trim($file) !== '') {
 			$path = self::isAbsolute($file) ? $file : $kirby->root('config') . '/' . $file;
 			if (!is_file($path)) {
-				Options::invalid($kirby, 'Hikkoshi: hikkoshi.file points to a missing file: ' . $path);
+				Options::invalid($kirby, 'Hikkoshi: ' . Options::PREFIX . 'file points to a missing file: ' . $path);
 				return [];
 			}
 			return require $path;
