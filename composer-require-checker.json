@@ -13,6 +13,7 @@
         "Kirby\\Cms\\Page",
         "Kirby\\Cms\\Responder",
         "Kirby\\Exception\\Exception",
+        "Kirby\\Exception\\InvalidArgumentException",
         "Kirby\\Filesystem\\F",
         "Kirby\\Http\\Response",
         "Kirby\\Http\\Route",

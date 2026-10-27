@@ -72,6 +72,9 @@ jobs:
       - name: PHP Mess Detector
         run: composer analyze:phpmd
 
+      - name: Platform requirements
+        run: composer check-platform-reqs
+
   style:
     name: Code style, PHP 8.4
     runs-on: ubuntu-latest

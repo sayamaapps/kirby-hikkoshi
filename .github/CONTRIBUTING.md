@@ -18,16 +18,13 @@ To try the plugin on a site, link or copy the folder to `site/plugins/hikkoshi/`
 
 ## Checks
 
-Run these before you open a pull request. CI runs the same checks on PHP 8.2 to 8.5.
+Run this before you open a pull request. It runs every check that CI runs (`composer ci`), on the PHP version installed locally. CI runs the tests on PHP 8.2 to 8.5.
 
 ```sh
-composer test                     # PHPUnit
-composer analyze:psalm            # Psalm
-composer analyze:phpmd            # PHP Mess Detector
-composer analyze:unused           # unused Composer packages
-composer analyze:require-checker  # undeclared dependencies
-composer normalize:check          # composer.json layout
+composer ci
 ```
+
+The script runs: `validate`, `normalize:check` (composer.json layout), `analyze:require-checker` (undeclared dependencies), `analyze:unused` (unused packages), `check-platform-reqs`, `analyze:psalm`, `analyze:phpmd` and `test` (PHPUnit).
 
 Code style is checked with PHP-CS-Fixer and the Kirby rule set (`getkirby/php-cs`). The package is installed globally, because it needs PHP 8.3 or newer and this package supports PHP 8.2:
 
