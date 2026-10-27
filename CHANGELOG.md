@@ -14,7 +14,7 @@ Compatible with 1.x: every 1.x name, option, message key and behaviour still wor
 
 ### Changed
 
-- **Classes live in the namespace `Sayamaapps\Hikkoshi\`.** The 1.x names `Hikkoshi\*` stay as aliases. An alias is declared when its class loads, so `Hikkoshi\Validator` works without a prior `require` of the file.
+- **Classes live in the namespace `Sayamaapps\Hikkoshi\`.** The 1.x names `Hikkoshi\*` stay as aliases, and an alias is declared when its class loads, so `Hikkoshi\Validator` works without a prior `require` of the file. The exception keeps its 1.x class name at runtime (`Hikkoshi\ConfigException`, also in `get_class()` and uncaught output). The other classes report `Sayamaapps\Hikkoshi\*` in `get_class()` and in stack traces.
 - **The classes are no longer `final`.** A site may extend them; nothing that worked before stops working.
 - **Translations are also registered as `sayamaapps.hikkoshi.<key>`.** The 1.x keys `hikkoshi.<key>` stay registered.
 - **The spec moved to `docs/SPEC.md`.** `docs/` and `scripts/` are no longer part of the dist archive.

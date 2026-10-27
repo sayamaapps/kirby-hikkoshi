@@ -103,7 +103,7 @@ Deprecated in 1.x and removed in 2.0. Each still works. Nothing is raised at run
 | 1.x | Use instead |
 |---|---|
 | `hikkoshi_option($key, $default)` | `Sayamaapps\Hikkoshi\Options::get($kirby, $key, $default)` |
-| `Hikkoshi\*` classes (`Hikkoshi\Validator`, `Hikkoshi\ConfigException`, …) | `Sayamaapps\Hikkoshi\*` (the same classes; the old names are aliases) |
+| `Hikkoshi\*` classes (`Hikkoshi\Validator`, `Hikkoshi\ConfigException`, …) | `Sayamaapps\Hikkoshi\*` (the same classes under both names; the exception keeps the name `Hikkoshi\ConfigException` at runtime) |
 
 ## Planned for 2.0
 
@@ -115,7 +115,7 @@ These change behaviour, so they wait for the next major version. In 1.x they are
 - `hikkoshi_option()` and the `Hikkoshi\*` aliases are removed.
 - Error messages name the option as `sayamaapps.hikkoshi.<name>`.
 
-`Sayamaapps\Hikkoshi\ConfigException` keeps extending `LogicException`, as in 1.x, so a site's own `catch` keeps working.
+`Hikkoshi\ConfigException` keeps extending `LogicException`, as in 1.x, so a site's own `catch` keeps working.
 
 ## Validation
 
