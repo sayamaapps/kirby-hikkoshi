@@ -21,7 +21,7 @@ use WeakMap;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class Redirects
+class Redirects
 {
 	/**
 	 * Validated state per App instance, so the two site methods and the route

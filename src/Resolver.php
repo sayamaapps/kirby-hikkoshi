@@ -19,7 +19,7 @@ namespace Sayamaapps\Hikkoshi;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class Resolver
+class Resolver
 {
 	/** @var array<string, list<array>> normalised source path => entries, most conditions first */
 	private array $index = [];

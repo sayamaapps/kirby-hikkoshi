@@ -18,7 +18,7 @@ namespace Sayamaapps\Hikkoshi;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class Path
+class Path
 {
 	/**
 	 * A Kirby page id: lowercase segments without dots (`home`,

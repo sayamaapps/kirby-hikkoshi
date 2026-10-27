@@ -27,7 +27,7 @@ use Kirby\Http\Url;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class SiteCheck
+class SiteCheck
 {
 	private const REDIRECTS = [301, 302, 307, 308];
 

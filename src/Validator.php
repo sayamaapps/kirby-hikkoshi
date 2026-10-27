@@ -26,7 +26,7 @@ namespace Sayamaapps\Hikkoshi;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class Validator
+class Validator
 {
 	/** Keys the array form of an entry may have. */
 	private const ENTRY_KEYS = ['to', 'status', 'query'];

@@ -30,7 +30,7 @@ use Throwable;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class Options
+class Options
 {
 	/**
 	 * The settings the Kirby-free classes receive (SPEC.md §4), with their

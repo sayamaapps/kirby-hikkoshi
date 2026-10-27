@@ -14,7 +14,7 @@ namespace Sayamaapps\Hikkoshi;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class CheckCommand
+class CheckCommand
 {
 	/** `require`s a config file; its return value is the redirect list. */
 	private static function load(string $file): mixed

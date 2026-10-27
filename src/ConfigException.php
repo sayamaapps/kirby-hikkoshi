@@ -19,7 +19,7 @@ namespace Sayamaapps\Hikkoshi;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class ConfigException extends \LogicException
+class ConfigException extends \LogicException
 {
 	/** @var list<array{level:string, code:string, message:string, key:?string, values:array}> */
 	private array $findings;

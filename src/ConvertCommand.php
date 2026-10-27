@@ -13,7 +13,7 @@ namespace Sayamaapps\Hikkoshi;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class ConvertCommand
+class ConvertCommand
 {
 	/**
 	 * @param list<string> $args

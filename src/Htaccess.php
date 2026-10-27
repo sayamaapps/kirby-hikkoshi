@@ -21,7 +21,7 @@ namespace Sayamaapps\Hikkoshi;
  * @copyright Simon Räder
  * @license   https://opensource.org/licenses/MIT
  */
-final class Htaccess
+class Htaccess
 {
 	/**
 	 * RewriteRule flags a redirect may carry: handled (R, G, QSD) or without
