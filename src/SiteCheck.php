@@ -32,110 +32,6 @@ class SiteCheck
 	private const REDIRECTS = [301, 302, 307, 308];
 
 	/**
-	 * What the router answers for a GET on this path: [status, Location or null].
-	 *
-	 * The Responder is reset first: Kirby keeps one per App, and the status or
-	 * redirect a template set during an earlier request would otherwise stick.
-	 * For a Page the result mirrors App::io(): render, then the Responder's
-	 * code (404 for the error page when none is set) and its Location header.
-	 *
-	 * @return array{0: int, 1: ?string}
-	 */
-	private static function request(App $kirby, string $path): array
-	{
-		self::resetResponder($kirby);
-
-		try {
-			$result = $kirby->router()->call(trim($path, '/'), 'GET');
-
-			// Responder: what Kirby's core routes and $kirby->response()->redirect() return.
-			if ($result instanceof Responder) {
-				/** @var array<string, string> $headers */
-				$headers = $result->headers();
-				$location = $headers['Location'] ?? null;
-				/** @var int|null $code */
-				$code = $result->code();
-				return [$code ?? 200, $location === null ? null : (string)$location];
-			}
-			if ($result instanceof Response) {
-				$location = $result->headers()['Location'] ?? null;
-				return [$result->code(), $location === null ? null : (string)$location];
-			}
-			if ($result instanceof Page) {
-				$result->render();
-				$responder = $kirby->response();
-				/** @var array<string, string> $headers */
-				$headers = $responder->headers();
-				$location = $headers['Location'] ?? null;
-				/** @var int|null $code */
-				$code = $responder->code();
-				return [
-					$code ?? ($result->isErrorPage() ? 404 : 200),
-					$location === null ? null : (string)$location,
-				];
-			}
-			if ($result === null) {
-				return [404, null];
-			}
-			// A File, or anything else the router returns, is delivered.
-			return [200, null];
-		} catch (\Throwable $e) {
-			return [$e instanceof KirbyException ? $e->getHttpCode() : 500, null];
-		}
-	}
-
-	/**
-	 * Drops the App's Responder; Kirby creates a fresh one on the next
-	 * response() call. There is no public reset (Responder::code(null) is a
-	 * getter), hence the bound closure.
-	 */
-	private static function resetResponder(App $kirby): void
-	{
-		(function (): void {
-			/** @psalm-suppress InvalidScope Closure::call() binds $this to the App; Psalm does not follow call(). */
-			$this->response = null;
-		})->call($kirby);
-	}
-
-	/**
-	 * Findings in the Validator shape, [] when all is well. Infos are never
-	 * returned (a resolved chain is not a problem).
-	 *
-	 * @return list<array{level:string, code:string, message:string, key:?string, values:array}>
-	 */
-	public static function run(App $kirby, bool $render = true): array
-	{
-		if (!Options::active($kirby)) {
-			return [Validator::finding(Validator::ERROR, 'inactive', [], null)];
-		}
-
-		Options::applyLanguage($kirby);
-		$settings = Options::settings($kirby);
-		$result = Validator::validate(Redirects::config($kirby), $settings);
-
-		$findings = [];
-		foreach ($result['findings'] as $finding) {
-			if ($finding['level'] !== Validator::INFO) {
-				$findings[] = $finding;
-			}
-		}
-		if (Validator::hasErrors($findings)) {
-			return $findings;
-		}
-
-		$resolver = new Resolver($result['entries'], $settings);
-		$rendered = [];
-		foreach ($result['entries'] as $entry) {
-			array_push($findings, ...self::checkEntry($kirby, $resolver, $entry, $render, $rendered));
-		}
-
-		// Nothing a target's template set on the Responder may leak to the caller.
-		self::resetResponder($kirby);
-
-		return $findings;
-	}
-
-	/**
 	 * The findings of one entry: its target page, its own old path and the
 	 * target page's answer. $rendered holds the page ids already requested in
 	 * this run, so a page shared by several entries is rendered once.
@@ -235,6 +131,110 @@ class SiteCheck
 				);
 			}
 		}
+
+		return $findings;
+	}
+
+	/**
+	 * What the router answers for a GET on this path: [status, Location or null].
+	 *
+	 * The Responder is reset first: Kirby keeps one per App, and the status or
+	 * redirect a template set during an earlier request would otherwise stick.
+	 * For a Page the result mirrors App::io(): render, then the Responder's
+	 * code (404 for the error page when none is set) and its Location header.
+	 *
+	 * @return array{0: int, 1: ?string}
+	 */
+	private static function request(App $kirby, string $path): array
+	{
+		self::resetResponder($kirby);
+
+		try {
+			$result = $kirby->router()->call(trim($path, '/'), 'GET');
+
+			// Responder: what Kirby's core routes and $kirby->response()->redirect() return.
+			if ($result instanceof Responder) {
+				/** @var array<string, string> $headers */
+				$headers = $result->headers();
+				$location = $headers['Location'] ?? null;
+				/** @var int|null $code */
+				$code = $result->code();
+				return [$code ?? 200, $location === null ? null : (string)$location];
+			}
+			if ($result instanceof Response) {
+				$location = $result->headers()['Location'] ?? null;
+				return [$result->code(), $location === null ? null : (string)$location];
+			}
+			if ($result instanceof Page) {
+				$result->render();
+				$responder = $kirby->response();
+				/** @var array<string, string> $headers */
+				$headers = $responder->headers();
+				$location = $headers['Location'] ?? null;
+				/** @var int|null $code */
+				$code = $responder->code();
+				return [
+					$code ?? ($result->isErrorPage() ? 404 : 200),
+					$location === null ? null : (string)$location,
+				];
+			}
+			if ($result === null) {
+				return [404, null];
+			}
+			// A File, or anything else the router returns, is delivered.
+			return [200, null];
+		} catch (\Throwable $e) {
+			return [$e instanceof KirbyException ? $e->getHttpCode() : 500, null];
+		}
+	}
+
+	/**
+	 * Drops the App's Responder; Kirby creates a fresh one on the next
+	 * response() call. There is no public reset (Responder::code(null) is a
+	 * getter), hence the bound closure.
+	 */
+	private static function resetResponder(App $kirby): void
+	{
+		(function (): void {
+			/** @psalm-suppress InvalidScope Closure::call() binds $this to the App; Psalm does not follow call(). */
+			$this->response = null;
+		})->call($kirby);
+	}
+
+	/**
+	 * Findings in the Validator shape, [] when all is well. Infos are never
+	 * returned (a resolved chain is not a problem).
+	 *
+	 * @return list<array{level:string, code:string, message:string, key:?string, values:array}>
+	 */
+	public static function run(App $kirby, bool $render = true): array
+	{
+		if (!Options::active($kirby)) {
+			return [Validator::finding(Validator::ERROR, 'inactive', [], null)];
+		}
+
+		Options::applyLanguage($kirby);
+		$settings = Options::settings($kirby);
+		$result = Validator::validate(Redirects::config($kirby), $settings);
+
+		$findings = [];
+		foreach ($result['findings'] as $finding) {
+			if ($finding['level'] !== Validator::INFO) {
+				$findings[] = $finding;
+			}
+		}
+		if (Validator::hasErrors($findings)) {
+			return $findings;
+		}
+
+		$resolver = new Resolver($result['entries'], $settings);
+		$rendered = [];
+		foreach ($result['entries'] as $entry) {
+			array_push($findings, ...self::checkEntry($kirby, $resolver, $entry, $render, $rendered));
+		}
+
+		// Nothing a target's template set on the Responder may leak to the caller.
+		self::resetResponder($kirby);
 
 		return $findings;
 	}
