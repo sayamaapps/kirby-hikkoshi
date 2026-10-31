@@ -7,13 +7,16 @@ use Kirby\Cms\App;
 use Throwable;
 
 /**
- * Reads the plugin's options (docs/SPEC.md §4): `hikkoshi.<key>`.
+ * Reads the plugin's options (docs/SPEC.md §4): `sayamaapps.hikkoshi.<key>`,
+ * falling back to the 1.x name `hikkoshi.<key>`.
  *
  * `null` counts as "not set", like Kirby's own option(), so
- * `'hikkoshi.status' => null` falls back to the default.
+ * `'sayamaapps.hikkoshi.status' => null` falls back to the default.
  *
- * Both spellings work, flat (`'hikkoshi.active' => true`) and nested
- * (`'hikkoshi' => ['active' => true]`), because Kirby's option() finds both.
+ * The flat form (`'sayamaapps.hikkoshi.active' => true`) is the one to use. The
+ * nested form (`'hikkoshi' => ['active' => true]`) works for the 1.x prefix only:
+ * Kirby resolves `sayamaapps.hikkoshi.*` through the plugin's own options block
+ * first, which shadows a nested `sayamaapps` array.
  *
  * Defaults live in DEFAULTS and are given at the call sites, never in an
  * `options` block of the plugin (Kirby would file them under the plugin name).
@@ -44,10 +47,17 @@ class Options
 		'indexFiles'    => ['index.php', 'index.html', 'index.htm'],
 	];
 
-	/** File names tried in site/config/ when `hikkoshi.redirects` and `hikkoshi.file` are not set, in this order. */
+	/** File names tried in site/config/ when the `redirects` and `file` options are not set, in this order. */
 	public const FILES = ['hikkoshi.php', 'weiterleitungen.php'];
 
-	/** Option prefix: `hikkoshi.<key>`. */
+	/** Option prefix since 1.3: `sayamaapps.hikkoshi.<key>`. */
+	public const OPTION_PREFIX = 'sayamaapps.hikkoshi.';
+
+	/**
+	 * Option prefix of 1.x (`hikkoshi.<key>`). Still read as a fallback until 2.0.
+	 *
+	 * @deprecated 1.3 use OPTION_PREFIX; removal planned for 2.0
+	 */
 	public const PREFIX = 'hikkoshi.';
 
 	/** @var array<string, true> messages already written to the error log in this process */
@@ -76,18 +86,27 @@ class Options
 		if (is_bool($value)) {
 			return $value;
 		}
-		self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be true or false — using ' . var_export($default, true) . '.');
+		self::invalid($kirby, 'Hikkoshi: ' . self::setKey($kirby, $key) . ' must be true or false — using ' . var_export($default, true) . '.');
 		return $default;
 	}
 
-	/** Reads `hikkoshi.<key>`, or `$default` when it is not set. */
+	/**
+	 * Reads an option under the sayamaapps.hikkoshi.* spelling, then under the
+	 * 1.x hikkoshi.* spelling, which is read silently (README, Deprecated).
+	 * Returns $default when neither is set.
+	 */
 	public static function get(App $kirby, string $key, mixed $default = null): mixed
 	{
+		$value = $kirby->option(self::OPTION_PREFIX . $key);
+		if ($value !== null) {
+			return $value;
+		}
+
 		return $kirby->option(self::PREFIX . $key) ?? $default;
 	}
 
 	/**
-	 * `hikkoshi.allowedHosts`: hosts that may be redirect targets, lowercased.
+	 * The `allowedHosts` option: hosts that may be redirect targets, lowercased.
 	 * A single string is accepted as a one-element list.
 	 *
 	 * @return list<string>
@@ -122,7 +141,7 @@ class Options
 	}
 
 	/**
-	 * Language of the plugin's text: `hikkoshi.language`, otherwise the current
+	 * Language of the plugin's text: the `language` option, otherwise the current
 	 * language of a multi-language site, otherwise its default language,
 	 * otherwise the first two letters of Kirby's `locale` option, otherwise
 	 * English. Only languages Hikkoshi ships (I18n::LANGUAGES) are returned.
@@ -185,6 +204,18 @@ class Options
 	}
 
 	/**
+	 * The option name as the site spelled it, for messages: the 1.x hikkoshi.*
+	 * name only when the site sets no sayamaapps.hikkoshi.* value for it.
+	 */
+	public static function setKey(App $kirby, string $key): string
+	{
+		if ($kirby->option(self::OPTION_PREFIX . $key) === null && $kirby->option(self::PREFIX . $key) !== null) {
+			return self::PREFIX . $key;
+		}
+		return self::OPTION_PREFIX . $key;
+	}
+
+	/**
 	 * Every setting the Kirby-free classes need, normalised, with the
 	 * defaults of docs/SPEC.md §4. A broken value is reported (invalid()) and the
 	 * default is used.
@@ -198,12 +229,12 @@ class Options
 	{
 		$status = self::get($kirby, 'status', self::DEFAULTS['status']);
 		if (!is_int($status) || !in_array($status, [301, 302, 307, 308], true)) {
-			self::invalid($kirby, 'Hikkoshi: hikkoshi.status must be 301, 302, 307 or 308 — using 301.');
+			self::invalid($kirby, 'Hikkoshi: ' . self::setKey($kirby, 'status') . ' must be 301, 302, 307 or 308 — using 301.');
 			$status = self::DEFAULTS['status'];
 		}
 		$query = self::get($kirby, 'query', self::DEFAULTS['query']);
 		if (!in_array($query, ['keep', 'drop'], true)) {
-			self::invalid($kirby, 'Hikkoshi: hikkoshi.query must be "keep" or "drop" — using "keep".');
+			self::invalid($kirby, 'Hikkoshi: ' . self::setKey($kirby, 'query') . ' must be "keep" or "drop" — using "keep".');
 			$query = self::DEFAULTS['query'];
 		}
 		return [
@@ -233,7 +264,7 @@ class Options
 			$option = [$option];
 		}
 		if (!is_array($option)) {
-			self::invalid($kirby, 'Hikkoshi: ' . self::PREFIX . $key . ' must be a list of strings — using the default.');
+			self::invalid($kirby, 'Hikkoshi: ' . self::setKey($kirby, $key) . ' must be a list of strings — using the default.');
 			return $default;
 		}
 		$list = [];
