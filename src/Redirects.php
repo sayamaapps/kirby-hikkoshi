@@ -31,7 +31,7 @@ class Redirects
 	 */
 	private static \WeakMap|null $cache = null;
 
-	/** The raw list: option hikkoshi.redirects, else hikkoshi.file, else the first existing Options::FILES, else []. */
+	/** The raw list: option redirects, else file, else the first existing Options::FILES, else []. */
 	public static function config(App $kirby): mixed
 	{
 		$option = Options::get($kirby, 'redirects');
@@ -46,7 +46,7 @@ class Redirects
 		if (is_string($file) && trim($file) !== '') {
 			$path = self::isAbsolute($file) ? $file : $kirby->root('config') . '/' . $file;
 			if (!is_file($path)) {
-				Options::invalid($kirby, 'Hikkoshi: ' . Options::PREFIX . 'file points to a missing file: ' . $path);
+				Options::invalid($kirby, 'Hikkoshi: ' . Options::setKey($kirby, 'file') . ' points to a missing file: ' . $path);
 				return [];
 			}
 			return require $path;

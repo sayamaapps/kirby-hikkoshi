@@ -38,7 +38,7 @@ git submodule add https://github.com/sayamaapps/kirby-hikkoshi.git site/plugins/
 
 ## Usage
 
-Hikkoshi is off until you set `'hikkoshi.active' => true` in `site/config/config.php`. Then create `site/config/hikkoshi.php`, which maps old address to new address (the package ships a template as `config/hikkoshi.example.php`):
+Hikkoshi is off until you set `'sayamaapps.hikkoshi.active' => true` in `site/config/config.php`. Then create `site/config/hikkoshi.php`, which maps old address to new address (the package ships a template as `config/hikkoshi.example.php`):
 
 ```php
 <?php
@@ -49,14 +49,14 @@ return [
     '?page_id=82'      => 'impressum',
     'aktion'           => ['to' => 'produkte', 'status' => 302, 'query' => 'drop'],
     'gewinnspiel-2019' => 410,
-    'partner'          => 'https://partner.example/start', // needs hikkoshi.allowedHosts
+    'partner'          => 'https://partner.example/start', // needs sayamaapps.hikkoshi.allowedHosts
 ];
 ```
 
 ### Keys and values
 
 - **Keys** are old paths such as `'ueber-uns'` or `'downloads/karte.pdf'`. **Query conditions** follow the `?`: `'?page_id=82'`, or `'?feed'` (parameter present, any value). The home page needs a query condition.
-- **Values** are a page id (`'team'`, `'home'`), `410`, an array with `to`, `status` and `query`, or an external URL whose host is listed in `hikkoshi.allowedHosts`. `410` answers with the snippet `hikkoshi/gone`; to restyle it, create `site/snippets/hikkoshi/gone.php`, which receives `$title` and `$text` (escape them).
+- **Values** are a page id (`'team'`, `'home'`), `410`, an array with `to`, `status` and `query`, or an external URL whose host is listed in `sayamaapps.hikkoshi.allowedHosts`. `410` answers with the snippet `hikkoshi/gone`; to restyle it, create `site/snippets/hikkoshi/gone.php`, which receives `$title` and `$text` (escape them).
 - Targets are lowercase page ids: `'/kontakt'` and `'kontakt.html'` are errors. Numeric keys such as `2024` are errors too; write `'archiv/2024'`.
 
 ### Matching
@@ -74,12 +74,14 @@ The exact pass comes first. If nothing matches, one suffix (`html`, `htm`, `php`
 - `$site->hikkoshiResolve($path, $query = [])`: the decision for a path and query (`status`, `location`, `page`), or `null`.
 - `$site->hikkoshiCheck($render = true)`: findings for the site test; `[]` when all is well.
 - `$page->hikkoshiSources()`: the old paths that redirect to this page.
-- `hikkoshi_option('language')` reads any `hikkoshi.*` option in your templates.
+- `Sayamaapps\Hikkoshi\Options::get(kirby(), 'language')` reads any `sayamaapps.hikkoshi.*` option in your templates.
 - `t('hikkoshi.gone.title')` and `t('sayamaapps.hikkoshi.gone.title')` read the plugin's strings in your templates.
 
 ## Options
 
-Each option is read as `hikkoshi.<name>`, flat or nested. `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws PHP's `InvalidArgumentException`. That is PHP's class and not a Kirby exception on purpose: a site that catches `InvalidArgumentException` keeps working, and Kirby's own exception classes do not extend it. Kirby exceptions are planned for 2.0 (see below).
+Every option is `sayamaapps.hikkoshi.<name>`, written flat: `'sayamaapps.hikkoshi.active' => true`. The nested form `'hikkoshi' => ['active' => true]` works for the 1.x name only (see [Deprecated](#deprecated)). `null` means "not set". Booleans take a real `true` or `false`. A broken value is logged once and the default is used; with Kirby's `debug` option on, it throws PHP's `InvalidArgumentException`. That is PHP's class and not a Kirby exception on purpose: a site that catches `InvalidArgumentException` keeps working, and Kirby's own exception classes do not extend it. Kirby exceptions are planned for 2.0 (see below).
+
+The 1.x name `hikkoshi.<name>` still works as a fallback until 2.0, flat or nested, and is read without a warning. If both names are set, the new one wins.
 
 | Option | Default | Description |
 |---|---|---|
@@ -103,13 +105,13 @@ Deprecated in 1.x and removed in 2.0. Each still works. Nothing is raised at run
 | 1.x | Use instead |
 |---|---|
 | `hikkoshi_option($key, $default)` | `Sayamaapps\Hikkoshi\Options::get($kirby, $key, $default)` |
+| `hikkoshi.<option>` in `config.php` | `sayamaapps.hikkoshi.<option>`. Still read as fallback. Rename the keys in your site config. |
 | `Hikkoshi\*` classes (`Hikkoshi\Validator`, `Hikkoshi\ConfigException`, …) | `Sayamaapps\Hikkoshi\*` (the same classes under both names; the exception keeps the name `Hikkoshi\ConfigException` at runtime) |
 
 ## Planned for 2.0
 
 These change behaviour, so they wait for the next major version. In 1.x they are not done:
 
-- Options are read as `sayamaapps.hikkoshi.<name>` only, and the 1.x spelling `hikkoshi.<name>` is no longer read.
 - Broken options throw a Kirby exception instead of PHP's `InvalidArgumentException`.
 - The translation keys `hikkoshi.<key>` are removed. `sayamaapps.hikkoshi.<key>` stays.
 - `hikkoshi_option()` and the `Hikkoshi\*` aliases are removed.
@@ -184,7 +186,7 @@ The 1.x names (`Hikkoshi\Validator` and the others) are aliases in each class fi
 ## Design notes
 
 - The plugin's strings come from its own Kirby-free table (`src/I18n.php`), so a missing Kirby translation never shows English for a German message. The same strings are also registered as Kirby translations.
-- The 410 page takes its text from the same table, not from Kirby's `t()`. Kirby picks the translation by its own locale; Hikkoshi picks the language from `hikkoshi.language`, then the site language, then the locale. The CLI and the validator need the same strings without Kirby. A site that wants its own 410 text uses `t('hikkoshi.gone.title')` in its own snippet.
+- The 410 page takes its text from the same table, not from Kirby's `t()`. Kirby picks the translation by its own locale; Hikkoshi picks the language from the `language` option, then the site language, then the locale. The CLI and the validator need the same strings without Kirby. A site that wants its own 410 text uses `t('hikkoshi.gone.title')` in its own snippet.
 - Defaults are passed at each option call, never in an `options` block of the plugin: Kirby would file them under the plugin name, and the options would no longer be the 1.x names.
 
 ## Privacy

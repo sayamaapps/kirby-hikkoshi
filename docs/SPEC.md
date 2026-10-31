@@ -9,7 +9,7 @@ converter for Apache `.htaccess` rules and a test helper for sites. **No
 outbound HTTP at runtime, no styling.**
 
 Package `sayamaapps/kirby-hikkoshi`, plugin id `sayamaapps/hikkoshi`, namespace
-`Hikkoshi`, option prefix `hikkoshi.`, directory: the repository root.
+`Hikkoshi`, option prefix `sayamaapps.hikkoshi.` (1.x: `hikkoshi.`, still read), directory: the repository root.
 
 It replaces the pre-1.0 redirect code (a plugin folder in each site: plugin id `weiterleitungen/kern`, class `Weiterleitungen\Liste`) and takes over the WordPress query-string redirects that a migrated site still writes as Apache rules.
 
@@ -287,9 +287,9 @@ The Kirby glue. All methods are static and take `App $kirby`.
 ```php
 public static function config(App $kirby): mixed
 ```
-The raw list: option `hikkoshi.redirects` when set (an array, or a Closure
+The raw list: option `redirects` when set (an array, or a Closure
 which is called and whose return value is used); else the file named by
-`hikkoshi.file` (absolute, or relative to `$kirby->root('config')`; missing →
+`file` (absolute, or relative to `$kirby->root('config')`; missing →
 `Options::invalid()` with a plain English message and `[]`); else the first
 existing file of `Options::FILES` (`hikkoshi.php`, then `weiterleitungen.php`)
 in `$kirby->root('config')`; else `[]`. A file is `require`d and whatever it
@@ -593,7 +593,7 @@ I18n first. Exit 2 and usage for no/unknown command.
 
 ## 4. Options
 
-All read as `hikkoshi.<name>`, flat or nested; `null` = not set. `Options::settings()`
+All read as `sayamaapps.hikkoshi.<name>` (since 1.3; the 1.x name `hikkoshi.<name>` is the fallback), flat or nested; `null` = not set. The keys are listed with `null` in `config/options.php`. `Options::settings()`
 returns the starred ones, normalised, for the Kirby-free classes.
 
 | Option | Default | Meaning |
