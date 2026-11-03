@@ -479,6 +479,87 @@ final class HtaccessTest extends TestCase
 
 		expect(['alt' => 'https://target.example/team#section'], Htaccess::convert('RedirectMatch 301 ^/alt$ https://target.example/team#section')['entries'], 'RedirectMatch keeps a # target (out of scope)');
 
+		// Apache changes the substitution of a RewriteRule: `$0`–`$9` and `%0`–`%9` are backreferences
+		// (`%20` reads as `%2` followed by `0`, also with NE), `%{VAR}` is a server variable, `${map:key}` a
+		// RewriteMap lookup, and without NE every other `%` is escaped to `%25`. None of it is in the list.
+		foreach ([
+			'RewriteRule ^old-space$ https://target.example/target/space%20name [R=301,L]' => 'encoded space',
+			'RewriteRule ^old-space$ https://target.example/target/space%20name [R=301,L,NE]' => 'encoded space, NE',
+			'RewriteRule ^old-space$ /target/space%20name [R=301,L,NE]' => 'encoded space, relative target, NE',
+			'RewriteRule ^old-question$ https://target.example/target/question%3Fmark?fixed=a%26b%3Dc [R=301,L]' => 'encoded ? and an encoded query',
+			'RewriteRule ^old-question$ https://target.example/target/question%3Fmark?fixed=a%26b%3Dc [R=301,L,NE]' => 'encoded ? and an encoded query, NE',
+			'RewriteRule ^old-percent$ https://target.example/target/percent%25sign [R=301,L,NE]' => 'encoded %, NE',
+			'RewriteRule ^old-ref$ /target/$2 [R=301,L]' => '$2 backreference',
+			'RewriteRule ^old-ref$ https://target.example/$0 [R=301,L,NE]' => '$0 backreference, NE',
+			'RewriteRule ^old-ref$ https://target.example/$9?x=1 [R=301,L]' => '$9 backreference',
+			'RewriteRule ^old-cond$ /target/%2 [R=301,L]' => '%2 condition backreference',
+			'RewriteRule ^old-cond$ https://target.example/new?x=%0 [R=301,L,NE]' => '%0 condition backreference, NE',
+			'RewriteRule ^old-host$ https://%{HTTP_HOST}/new [R=301,L]' => '%{HTTP_HOST} server variable',
+			'RewriteRule ^old-host$ /target/%{REQUEST_URI} [R=301,L,NE]' => '%{REQUEST_URI} server variable, NE',
+			'RewriteRule ^old-map$ /target/${lc:Key} [R=301,L]' => '${map:key} lookup',
+			'RewriteRule ^old-utf8$ https://target.example/target/caf%C3%A9?fixed=one%20two [R=301,L]' => 'encoded UTF-8 and an encoded query',
+			'RewriteRule ^old-utf8$ https://target.example/target/caf%C3%A9?fixed=one%20two [R=301,L,NE]' => 'encoded UTF-8 and an encoded query, NE',
+			'RewriteRule ^old-utf8$ https://target.example/target/caf%C3%A9 [R=301,L]' => 'encoded UTF-8 without NE: Apache sends %25C3%25A9',
+			'RewriteRule ^old-utf8$ https://target.example/target/caf%C3%A9 [R=301,L,NE]' => 'encoded UTF-8, NE',
+			'RewriteRule ^old-utf8$ /target/caf%C3%A9 [R=302,L,noescape]' => 'encoded UTF-8, relative, NOESCAPE',
+			'RewriteRule ^old-utf8$ /target/caf%C3%A9? [R=301,L]' => 'encoded UTF-8 and a trailing ?',
+		] as $rule => $label) {
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$label → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'target']], $r['skipped'], "$label → skipped target");
+			expect([], $r['partial'], "$label → no partial note");
+		}
+
+		// The same text in a mod_alias target does not go through that expansion
+		expect(['alt' => 'https://target.example/space%20name'], Htaccess::convert('Redirect 301 /alt https://target.example/space%20name')['entries'], 'Redirect keeps %20 (Apache sends it as written)');
+
+		// `$0`–`$9` are backreferences of RedirectMatch too (the existing guard knew only $1)
+		foreach ([
+			'RedirectMatch 301 ^/old$ /target/$2' => 'RedirectMatch $2',
+			'RedirectMatch 301 ^/old$ https://target.example/$0' => 'RedirectMatch $0',
+			'Redirect 301 /old /target/$2' => 'Redirect $2',
+		] as $rule => $label) {
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$label → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'target']], $r['skipped'], "$label → skipped target");
+		}
+
+		// What stays: plain ASCII targets, 410 (no target), other lines around a skip
+		foreach ([
+			'RewriteRule ^plain-ascii$ https://target.example/target/plain?fixed=yes [R=301,L]' => ['plain-ascii' => ['to' => 'https://target.example/target/plain?fixed=yes', 'query' => 'drop']],
+			'RewriteRule ^plain-ascii$ https://target.example/target/plain?fixed=yes [R=301,L,NE]' => ['plain-ascii' => ['to' => 'https://target.example/target/plain?fixed=yes', 'query' => 'drop']],
+			'RewriteRule ^plain-ascii$ /target/plain [R=301,L]' => ['plain-ascii' => 'target/plain'],
+			'RewriteRule ^plain-ascii$ /target/plain-name_1.html [R=302]' => ['plain-ascii' => ['to' => 'target/plain-name_1.html', 'status' => 302]],
+		] as $rule => $expected) {
+			$r = Htaccess::convert($rule);
+			expect($expected, $r['entries'], "$rule → imported unchanged");
+			expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
+		}
+
+		expect(['gone' => 410], Htaccess::convert('RewriteRule ^gone$ /target/space%20name [R=410]')['entries'], '410 does not use its target, so % does not matter');
+
+		$r = Htaccess::convert(
+			"RewriteRule ^first$ /one [R=301,L]\n"
+			. "RewriteRule ^old-space$ https://target.example/target/space%20name [R=301,L,NE]\n"
+			. "RewriteRule ^old-ref$ /target/\$2 [R=301,L]\n"
+			. 'RewriteRule ^last$ /two [R=301,L]'
+		);
+
+		expect(['first' => 'one', 'last' => 'two'], $r['entries'], 'a skipped % or $ line does not drop its neighbours');
+
+		expect([
+			['line' => 2, 'text' => 'RewriteRule ^old-space$ https://target.example/target/space%20name [R=301,L,NE]', 'reason' => 'target'],
+			['line' => 3, 'text' => 'RewriteRule ^old-ref$ /target/$2 [R=301,L]', 'reason' => 'target'],
+		], $r['skipped'], 'each skipped line is reported with its line number');
+
+		foreach ([
+			'RewriteRule ^old/(.*)$ https://target.example/target/space%20name [R=301,L]' => 'pattern',
+			'RewriteRule ^old-space$ https://target.example/target/space%20name [R=303,L]' => 'status',
+			'RewriteRule ^old-space$ https://target.example/target/space%20name [R=301,S=1]' => 'flag',
+		] as $rule => $reason) {
+			expect($reason, Htaccess::convert($rule)['skipped'][0]['reason'] ?? '', "$rule → the earlier guard keeps the reason $reason");
+		}
+
 		// Redirect family: mod_alias replaces the request's query with a target query of its own, too (no QSA here)
 		$own = ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop'];
 

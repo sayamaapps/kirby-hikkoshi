@@ -127,7 +127,8 @@ class Htaccess
 	/**
 	 * Target rules: `/` → home, `/path` → path, a trailing `?` drops the
 	 * query, http(s) URLs verbatim. Null when the target cannot be converted
-	 * (also `//host/path`: protocol-relative, not a path of this site).
+	 * (also `//host/path`: protocol-relative, not a path of this site, and
+	 * `$0`–`$9` or `%1`: a backreference that Apache fills in).
 	 *
 	 * The target forms (absolute, relative, query, flags) are one decision table; splitting it scatters the rule order.
 	 *
@@ -138,7 +139,7 @@ class Htaccess
 	private static function destination(string $raw): array|null
 	{
 		$target = trim($raw);
-		if ($target === '' || $target === '-' || str_contains($target, '$1') || str_contains($target, '%1')) {
+		if ($target === '' || $target === '-' || preg_match('/\$[0-9]/', $target) === 1 || str_contains($target, '%1')) {
 			return null;
 		}
 		$drop = str_ends_with($target, '?');
@@ -199,6 +200,19 @@ class Htaccess
 	private static function escapesHash(string $target, string $flags): bool
 	{
 		return str_contains($target, '#') && !self::hasFlag($flags, 'NE') && !self::hasFlag($flags, 'NOESCAPE');
+	}
+
+	/**
+	 * Does Apache change a `%` or `${` of the RewriteRule target? Whatever the flags, it replaces
+	 * `%0`–`%9` (backreferences of the last RewriteCond; `%20` reads as `%2` and `0`), `%{VAR}`
+	 * (server variable) and `${map:key}` (RewriteMap). Without NE it also escapes every other `%`
+	 * to `%25`. The list has no such expansion, and the outcome depends on the text, the flags and
+	 * the conditions, so a target with a `%` is not judged any further: it is reported. (`$0`–`$9`
+	 * are backreferences of the rule's pattern; destination() rejects them.)
+	 */
+	private static function expandsTarget(string $target): bool
+	{
+		return str_contains($target, '%') || str_contains($target, '${');
 	}
 
 	/** The value of flag NAME (`R` or `R=301`): '' for a bare flag, null when absent. */
@@ -511,7 +525,7 @@ class Htaccess
 			$value = 410;
 		} else {
 			$destination = self::destination($target);
-			if ($destination === null || self::escapesHash($target, $flags)) {
+			if ($destination === null || self::escapesHash($target, $flags) || self::expandsTarget($target)) {
 				self::skip($state, $line, $body, 'target');
 				return;
 			}

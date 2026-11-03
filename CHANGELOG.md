@@ -8,6 +8,12 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [1.3.3] — 2026-11-03
+
+### Fixed
+
+- **`convert` reports a `RewriteRule` target that Apache changes, instead of importing it as written.** Apache fills in `$0`–`$9` and `%0`–`%9` (backreferences of the pattern and of the last `RewriteCond`) and `%{VAR}` in the substitution, also with `NE`, and without `NE` it escapes every other `%` to `%25`. So `RewriteRule ^old$ /target/space%20name [R=301,L]` answers with `/target/space0name` (`%2` is a backreference, then `0`), `…/question%3Fmark?fixed=a%26b%3Dc` with `…/questionFmark?fixed=a6bDc`, and `…/caf%C3%A9` without `NE` with `…/caf%25C3%25A9`. The converter imported the text as written, a different address, and reported nothing. A target with a `%` or `${` (RewriteMap) is now skipped (`target`) on standard error with exit code 1, with or without `NE`, and `$0`–`$9` are rejected like `$1` was: also for `RedirectMatch` and `Redirect`. Plain ASCII targets and rules with `G` or `R=410` (no target) are imported as before; `Redirect` and `RedirectMatch` targets with `%` are not changed. Lists converted earlier are not changed: convert the rules again.
+
 ## [1.3.2] — 2026-11-03
 
 ### Fixed

@@ -149,6 +149,27 @@ final class ConvertCommandTest extends TestCase
 			cv_remove($dir);
 		}
 
+		// An encoded RewriteRule target: Apache expands `%2` of `%20` as a backreference (also with NE), so the line is reported, not imported
+		$dir = cv_tmp();
+
+		try {
+			$encoded = 'RewriteRule ^old-space$ https://target.example/target/space%20name [R=301,L,NE]';
+			$variable = 'RewriteRule ^old-host$ https://%{HTTP_HOST}/new [R=301,L]';
+			$utf8 = 'RewriteRule ^old-utf8$ https://target.example/target/caf%C3%A9 [R=301,L]';
+			$ascii = 'RewriteRule ^plain-ascii$ https://target.example/target/plain?fixed=yes [R=301,L]';
+			file_put_contents($dir . '/encoded.htaccess', "$encoded\n$variable\n$utf8\n$ascii\n");
+			[$code, $out, $err] = cv_run(['encoded.htaccess'], $dir);
+			expect(1, $code, 'encoded targets → exit 1');
+			expect(['plain-ascii' => ['to' => 'https://target.example/target/plain?fixed=yes', 'query' => 'drop']], cv_eval($out), 'only the ASCII target is in the list');
+			holds(str_contains($err, 'Skipped line 1 (' . I18n::t('reason.target') . '): ' . $encoded), 'stderr names the %20 skip via the translation');
+			holds(str_contains($err, 'Skipped line 2 (' . I18n::t('reason.target') . '): ' . $variable), 'stderr names the %{HTTP_HOST} skip');
+			holds(str_contains($err, 'Skipped line 3 (' . I18n::t('reason.target') . '): ' . $utf8), 'stderr names the encoded UTF-8 skip');
+			holds(str_contains($err, '1 entries converted, 3 lines skipped.'), 'encoded targets → convert summary counts the skips');
+			expect(4, substr_count($err, "\n"), 'stderr has four lines (three skipped, summary)');
+		} finally {
+			cv_remove($dir);
+		}
+
 		/* ------------------------------------------------------------------------
 		 * Hostile file names and lines: no code from the path, no escape sequences
 		 * --------------------------------------------------------------------- */
