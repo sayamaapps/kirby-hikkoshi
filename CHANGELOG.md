@@ -8,6 +8,12 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [1.3.2] — 2026-11-03
+
+### Fixed
+
+- **Different query conditions are no longer rejected as `source.duplicate`.** The duplicate check compared the conditions with their decoded names and values joined by `=` and `&`, so `'old?campaign=summer%26lang%3Dde'` (one parameter `campaign` with the value `summer&lang=de`) and `'old?campaign=summer&lang=de'` (the parameters `campaign` and `lang`) counted as one old address, and so did `'old?a%3Db'` (the parameter named `a=b`) and `'old?a=b'` (`a` equals `b`). The site then failed on every request with a valid list. The check now encodes every name and value before it compares, so each of these lists boots and each old address matches its own query. Real duplicates are still found: the same conditions in another order, or written with other percent-encodings of the same text. The text of the `source.duplicate` message, `Validator::identity()` and the matching are unchanged.
+
 ## [1.3.1] — 2026-11-03
 
 ### Fixed

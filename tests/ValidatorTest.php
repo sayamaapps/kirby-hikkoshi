@@ -518,6 +518,70 @@ final class ValidatorTest extends TestCase
 
 		expect('410', $result['findings'][0]['values']['target'], 'duplicate of a 410 reports target 410');
 
+		// ── Duplicate detection tells different condition lists apart ───────────
+		// A percent-encoded & or = is part of a name or value, not a separator:
+		// these lists have no duplicate.
+		$pairs = [
+			'encoded & in a value vs two parameters' => ['old?campaign=summer%26lang%3Dde', 'old?campaign=summer&lang=de'],
+			'encoded = in a name vs name and value' => ['old?a%3Db', 'old?a=b'],
+			'encoded & in a name vs two names' => ['old?a%26b', 'old?a&b'],
+		];
+		foreach ($pairs as $what => [$first, $second]) {
+			$result = Validator::validate([$first => 'team', $second => 'produkte']);
+
+			expect([], codes($result['findings']), "$what: no finding");
+
+			expect([$first, $second], array_column($result['entries'], 'key'), "$what: both entries are kept");
+
+			expect(['team', 'produkte'], array_column($result['entries'], 'target'), "$what: each entry keeps its target");
+		}
+
+		$result = Validator::validate(['old?campaign=summer%26lang%3Dde' => 'team', 'old?campaign=summer&lang=de' => 'produkte']);
+
+		expect(['campaign' => 'summer&lang=de'], $result['entries'][0]['conditions'] ?? null, 'encoded & in a value: one condition, decoded');
+
+		expect(['campaign' => 'summer', 'lang' => 'de'], $result['entries'][1]['conditions'] ?? null, 'two parameters: two conditions');
+
+		$result = Validator::validate(['old?a%3Db' => 'team', 'old?a=b' => 'produkte']);
+
+		expect(['a=b' => null], $result['entries'][0]['conditions'] ?? null, 'encoded = in a name: presence of the parameter "a=b"');
+
+		expect(['a' => 'b'], $result['entries'][1]['conditions'] ?? null, 'name and value: a equals b');
+
+		// "present" and "empty value" are different conditions.
+		$result = Validator::validate(['old?a' => 'team', 'old?a=' => 'produkte']);
+
+		expect([], codes($result['findings']), "'old?a' (present) and 'old?a=' (empty value): no duplicate");
+
+		expect([['a' => null], ['a' => '']], array_column($result['entries'], 'conditions'), 'present stays null, empty value stays an empty string');
+
+		// Equal condition lists are duplicates however they are written: in
+		// another order, with other percent-encodings of the same decoded text.
+		$same = [
+			'another order' => ['old?a=1&b=2', 'old?b=2&a=1'],
+			'another order, three conditions' => ['old?c&a=1&b=', 'old?b=&c&a=1'],
+			'another order, encoded & in a value' => ['old?x=a%26b&y=1', 'old?y=1&x=a%26b'],
+			'another order, names that need encoding' => ['old?a%20b=1&a-b=2', 'old?a-b=2&a%20b=1'],
+			'another order, numeric names' => ['old?10=a&9=b', 'old?9=b&10=a'],
+			'encoded value' => ['old?a=%31', 'old?a=1'],
+			'encoded name' => ['old?%61=1', 'old?a=1'],
+			'lower and upper case hex digits' => ['old?a=%c3%bc', 'old?a=%C3%BC'],
+			'encoded = in a value' => ['old?a=b%3Dc', 'old?a=b%3dc'],
+		];
+		foreach ($same as $what => [$first, $second]) {
+			$result = Validator::validate([$first => 'team', $second => 'produkte']);
+
+			expect(['source.duplicate'], codes($result['findings']), "$what: source.duplicate");
+
+			expect([$first], array_column($result['entries'], 'key'), "$what: the first entry wins");
+
+			expect('team', $result['findings'][0]['values']['target'] ?? null, "$what: names the first entry's target");
+		}
+
+		$result = Validator::validate(['old?a=1&b=2' => 'team', 'old?b=2&a=1' => 'produkte']);
+
+		expect('old?a=1&b=2', $result['findings'][0]['values']['source'] ?? null, 'reordered duplicate: source is the readable identity');
+
 		I18n::setLanguage('en');
 
 		// ── source.empty (§8.1) ─────────────────────────────────────────────────
