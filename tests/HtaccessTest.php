@@ -120,6 +120,7 @@ const WORDPRESS_EXPECTED = [
 ];
 
 #[CoversClass(\Sayamaapps\Hikkoshi\Htaccess::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\HtaccessGuard::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class HtaccessTest extends TestCase
 {
@@ -580,6 +581,179 @@ final class HtaccessTest extends TestCase
 		foreach ([
 			'RedirectMatch 301 ^/old/(.*)$ /target/space%20name' => 'pattern',
 			'RedirectMatch 303 ^/old$ /target/space%20name' => 'status',
+		] as $rule => $reason) {
+			expect($reason, Htaccess::convert($rule)['skipped'][0]['reason'] ?? '', "$rule → the earlier guard keeps the reason $reason");
+		}
+
+		// Apache compares the old path of Redirect, RedirectMatch and RewriteRule with the decoded path, and
+		// Hikkoshi decodes the key (`k%C3%B6ln` → `koeln`). Imported as written, the list matches /köln while
+		// Apache's rule matched only /k%25C3%25B6ln, never /köln. So a `%` in the old path is reported
+		// (`pattern`), not imported; where the `%` sits is not judged (the Validator rejects a `%` in a path too).
+		foreach ([
+			'RedirectMatch 410 ^/k%C3%B6ln$' => 'RedirectMatch 410, encoded umlaut',
+			'RedirectMatch 301 ^/k%C3%B6ln$ /target' => 'RedirectMatch, encoded umlaut',
+			'RedirectMatch 301 ^/k%c3%b6ln$ /target' => 'RedirectMatch, lowercase hex',
+			'RedirectMatch 301 ^/a%20b$ /target' => 'RedirectMatch, encoded space',
+			'RedirectMatch 301 ^/100%$ /target' => 'RedirectMatch, bare %',
+			'RedirectMatch 301 ^/k%C3%B6ln/?$ /target' => 'RedirectMatch, encoded umlaut and /?',
+			'RedirectMatch 301 ^/k%C3%B6ln /target' => 'RedirectMatch without $ (no partial note either)',
+			'RedirectMatch gone ^/k%C3%B6ln$' => 'RedirectMatch gone',
+			'RedirectMatch ^/k%C3%B6ln$ /target' => 'RedirectMatch, no status',
+			'Redirect 301 /m%C3%BCnchen /target' => 'Redirect, encoded umlaut',
+			'Redirect /m%C3%BCnchen /target' => 'Redirect, no status',
+			'Redirect 410 /m%C3%BCnchen' => 'Redirect 410',
+			'Redirect gone /m%C3%BCnchen' => 'Redirect gone',
+			'Redirect 301 /stra%C3%9Fe/haus /target' => 'Redirect, encoded ß in a second segment',
+			'Redirect 301 /100% /target' => 'Redirect, bare %',
+			'RedirectPermanent /m%C3%BCnchen /target' => 'RedirectPermanent',
+			'RedirectTemp /m%C3%BCnchen /target' => 'RedirectTemp',
+			'RewriteRule ^k%C3%B6ln$ /target [R=301,L]' => 'RewriteRule, encoded umlaut',
+			'RewriteRule ^k%C3%B6ln$ https://target.example/new [R=301,L,NE]' => 'RewriteRule, encoded umlaut, absolute target',
+			'RewriteRule ^k%C3%B6ln/?$ /target [R=301,L]' => 'RewriteRule, encoded umlaut and /?',
+			'RewriteRule ^k%C3%B6ln /target [R=301,L]' => 'RewriteRule without $ (no partial note either)',
+			'RewriteRule ^a%20b$ /target [R=302]' => 'RewriteRule, encoded space, 302',
+			'RewriteRule ^k%C3%B6ln$ - [G]' => 'RewriteRule G',
+			'RewriteRule ^k%C3%B6ln$ /target [R=410]' => 'RewriteRule R=410',
+			'RewriteRule ^100%$ /target [R=301,L]' => 'RewriteRule, bare %',
+		] as $rule => $label) {
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$label → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'pattern']], $r['skipped'], "$label → skipped pattern");
+			expect([], $r['partial'], "$label → no partial note");
+		}
+
+		// Controls: the `%` of a condition and a `%` in a Redirect target (Apache sends it as written) are not an old path, and an escaped dot still is one
+		foreach ([
+			'Redirect 301 /alt /neu' => ['alt' => 'neu'],
+			'RedirectMatch 301 ^/alt$ /neu' => ['alt' => 'neu'],
+			'RedirectMatch 410 ^/alt$' => ['alt' => 410],
+			'RedirectMatch 301 ^/alt\.html$ /neu' => ['alt.html' => 'neu'],
+			"RewriteCond %{QUERY_STRING} ^q=a%20b\$\nRewriteRule ^\$ /neu [R=301,L]" => ['?q=a%20b' => 'neu'],
+			'RewriteRule ^alt$ /neu [R=301,L]' => ['alt' => 'neu'],
+			'RewriteRule ^alt$ - [G]' => ['alt' => 410],
+			'RewriteRule ^alt/uebersicht\.html$ /neu [R=301,L]' => ['alt/uebersicht.html' => 'neu'],
+			'Redirect 301 /alt /m%C3%BCnchen' => ['alt' => 'm%C3%BCnchen'],
+			'Redirect 301 /alt https://target.example/k%C3%B6ln' => ['alt' => 'https://target.example/k%C3%B6ln'],
+		] as $rule => $expected) {
+			$r = Htaccess::convert($rule);
+			expect($expected, $r['entries'], "$rule → imported as before");
+			expect([], $r['skipped'], "$rule → nothing skipped");
+		}
+
+		$r = Htaccess::convert(
+			"RedirectMatch 301 ^/first\$ /one\n"
+			. "RedirectMatch 301 ^/k%C3%B6ln\$ /target\n"
+			. "Redirect 301 /m%C3%BCnchen /target\n"
+			. "RewriteCond %{QUERY_STRING} ^id=5\$\n"
+			. "RewriteRule ^k%C3%B6ln\$ /target [R=301,L]\n"
+			. "RewriteRule ^last\$ /two [R=301,L]\n"
+			. 'Redirect 301 /kept /three'
+		);
+
+		expect(['first' => 'one', 'last' => 'two', 'kept' => 'three'], $r['entries'], 'a skipped % source line does not drop its neighbours');
+		expect([
+			['line' => 2, 'text' => 'RedirectMatch 301 ^/k%C3%B6ln$ /target', 'reason' => 'pattern'],
+			['line' => 3, 'text' => 'Redirect 301 /m%C3%BCnchen /target', 'reason' => 'pattern'],
+			['line' => 5, 'text' => 'RewriteRule ^k%C3%B6ln$ /target [R=301,L]', 'reason' => 'pattern'],
+		], $r['skipped'], 'each skipped % source line is reported with its line number, the RewriteCond group is used up');
+
+		// The guards before the source keep their reason; the source comes before the target
+		foreach ([
+			'RedirectMatch 303 ^/k%C3%B6ln$ /target' => 'status',
+			'Redirect 303 /m%C3%BCnchen /target' => 'status',
+			'RewriteRule ^k%C3%B6ln$ /target [R=303,L]' => 'status',
+			'RewriteRule ^k%C3%B6ln$ /target [R=301,S=1]' => 'flag',
+			'RedirectMatch 301 ^/k%C3%B6ln$ /a%20b' => 'pattern',
+			'Redirect 301 /m%C3%BCnchen /a%20b' => 'pattern',
+			'RewriteRule ^k%C3%B6ln$ /a%20b [R=301,L]' => 'pattern',
+			'RewriteRule ^k%C3%B6ln$ /a\b [R=301,L]' => 'pattern',
+		] as $rule => $reason) {
+			expect($reason, Htaccess::convert($rule)['skipped'][0]['reason'] ?? '', "$rule → reason $reason");
+		}
+
+		// Apache drops the `\` of a RewriteRule or RedirectMatch target (`/a\b` is sent as `/ab`, `/a\\b` as `/a%5cb`
+		// for RewriteRule and `/ab` for RedirectMatch), while a browser reads a `\` of an http(s) path as `/`. The list
+		// would send `/a\b`, so a target with a backslash is reported (`target`), absolute or relative, wherever it sits.
+		foreach ([
+			'RewriteRule ^a$ https://target.example/a\b [R=301,L]' => 'RewriteRule, absolute',
+			'RewriteRule ^b$ https://target.example/a\b [R=301,L,NE]' => 'RewriteRule, absolute, NE',
+			'RewriteRule ^c$ /a\b [R=301,L]' => 'RewriteRule, relative',
+			'RewriteRule ^d$ /a\b [R=301,L,NE]' => 'RewriteRule, relative, NE',
+			'RewriteRule ^e$ /a\b [R=302]' => 'RewriteRule, 302',
+			'RewriteRule ^f$ /a\\\\b [R=301,L]' => 'RewriteRule, two backslashes',
+			'RewriteRule ^g$ /a\.html [R=301,L]' => 'RewriteRule, escaped dot',
+			'RewriteRule ^h$ https://target.example/a?q=x\y [R=301,L]' => 'RewriteRule, backslash in the query',
+			'RewriteRule ^i$ https://target.example/a\b? [R=301,L]' => 'RewriteRule, trailing ?',
+			'RewriteRule ^j$ https://target.example/a\b [R=301,L,QSD]' => 'RewriteRule, QSD',
+			'RewriteRule ^k$ /\a [R=301,L]' => 'RewriteRule, backslash first',
+			'RewriteRule ^l/?$ /a\b [R=301,L]' => 'RewriteRule, pattern with /?',
+			'RedirectMatch 301 ^/a$ https://target.example/a\b' => 'RedirectMatch, absolute',
+			'RedirectMatch 301 ^/b$ /a\b' => 'RedirectMatch, relative',
+			'RedirectMatch 302 ^/c$ /a\b' => 'RedirectMatch, 302',
+			'RedirectMatch ^/d$ /a\b' => 'RedirectMatch, no status',
+			'RedirectMatch temp ^/e$ /a\b' => 'RedirectMatch, status word',
+			'RedirectMatch 301 ^/f$ /a\\\\b' => 'RedirectMatch, two backslashes',
+			'RedirectMatch 301 ^/g$ /a\.html' => 'RedirectMatch, escaped dot',
+			'RedirectMatch 301 ^/h$ https://target.example/a?q=x\y' => 'RedirectMatch, backslash in the query',
+			'RedirectMatch 301 ^/i$ /a\b?' => 'RedirectMatch, trailing ?',
+			'RedirectMatch 301 ^/j /a\b' => 'RedirectMatch, regex without $ (no partial note either)',
+		] as $rule => $label) {
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$label → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'target']], $r['skipped'], "$label → skipped target");
+			expect([], $r['partial'], "$label → no partial note");
+		}
+
+		// Controls: Redirect sends the target as written (`a\b` stays `a\b`), so it is imported as before
+		foreach ([
+			'Redirect 301 /a https://target.example/a\b' => ['a' => 'https://target.example/a\b'],
+			'Redirect 301 /b /a\b' => ['b' => 'a\b'],
+			'RedirectPermanent /c /a\b' => ['c' => 'a\b'],
+			'RedirectTemp /d https://target.example/a\b' => ['d' => ['to' => 'https://target.example/a\b', 'status' => 302]],
+		] as $rule => $expected) {
+			$r = Htaccess::convert($rule);
+			expect($expected, $r['entries'], "$rule → imported as written");
+			expect([], $r['skipped'], "$rule → nothing skipped");
+		}
+
+		// Controls: 410 has no target, a target without a backslash is imported, a continuation line is no backslash of the target
+		foreach ([
+			'RewriteRule ^a$ /a\b [R=410]' => ['a' => 410],
+			'RewriteRule ^a$ /a\b [G]' => ['a' => 410],
+			'RedirectMatch 410 ^/a$ /a\b' => ['a' => 410],
+			'RedirectMatch gone ^/a$' => ['a' => 410],
+			'RewriteRule ^a$ /a/b [R=301,L]' => ['a' => 'a/b'],
+			'RewriteRule ^a$ https://target.example/a/b?fixed=yes [R=301,L,NE]' => ['a' => ['to' => 'https://target.example/a/b?fixed=yes', 'query' => 'drop']],
+			'RedirectMatch 301 ^/a$ /a/b' => ['a' => 'a/b'],
+			'RedirectMatch 301 ^/a$ https://target.example/a/b?fixed=yes' => ['a' => ['to' => 'https://target.example/a/b?fixed=yes', 'query' => 'drop']],
+			"RewriteRule ^a\$ /target \\\n[R=301,L]" => ['a' => 'target'],
+			"RedirectMatch 301 ^/a\$ \\\n/target" => ['a' => 'target'],
+		] as $rule => $expected) {
+			$r = Htaccess::convert($rule);
+			expect($expected, $r['entries'], "$rule → imported");
+			expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
+		}
+
+		$r = Htaccess::convert(
+			"RewriteRule ^first\$ /one [R=301,L]\n"
+			. "RewriteRule ^old-abs\$ https://target.example/a\\b [R=301,L]\n"
+			. "RedirectMatch 301 ^/old-rel\$ /a\\b\n"
+			. "Redirect 301 /kept /a\\b\n"
+			. 'RewriteRule ^last$ /two [R=301,L]'
+		);
+
+		expect(['first' => 'one', 'kept' => 'a\b', 'last' => 'two'], $r['entries'], 'a skipped backslash line does not drop its neighbours');
+		expect([
+			['line' => 2, 'text' => 'RewriteRule ^old-abs$ https://target.example/a\b [R=301,L]', 'reason' => 'target'],
+			['line' => 3, 'text' => 'RedirectMatch 301 ^/old-rel$ /a\b', 'reason' => 'target'],
+		], $r['skipped'], 'each skipped backslash line is reported with its line number');
+
+		foreach ([
+			'RewriteRule ^old/(.*)$ /a\b [R=301,L]' => 'pattern',
+			'RewriteRule ^old$ /a\b [R=303,L]' => 'status',
+			'RewriteRule ^old$ /a\b [R=301,S=1]' => 'flag',
+			'RedirectMatch 301 ^/old/(.*)$ /a\b' => 'pattern',
+			'RedirectMatch 303 ^/old$ /a\b' => 'status',
 		] as $rule => $reason) {
 			expect($reason, Htaccess::convert($rule)['skipped'][0]['reason'] ?? '', "$rule → the earlier guard keeps the reason $reason");
 		}

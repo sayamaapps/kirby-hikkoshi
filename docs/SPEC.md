@@ -64,6 +64,7 @@ kirby-hikkoshi/
 │   ├── Redirects.php                (§3.4)
 │   ├── SiteCheck.php                (§3.6)
 │   ├── Htaccess.php                 (§3.7)
+│   ├── HtaccessGuard.php            (§3.7, internal)
 │   ├── CheckCommand.php             (§3.8)
 │   └── ConvertCommand.php           (§3.9)
 ├── snippets/hikkoshi/gone.php       (§3.5)
@@ -419,7 +420,11 @@ page". Infos are never returned (a resolved chain is not a problem).
 
 ### 3.7 `Hikkoshi\Htaccess` (src/Htaccess.php)
 
-Kirby-free converter for Apache rules. Never touches files.
+Kirby-free converter for Apache rules. Never touches files. The predicates
+that decide what Apache reads or sends differently from the list (a `%` in the
+old path, the targets Apache changes) live in the internal class
+`Hikkoshi\HtaccessGuard` (src/HtaccessGuard.php), so `Htaccess` stays below the
+complexity limit of PHPMD. It is not part of the API.
 
 ```php
 public static function convert(string $text): array
@@ -445,7 +450,8 @@ empty lines, `#` comments and everything that is not `Redirect`,
 `301|302|307|308|410|permanent|temp|gone` (`permanent`=301, `temp`=302,
 `gone`=410, no token = 302). `303`/`seeother` or anything else → `status`.
 Old path must start with `/`; key = path without the leading slash (verbatim,
-the Validator normalises later). 410: no target, value `410`. Otherwise target
+the Validator normalises later). A `%` in the old path → `pattern`, see
+below. 410: no target, value `410`. Otherwise target
 rules below. `Redirect`, `RedirectPermanent` and `RedirectTemp` (mod_alias)
 match the path as a prefix of complete segments and append the rest
 (`/old/child` → `/target/child`): every converted line also gets one
@@ -454,16 +460,30 @@ match the path as a prefix of complete segments and append the rest
 **`RedirectMatch [status] regex target`** — only a *literal* regex that
 starts with `^` (without it the regex may match anywhere → `pattern`): strip
 `^` and `$`, a trailing `/?`, unescape `\.` `\-` `\/`; if any unescaped regex
-meta (`. * + ? ( ) [ ] { } | \`) remains → `pattern`. Without the closing `$`
+meta (`. * + ? ( ) [ ] { } | \`) remains → `pattern`, and so does a `%` (see
+below). Without the closing `$`
 (`^/old`, `^/old/?`) the regex also matches every path that starts with it
 (`/old/child`, `/older`): converted with a `partial` note (`prefix`). The
-suffix `\/?` counts like `/?`. Then as `Redirect`, except for a `%` in the
-target (redirect, not 410) → `target`: Apache 2.4 escapes the path of a
-RedirectMatch target once more, so `/target/space%20name` is sent as
+suffix `\/?` counts like `/?`. Then as `Redirect`, except for a `%` or a
+backslash in the target (redirect, not 410) → `target`: Apache 2.4 escapes the
+path of a RedirectMatch target once more, so `/target/space%20name` is sent as
 `/target/space%2520name` and `/target/caf%C3%A9` as `/target/caf%25C3%25A9`
 (the query and the fragment stay as written; plain `Redirect` sends the target
-as written and keeps its `%`). The list does not escape, so the line is
-reported, wherever the `%` sits, for a relative and an absolute target alike.
+as written and keeps its `%`), and it drops a backslash (`/a\b` is sent as
+`/ab`, where a browser reads a `\` of an http(s) path as `/`; plain `Redirect`
+sends it as written and keeps it). The list does neither, so the line is
+reported, wherever the `%` or the backslash sits, for a relative and an
+absolute target alike.
+
+**A `%` in the old path** of `Redirect`, `RedirectMatch` and `RewriteRule`
+(also 410, also a bare `%`) → `pattern`, and no `partial` note. Apache compares
+the pattern with the *decoded* path: `^/k%C3%B6ln$` matches `/k%25C3%25B6ln` and
+never `/köln` (which a browser sends as `/k%C3%B6ln`), and `Redirect
+/m%C3%BCnchen` behaves the same. The list decodes its keys (`k%C3%B6ln` →
+`koeln`) and would match `/köln`, `/koeln` and `/k%C3%B6ln`, not the address
+Apache matched. The Validator accepts no `%` in a path either. The `%` of a
+`RewriteCond %{QUERY_STRING}` and a `%` in the target of a plain `Redirect` are
+not an old path and are not judged here.
 
 **`RewriteCond %{QUERY_STRING} regex [flags]`** — collected for the next
 `RewriteRule`. Accepted regex: optional `(^|&)` or `^` prefix, then
@@ -503,15 +523,18 @@ without `NE`: Apache replaces `%0`–`%9` (backreferences of the last
 variable) and `${map:key}` (RewriteMap) even with `NE`, and without `NE` it
 escapes every other `%` to `%25` (`caf%C3%A9` is sent as `caf%25C3%25A9`). The
 list has none of this and the outcome depends on text, flags and conditions,
-so the rule is reported, not judged further. `L LAST END NC NOCASE
+so the rule is reported, not judged further. A target with a backslash
+(redirect, not 410) → `target`, with or without `NE`: Apache drops it (`a\b` is
+sent as `ab`, `a\\b` as `a%5cb`), and a browser reads a `\` of an http(s) path as
+`/`, so the list would send another address. `L LAST END NC NOCASE
 NE NOESCAPE E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
 PASSTHROUGH` are otherwise ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
 unknown) → `flag`. Rules without R/G are not judged by their flags.
 Pattern: literal only and starting with `^`, anchored with `$` or else
 `partial`, like RedirectMatch, plus these exact WordPress forms (anchored) →
 path `''`: `^$`, `^/?$`, `^(index\.php)?$`, `^index\.php$` → `'index.php'`.
-Other meta → `pattern`. Path `''` **without** conditions → `pattern` (home
-cannot be a source). Target rules below; `-` → `target`. Entries in file order.
+Other meta → `pattern`, and a `%` too (see RedirectMatch). Path `''` **without**
+conditions → `pattern` (home cannot be a source). Target rules below; `-` → `target`. Entries in file order.
 
 **Target rules** (Redirect, RedirectMatch, RewriteRule): `/` → `home`;
 `/path` → `path` (leading slash removed, trailing slash removed); a `?` elsewhere in a path target (`/path?x=1`) → `target` (the Validator
@@ -521,8 +544,9 @@ accepts no query in a page id); a trailing
 the host is allowed; a trailing `?` is removed and means drop); contains `$0`
 to `$9` or `%1` (a backreference that Apache fills in), or does not start with
 `/` or `http` → `target`. A RewriteRule target is also `target` when it contains
-`%` or `${` (see RewriteRule), and a RedirectMatch target when it contains `%`
-(see RedirectMatch).
+`%`, `${` or a backslash (see RewriteRule), and a RedirectMatch target when it
+contains `%` or a backslash (see RedirectMatch). A plain `Redirect` target is
+sent as written by Apache and keeps both.
 
 **Value shape** of `entries[key]`: 410 → `410`; status 301 and no drop →
 `'id'` (string); otherwise `['to' => 'id']` plus `'status' => n` when
@@ -1005,6 +1029,20 @@ property of the instance). Use a `withSite()` wrapper with try/finally, as in te
   `partial` note, while `Redirect 301 /alt /a%20b` → `['alt' => 'a%20b']`,
   `RedirectMatch 301 ^/alt$ /plain` → `['alt' => 'plain']` and
   `RedirectMatch 410 ^/alt$ /a%20b` → `['alt' => 410]`;
+  a `%` in the old path (`RedirectMatch 410 ^/k%C3%B6ln$`, `RedirectMatch 301
+  ^/a%20b$ /t`, `Redirect 301 /m%C3%BCnchen /t`, `RedirectPermanent`,
+  `RedirectTemp`, `RewriteRule ^k%C3%B6ln$ /t [R=301,L]`, `[G]`, `[R=410]`,
+  a bare `%`) → `pattern`, no `partial` note, the neighbouring lines and the
+  `RewriteCond` group unaffected; the reasons `status` and `flag` of the
+  earlier guards stay, and `pattern` wins over a `%` or a backslash in the
+  target; controls: ASCII old paths, `^/alt\.html$`, a `%` in a
+  `RewriteCond %{QUERY_STRING}` regex and in the target of `Redirect`;
+  a backslash in the target of `RewriteRule` (absolute, relative, with `NE`,
+  `\.`, in the query, doubled) and of `RedirectMatch` (absolute, relative,
+  with or without a status) → `target` and no `partial` note, while
+  `Redirect 301 /a https://x.example/a\b` → `['a' => 'https://x.example/a\b']`,
+  `[R=410]`, `[G]` and `RedirectMatch 410` with such a target → `410`, and a
+  `\` at the end of a line stays a continuation;
   `^(index\.php)?$ /neu [R=301]` without conds → `pattern`; `[NC,R=301,L]`
   flag order irrelevant; `^alt /neu [R=301]` and `^alt/ /neu [R=301]` → entry
   `alt` plus `partial`; `alt /neu [R=301]` and `alt$ /neu [R]` → `pattern`; `[R=301,QSD,L]` → `['to' => 'neu', 'query' => 'drop']`;

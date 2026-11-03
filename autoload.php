@@ -11,6 +11,7 @@ return [
 	'sayamaapps\\hikkoshi\\configexception' => 'src/ConfigException.php',
 	'sayamaapps\\hikkoshi\\convertcommand' => 'src/ConvertCommand.php',
 	'sayamaapps\\hikkoshi\\htaccess' => 'src/Htaccess.php',
+	'sayamaapps\\hikkoshi\\htaccessguard' => 'src/HtaccessGuard.php',
 	'sayamaapps\\hikkoshi\\i18n' => 'src/I18n.php',
 	'sayamaapps\\hikkoshi\\options' => 'src/Options.php',
 	'sayamaapps\\hikkoshi\\path' => 'src/Path.php',

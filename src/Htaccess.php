@@ -192,29 +192,6 @@ class Htaccess
 		return $result;
 	}
 
-	/**
-	 * Does Apache change a `#` of the RewriteRule target? Without NE (`noescape`) it escapes
-	 * the substitution, so the Location carries `%23` (a path segment) where the file reads
-	 * a fragment. With NE the target is sent as written. Other characters are not judged.
-	 */
-	private static function escapesHash(string $target, string $flags): bool
-	{
-		return str_contains($target, '#') && !self::hasFlag($flags, 'NE') && !self::hasFlag($flags, 'NOESCAPE');
-	}
-
-	/**
-	 * Does Apache change a `%` or `${` of the RewriteRule target? Whatever the flags, it replaces
-	 * `%0`–`%9` (backreferences of the last RewriteCond; `%20` reads as `%2` and `0`), `%{VAR}`
-	 * (server variable) and `${map:key}` (RewriteMap). Without NE it also escapes every other `%`
-	 * to `%25`. The list has no such expansion, and the outcome depends on the text, the flags and
-	 * the conditions, so a target with a `%` is not judged any further: it is reported. (`$0`–`$9`
-	 * are backreferences of the rule's pattern; destination() rejects them.)
-	 */
-	private static function expandsTarget(string $target): bool
-	{
-		return str_contains($target, '%') || str_contains($target, '${');
-	}
-
 	/** The value of flag NAME (`R` or `R=301`): '' for a bare flag, null when absent. */
 	private static function flagValue(string $flags, string $name): string|null
 	{
@@ -415,7 +392,7 @@ class Htaccess
 			$anchored = false;   // mod_alias Redirect matches the path and everything below it
 			$path = str_starts_with($old, '/') ? trim(substr($old, 1), '/') : null;
 		}
-		if ($path === null || $path === '') {
+		if ($path === null || $path === '' || HtaccessGuard::decodesSource($path)) {
 			self::skip($state, $line, $body, 'pattern');
 			return;
 		}
@@ -423,11 +400,9 @@ class Htaccess
 		if ($status === 410) {
 			$value = 410;
 		} else {
-			// Apache 2.4 escapes the path of a RedirectMatch target once more (`%20` is sent as `%2520`,
-			// query and fragment stay as written); Redirect sends it as written. The list does not
-			// escape, so a `%` there would import a different address: reported, wherever it sits.
+			// Redirect sends its target as written; Apache changes a RedirectMatch target (HtaccessGuard).
 			$destination = self::destination($target);
-			if ($destination === null || ($regex && str_contains($target, '%'))) {
+			if ($destination === null || ($regex && HtaccessGuard::changesMatchTarget($target))) {
 				self::skip($state, $line, $body, 'target');
 				return;
 			}
@@ -519,7 +494,7 @@ class Htaccess
 		}
 		$anchored = true;
 		$path = self::literal($pattern, $anchored);
-		if ($path === null || ($path === '' && $chains === [])) {
+		if ($path === null || ($path === '' && $chains === []) || HtaccessGuard::decodesSource($path)) {
 			self::skip($state, $line, $body, 'pattern');
 			return;
 		}
@@ -528,7 +503,8 @@ class Htaccess
 			$value = 410;
 		} else {
 			$destination = self::destination($target);
-			if ($destination === null || self::escapesHash($target, $flags) || self::expandsTarget($target)) {
+			$noEscape = self::hasFlag($flags, 'NE') || self::hasFlag($flags, 'NOESCAPE');
+			if ($destination === null || HtaccessGuard::changesRewriteTarget($target, $noEscape)) {
 				self::skip($state, $line, $body, 'target');
 				return;
 			}

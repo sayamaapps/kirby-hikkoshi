@@ -16,6 +16,7 @@ class_exists(\Sayamaapps\Hikkoshi\CheckCommand::class);
 class_exists(\Sayamaapps\Hikkoshi\ConfigException::class); // declares Hikkoshi\ConfigException itself
 class_exists(\Sayamaapps\Hikkoshi\ConvertCommand::class);
 class_exists(\Sayamaapps\Hikkoshi\Htaccess::class);
+class_exists(\Sayamaapps\Hikkoshi\HtaccessGuard::class);
 class_exists(\Sayamaapps\Hikkoshi\I18n::class);
 class_exists(\Sayamaapps\Hikkoshi\Options::class);
 class_exists(\Sayamaapps\Hikkoshi\Path::class);
