@@ -561,7 +561,7 @@ final class HtaccessTest extends TestCase
 		}
 
 		// Redirect family: mod_alias replaces the request's query with a target query of its own, too (no QSA here)
-		$own =['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop'];
+		$own = ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop'];
 
 		foreach ([
 			'Redirect 301 /a https://target.example/new?mode=fixed' => ['a' => $own],
