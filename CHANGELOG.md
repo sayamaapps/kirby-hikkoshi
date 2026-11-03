@@ -8,6 +8,12 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [1.3.1] — 2026-11-03
+
+### Fixed
+
+- **`convert` reports a `RewriteRule` target with `#` unless the rule has `NE`.** Without `NE` (`noescape`) Apache escapes the substitution and sends the `#` as `%23`: `RewriteRule ^old$ https://target.example/team#section [R=301,L]` answers with `Location: https://target.example/team%23section`, a different address. The converter imported it as the address with a fragment. Such a rule is now skipped (`target`) on standard error with exit code 1, for absolute and for site-relative targets. With `NE` or `NOESCAPE` the rule is imported as before. `Redirect` and `RedirectMatch` are not changed. Lists converted earlier are not changed: convert the rules again.
+
 ## [1.3.0] — 2026-10-31
 
 ### Changed

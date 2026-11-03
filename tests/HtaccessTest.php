@@ -426,6 +426,59 @@ final class HtaccessTest extends TestCase
 			'external target with a trailing ? → drop (unchanged)'
 		);
 
+		// A `#` in a RewriteRule target: without NE Apache sends it escaped (`%23`), so a fragment would be a different URI
+		foreach ([
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [R=301,L]' => 'absolute target with #',
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [R,L]' => 'absolute target with #, 302',
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [R=301]' => 'absolute target with #, no L',
+			'RewriteRule ^plain-anchor$ /team#section [R=301,L]' => 'relative target with #',
+			'RewriteRule ^plain-anchor$ /team#section? [R=301,L]' => 'relative target with # and a trailing ?',
+		] as $rule => $label) {
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$label, no NE → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'target']], $r['skipped'], "$label, no NE → skipped target");
+			expect([], $r['partial'], "$label, no NE → no partial note");
+		}
+
+		foreach ([
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [NE,R=301,L]' => ['plain-anchor' => 'https://target.example/team#section'],
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [R=301,L,NE]' => ['plain-anchor' => 'https://target.example/team#section'],
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [noescape,R=301]' => ['plain-anchor' => 'https://target.example/team#section'],
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [R=302,NOESCAPE]' => ['plain-anchor' => ['to' => 'https://target.example/team#section', 'status' => 302]],
+			'RewriteRule ^plain-anchor$ /team#section [NE,R=301,L]' => ['plain-anchor' => 'team#section'],
+		] as $rule => $expected) {
+			$r = Htaccess::convert($rule);
+			expect($expected, $r['entries'], "$rule → imported unchanged, fragment kept");
+			expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
+		}
+
+		// The skip stays with its line: the neighbours are converted, and a skip for another reason keeps its reason
+		$r = Htaccess::convert(
+			"RewriteRule ^first$ /one [R=301,L]\n"
+			. "RewriteRule ^plain-anchor$ https://target.example/team#section [R=301,L]\n"
+			. "RewriteRule ^kept$ https://target.example/team#section [NE,R=301,L]\n"
+			. 'RewriteRule ^last$ /two [R=301,L]'
+		);
+
+		expect(['first' => 'one', 'kept' => 'https://target.example/team#section', 'last' => 'two'], $r['entries'], 'a # skip does not drop its neighbours');
+
+		expect([['line' => 2, 'text' => 'RewriteRule ^plain-anchor$ https://target.example/team#section [R=301,L]', 'reason' => 'target']], $r['skipped'], 'only the # line without NE is skipped');
+
+		foreach ([
+			'RewriteRule ^plain-anchor/(.*)$ https://target.example/team#section [R=301,L]' => 'pattern',
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [R=303,L]' => 'status',
+			'RewriteRule ^plain-anchor$ https://target.example/team#section [R=301,S=1]' => 'flag',
+		] as $rule => $reason) {
+			expect($reason, Htaccess::convert($rule)['skipped'][0]['reason'] ?? '', "$rule → the earlier guard keeps the reason $reason");
+		}
+
+		expect(['gone' => 410], Htaccess::convert('RewriteRule ^gone$ /team#section [R=410]')['entries'], '410 does not use its target, so # does not matter');
+
+		// mod_alias is not RewriteRule: Redirect and RedirectMatch keep a fragment as before
+		expect(['alt' => 'https://target.example/team#section'], Htaccess::convert('Redirect 301 /alt https://target.example/team#section')['entries'], 'Redirect keeps a # target (out of scope)');
+
+		expect(['alt' => 'https://target.example/team#section'], Htaccess::convert('RedirectMatch 301 ^/alt$ https://target.example/team#section')['entries'], 'RedirectMatch keeps a # target (out of scope)');
+
 		// Redirect family: mod_alias replaces the request's query with a target query of its own, too (no QSA here)
 		$own = ['to' => 'https://target.example/new?mode=fixed', 'query' => 'drop'];
 
