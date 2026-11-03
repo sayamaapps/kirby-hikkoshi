@@ -457,7 +457,13 @@ starts with `^` (without it the regex may match anywhere → `pattern`): strip
 meta (`. * + ? ( ) [ ] { } | \`) remains → `pattern`. Without the closing `$`
 (`^/old`, `^/old/?`) the regex also matches every path that starts with it
 (`/old/child`, `/older`): converted with a `partial` note (`prefix`). The
-suffix `\/?` counts like `/?`. Then as `Redirect`.
+suffix `\/?` counts like `/?`. Then as `Redirect`, except for a `%` in the
+target (redirect, not 410) → `target`: Apache 2.4 escapes the path of a
+RedirectMatch target once more, so `/target/space%20name` is sent as
+`/target/space%2520name` and `/target/caf%C3%A9` as `/target/caf%25C3%25A9`
+(the query and the fragment stay as written; plain `Redirect` sends the target
+as written and keeps its `%`). The list does not escape, so the line is
+reported, wherever the `%` sits, for a relative and an absolute target alike.
 
 **`RewriteCond %{QUERY_STRING} regex [flags]`** — collected for the next
 `RewriteRule`. Accepted regex: optional `(^|&)` or `^` prefix, then
@@ -515,7 +521,8 @@ accepts no query in a page id); a trailing
 the host is allowed; a trailing `?` is removed and means drop); contains `$0`
 to `$9` or `%1` (a backreference that Apache fills in), or does not start with
 `/` or `http` → `target`. A RewriteRule target is also `target` when it contains
-`%` or `${` (see RewriteRule).
+`%` or `${` (see RewriteRule), and a RedirectMatch target when it contains `%`
+(see RedirectMatch).
 
 **Value shape** of `entries[key]`: 410 → `410`; status 301 and no drop →
 `'id'` (string); otherwise `['to' => 'id']` plus `'status' => n` when
@@ -992,7 +999,12 @@ property of the instance). Use a `withSite()` wrapper with try/finally, as in te
   (`/a%20b`, `https://x.example/caf%C3%A9`, with and without `NE`; `/%2`;
   `https://%{HTTP_HOST}/new`; `/${lc:Key}`) → `target`, a plain ASCII target
   stays; `^alt$ /a%20b [R=410]` → `['alt' => 410]`; `RedirectMatch` and
-  `Redirect` with `$2` in the target → `target`;
+  `Redirect` with `$2` in the target → `target`; `RedirectMatch` with a `%`
+  in the target (`/a%20b`, `/caf%C3%A9`, `https://x.example/caf%C3%A9`,
+  `https://x.example/p?q=a%26b`, with or without a status) → `target` and no
+  `partial` note, while `Redirect 301 /alt /a%20b` → `['alt' => 'a%20b']`,
+  `RedirectMatch 301 ^/alt$ /plain` → `['alt' => 'plain']` and
+  `RedirectMatch 410 ^/alt$ /a%20b` → `['alt' => 410]`;
   `^(index\.php)?$ /neu [R=301]` without conds → `pattern`; `[NC,R=301,L]`
   flag order irrelevant; `^alt /neu [R=301]` and `^alt/ /neu [R=301]` → entry
   `alt` plus `partial`; `alt /neu [R=301]` and `alt$ /neu [R]` → `pattern`; `[R=301,QSD,L]` → `['to' => 'neu', 'query' => 'drop']`;

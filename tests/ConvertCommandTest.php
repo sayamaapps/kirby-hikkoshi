@@ -170,6 +170,27 @@ final class ConvertCommandTest extends TestCase
 			cv_remove($dir);
 		}
 
+		// An encoded RedirectMatch target: Apache escapes its path once more (`%20` is sent as `%2520`), so the line is reported; Redirect sends the target as written and stays
+		$dir = cv_tmp();
+
+		try {
+			$space = 'RedirectMatch 301 ^/old-space$ /target/space%20name';
+			$utf8 = 'RedirectMatch 301 ^/old-utf8$ /target/caf%C3%A9';
+			$query = 'RedirectMatch 301 ^/old-query$ https://target.example/target/x?q=a%26b';
+			$redirect = 'Redirect 301 /kept-space /target/space%20name';
+			$ascii = 'RedirectMatch 301 ^/plain-ascii$ /target/plain';
+			file_put_contents($dir . '/matched.htaccess', "$space\n$utf8\n$query\n$redirect\n$ascii\n");
+			[$code, $out, $err] = cv_run(['matched.htaccess'], $dir);
+			expect(1, $code, 'encoded RedirectMatch targets → exit 1');
+			expect(['kept-space' => 'target/space%20name', 'plain-ascii' => 'target/plain'], cv_eval($out), 'only Redirect and the ASCII RedirectMatch are in the list');
+			holds(str_contains($err, 'Skipped line 1 (' . I18n::t('reason.target') . '): ' . $space), 'stderr names the %20 skip via the translation');
+			holds(str_contains($err, 'Skipped line 2 (' . I18n::t('reason.target') . '): ' . $utf8), 'stderr names the encoded UTF-8 skip');
+			holds(str_contains($err, 'Skipped line 3 (' . I18n::t('reason.target') . '): ' . $query), 'stderr names the encoded query skip');
+			holds(str_contains($err, '2 entries converted, 3 lines skipped.'), 'encoded RedirectMatch targets → convert summary counts the skips');
+		} finally {
+			cv_remove($dir);
+		}
+
 		/* ------------------------------------------------------------------------
 		 * Hostile file names and lines: no code from the path, no escape sequences
 		 * --------------------------------------------------------------------- */

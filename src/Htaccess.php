@@ -423,8 +423,11 @@ class Htaccess
 		if ($status === 410) {
 			$value = 410;
 		} else {
+			// Apache 2.4 escapes the path of a RedirectMatch target once more (`%20` is sent as `%2520`,
+			// query and fragment stay as written); Redirect sends it as written. The list does not
+			// escape, so a `%` there would import a different address: reported, wherever it sits.
 			$destination = self::destination($target);
-			if ($destination === null) {
+			if ($destination === null || ($regex && str_contains($target, '%'))) {
 				self::skip($state, $line, $body, 'target');
 				return;
 			}
