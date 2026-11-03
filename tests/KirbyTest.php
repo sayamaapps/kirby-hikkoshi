@@ -364,6 +364,65 @@ final class KirbyTest extends TestCase
 			expect('http://example.invalid', hikkoshi_render($pre, '/index.php')[2], 'index.php?p=1: location is home');
 		});
 
+		// --- 6b. conditions that look alike, but are not one list ----------------
+		// A percent-encoded & or = belongs to the name or value, so the App boots
+		// and each old address matches the query PHP decodes for it.
+		withSite(function (string $tmp): void {
+			$lists = [
+				'encoded & in a value' => [
+					['old?campaign=summer%26lang%3Dde' => 'team', 'old?campaign=summer&lang=de' => 'produkte'],
+					['campaign' => 'summer&lang=de'],
+					['campaign' => 'summer', 'lang' => 'de'],
+				],
+				'encoded = in a name' => [
+					['old?a%3Db' => 'team', 'old?a=b' => 'produkte'],
+					['a=b' => '1'],
+					['a' => 'b'],
+				],
+			];
+			foreach ($lists as $case => [$list, $firstQuery, $secondQuery]) {
+				hikkoshi_write_config($tmp, $list);
+
+				$booted = null;
+				$thrown = null;
+				try {
+					$booted = hikkoshi_kirby($tmp, ktOn(), ktRequest($firstQuery));
+				} catch (ConfigException $e) {
+					$thrown = $e;
+				}
+				holds($thrown === null && $booted !== null, "$case: the App boots with both entries");
+				if ($booted === null) {
+					continue;
+				}
+				expect(['team', 'produkte'], array_column($booted->site()->hikkoshiRedirects(), 'target'), "$case: both entries are loaded");
+				expect(
+					[301, 'http://example.invalid/team'],
+					[hikkoshi_render($booted, '/old')[0], hikkoshi_render($booted, '/old')[2]],
+					"$case: the first old address matches its own query"
+				);
+
+				$second = hikkoshi_kirby($tmp, ktOn(), ktRequest($secondQuery));
+				expect(
+					[301, 'http://example.invalid/produkte'],
+					[hikkoshi_render($second, '/old')[0], hikkoshi_render($second, '/old')[2]],
+					"$case: the second old address matches its own query"
+				);
+
+				$other = hikkoshi_kirby($tmp, ktOn(), ktRequest(['campaign' => 'winter']));
+				expect(404, hikkoshi_render($other, '/old')[0], "$case: another query matches neither");
+			}
+
+			// The same condition list in another order is still one old address.
+			hikkoshi_write_config($tmp, ['old?a=1&b=2' => 'team', 'old?b=2&a=1' => 'produkte']);
+			$thrown = null;
+			try {
+				hikkoshi_kirby($tmp, ktOn());
+			} catch (ConfigException $e) {
+				$thrown = $e;
+			}
+			holds($thrown instanceof ConfigException, 'conditions in another order: still a duplicate, the App cannot be built');
+		});
+
 		// --- 7. suffix and umlaut on real requests -------------------------------
 		withSite(function (string $tmp): void {
 			hikkoshi_write_config($tmp, ['impressum' => 'speisekarte', 'ueber-uns' => 'produkte']);

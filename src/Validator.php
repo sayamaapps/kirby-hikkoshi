@@ -167,6 +167,34 @@ class Validator
 	}
 
 	/**
+	 * The key of a source for duplicate detection. identity() is for display
+	 * (its names and values are decoded and not escaped), so different
+	 * condition lists can print alike: `campaign=summer&lang=de` is one
+	 * parameter with the value `summer&lang=de` or two parameters. This key
+	 * percent-encodes every name and value (RFC 3986), so `&` and `=` only
+	 * ever separate, and sorts by the encoded names. `a` (present with any
+	 * value) stays apart from `a=` (empty value), as in Path::split().
+	 *
+	 *   duplicateKey('old', ['campaign' => 'summer&lang=de']) → 'old?campaign=summer%26lang%3Dde'
+	 *   duplicateKey('old', ['campaign' => 'summer', 'lang' => 'de']) → 'old?campaign=summer&lang=de'
+	 *   duplicateKey('old', ['a=b' => null]) → 'old?a%3Db'
+	 *   duplicateKey('old', ['a' => 'b']) → 'old?a=b'
+	 */
+	private static function duplicateKey(string $source, array $conditions): string
+	{
+		if ($conditions === []) {
+			return $source;
+		}
+		$parts = [];
+		foreach ($conditions as $name => $value) {
+			$encoded = rawurlencode((string)$name);
+			$parts[$encoded] = $value === null ? $encoded : $encoded . '=' . rawurlencode($value);
+		}
+		ksort($parts, SORT_STRING);
+		return $source . '?' . implode('&', $parts);
+	}
+
+	/**
 	 * An external target: its host must be in allowedHosts, and the URL must be
 	 * usable as a Location header.
 	 *
@@ -385,7 +413,7 @@ class Validator
 
 		/** @var list<array{key: string, source: string, conditions: array<string, string|null>, target: string|null, status: int, query: string, external: bool}> $entries */
 		$entries = [];
-		$seen = [];   // identity => index into $entries
+		$seen = [];   // duplicateKey() => index into $entries
 		foreach ($config as $key => $value) {
 			$entryText = I18n::entry($key, $value);
 
@@ -413,8 +441,9 @@ class Validator
 			}
 
 			$identity = self::identity($source, $conditions);
-			if (isset($seen[$identity])) {
-				$first = $entries[$seen[$identity]];
+			$duplicateKey = self::duplicateKey($source, $conditions);
+			if (isset($seen[$duplicateKey])) {
+				$first = $entries[$seen[$duplicateKey]];
 				$findings[] = self::finding(self::ERROR, 'source.duplicate', [
 					'source' => $identity,
 					'entry'  => $entryText,
@@ -423,7 +452,7 @@ class Validator
 				continue;
 			}
 
-			$seen[$identity] = count($entries);
+			$seen[$duplicateKey] = count($entries);
 			$entries[] = [
 				'key'        => $key,
 				'source'     => $source,

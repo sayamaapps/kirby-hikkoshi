@@ -189,7 +189,18 @@ warnings and infos keep their entry. Order of `entries` = config order.
 | 11a | allowed URL with whitespace or a control character inside (`\s`, `\x00–\x1F`, `\x7F`; Kirby would send a mangled Location). An allowed URL's scheme is stored lowercase (`HTTPS:` makes Kirby's Uri throw) | `target.invalid` error | entry |
 | 12 | not external and `!Path::isValidTarget(target)` | `target.invalid` error | entry |
 | 13 | not external, no conditions, `target === source` | `target.self` error | entry |
-| 14 | `identity(source, conditions)` seen before | `source.duplicate` error | source (= identity), entry, target (first entry's target, or its status for 410) |
+| 14 | the duplicate key of `(source, conditions)` seen before (see below) | `source.duplicate` error | source (= `identity()`), entry, target (first entry's target, or its status for 410) |
+
+The duplicate key (rule 14) is not `identity()`, which prints decoded names and
+values unescaped and so prints different condition lists alike
+(`campaign=summer%26lang%3Dde` and `campaign=summer&lang=de` both as
+`campaign=summer&lang=de`; `a%3Db` and `a=b` both as `a=b`). It is the source,
+then `?`, then every condition as the `rawurlencode()`d name, plus `=` and the
+`rawurlencode()`d value unless the value is `null` (so `a` and `a=` differ),
+sorted by the encoded name and joined with `&`; no conditions → the source.
+Two keys are duplicates when their conditions are the same set of decoded
+names and values, in any order and written with any percent-encoding, and
+never otherwise.
 
 `entry` is always `I18n::entry($key, $value)`: `'old' => 'new'`, arrays on
 one line as `['to' => 'x', 'status' => 302]`. Values are `trim()`med. `410`
@@ -804,6 +815,10 @@ these adaptations, each named in a comment:
   English default `Invalid old path: '../secret' => 'produkte'`; array entry
   printed on one line `'m' => ['to' => 'x', 'status' => 200]`.
 - `identity('a', [])` → `a`; `identity('', ['q'=>'2','p'=>null])` → `?p&q=2`.
+- duplicate key: `['old?campaign=summer%26lang%3Dde'=>'x','old?campaign=summer&lang=de'=>'y']`,
+  `['old?a%3Db'=>'x','old?a=b'=>'y']` and `['old?a'=>'x','old?a='=>'y']` are no
+  duplicates; `['old?a=1&b=2'=>'x','old?b=2&a=1'=>'y']` and
+  `['old?a=%31'=>'x','old?a=1'=>'y']` are.
 - `hasErrors`, `ofLevel` on a mixed findings list.
 
 ### 8.2 tests/ResolverTest.php — Kirby-free
