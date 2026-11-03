@@ -8,6 +8,17 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [1.3.5] — 2026-11-03
+
+### Fixed
+
+- **`convert` reports an old path with a `%`, instead of importing it as written.** Apache compares the pattern of `Redirect`, `RedirectMatch` and `RewriteRule` with the decoded path, so `RedirectMatch 410 ^/k%C3%B6ln$` matched `/k%25C3%25B6ln` and never `/köln` (a browser sends `/k%C3%B6ln`); `Redirect 301 /m%C3%BCnchen /target` behaves the same. The converter wrote `'k%C3%B6ln' => 410`, and the list decodes its keys (`k%C3%B6ln` becomes `koeln`), so it answered `/köln`, `/koeln` and `/k%C3%B6ln`, not the address Apache had matched, and reported nothing. Such a line is now skipped (`pattern`) on standard error with exit code 1, with a status or `gone`, `410` or `G` alike, and for a bare `%` too. Write the address in the list yourself (`'köln' => 410`). `%` in a `RewriteCond %{QUERY_STRING}` and in the target of a plain `Redirect` is not an old path and is not affected.
+- **`convert` reports a `RewriteRule` or `RedirectMatch` target with a backslash, instead of importing it as written.** Apache drops the backslash of such a target: `RewriteRule ^old$ https://target.example/a\b [R=301,L]` answers with `Location: https://target.example/ab`, with and without `NE`, and so does `RedirectMatch 301 ^/old$ /a\b` (a doubled `\\` of a `RewriteRule` becomes `%5c`). The converter imported `https://target.example/a\b`, which a browser reads as `…/a/b`, a third address, and reported nothing. Such a line is now skipped (`target`) on standard error with exit code 1, for absolute and site-relative targets. `Redirect`, `RedirectPermanent` and `RedirectTemp` send the target as written (`Location: https://target.example/a\b`) and are imported as before; so are rules with `G` or `R=410` (no target). Lists converted earlier are not changed: convert the rules again.
+
+### Changed
+
+- The checks that decide what Apache reads or sends differently from the list moved from `Htaccess` into the internal class `HtaccessGuard` (not part of the API, with no change of behaviour), so that `Htaccess` stays below the complexity limit of the code analysis.
+
 ## [1.3.4] — 2026-11-03
 
 ### Fixed

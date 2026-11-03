@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\Redirects::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\Htaccess::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\HtaccessGuard::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\Resolver::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\SiteCheck::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\CheckCommand::class)]

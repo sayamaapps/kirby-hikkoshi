@@ -17,6 +17,7 @@ use Sayamaapps\Hikkoshi\I18n;
 
 #[CoversClass(\Sayamaapps\Hikkoshi\ConvertCommand::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\Htaccess::class)]
+#[CoversClass(\Sayamaapps\Hikkoshi\HtaccessGuard::class)]
 #[CoversClass(\Sayamaapps\Hikkoshi\I18n::class)]
 final class ConvertCommandTest extends TestCase
 {
@@ -187,6 +188,52 @@ final class ConvertCommandTest extends TestCase
 			holds(str_contains($err, 'Skipped line 2 (' . I18n::t('reason.target') . '): ' . $utf8), 'stderr names the encoded UTF-8 skip');
 			holds(str_contains($err, 'Skipped line 3 (' . I18n::t('reason.target') . '): ' . $query), 'stderr names the encoded query skip');
 			holds(str_contains($err, '2 entries converted, 3 lines skipped.'), 'encoded RedirectMatch targets → convert summary counts the skips');
+		} finally {
+			cv_remove($dir);
+		}
+
+		// An encoded old path: Apache compares the pattern with the decoded path, the list decodes its keys, so the line is reported (`pattern`) in all three directives
+		$dir = cv_tmp();
+
+		try {
+			$match = 'RedirectMatch 410 ^/k%C3%B6ln$';
+			$redirect = 'Redirect 301 /m%C3%BCnchen /target';
+			$rewrite = 'RewriteRule ^stra%C3%9Fe$ /target [R=301,L]';
+			$kept = 'Redirect 301 /plain-ascii /target';
+			$matchKept = 'RedirectMatch 301 ^/plain-match$ /target';
+			$rewriteKept = 'RewriteRule ^plain-rewrite$ /target [R=301,L]';
+			file_put_contents($dir . '/source.htaccess', "$match\n$redirect\n$rewrite\n$kept\n$matchKept\n$rewriteKept\n");
+			[$code, $out, $err] = cv_run(['source.htaccess'], $dir);
+			expect(1, $code, 'encoded old paths → exit 1');
+			expect(['plain-ascii' => 'target', 'plain-match' => 'target', 'plain-rewrite' => 'target'], cv_eval($out), 'only the ASCII old paths are in the list');
+			holds(str_contains($err, 'Skipped line 1 (' . I18n::t('reason.pattern') . '): ' . $match), 'stderr names the RedirectMatch skip via the translation');
+			holds(str_contains($err, 'Skipped line 2 (' . I18n::t('reason.pattern') . '): ' . $redirect), 'stderr names the Redirect skip');
+			holds(str_contains($err, 'Skipped line 3 (' . I18n::t('reason.pattern') . '): ' . $rewrite), 'stderr names the RewriteRule skip');
+			holds(str_contains($err, '3 entries converted, 3 lines skipped.'), 'encoded old paths → convert summary counts the skips');
+			holds(str_contains($err, 'Line 4 converted for the exact path only') && substr_count($err, 'Line ') === 1, 'only the plain Redirect line is a prefix rule');
+		} finally {
+			cv_remove($dir);
+		}
+
+		// A backslash in a RewriteRule or RedirectMatch target: Apache drops it, a browser reads it as `/`, so the line is reported; Redirect sends it as written and stays
+		$dir = cv_tmp();
+
+		try {
+			$rewriteAbsolute = 'RewriteRule ^old-abs$ https://target.example/a\b [R=301,L]';
+			$rewriteRelative = 'RewriteRule ^old-rel$ /a\b [R=301,L,NE]';
+			$matchAbsolute = 'RedirectMatch 301 ^/old-match-abs$ https://target.example/a\b';
+			$matchRelative = 'RedirectMatch 301 ^/old-match-rel$ /a\b';
+			$redirect = 'Redirect 301 /kept-redirect https://target.example/a\b';
+			$ascii = 'RewriteRule ^plain-ascii$ https://target.example/a/b [R=301,L]';
+			file_put_contents($dir . '/backslash.htaccess', "$rewriteAbsolute\n$rewriteRelative\n$matchAbsolute\n$matchRelative\n$redirect\n$ascii\n");
+			[$code, $out, $err] = cv_run(['backslash.htaccess'], $dir);
+			expect(1, $code, 'backslash targets → exit 1');
+			expect(['kept-redirect' => 'https://target.example/a\b', 'plain-ascii' => 'https://target.example/a/b'], cv_eval($out), 'only Redirect and the ASCII RewriteRule are in the list');
+			holds(str_contains($err, 'Skipped line 1 (' . I18n::t('reason.target') . '): ' . $rewriteAbsolute), 'stderr names the absolute RewriteRule skip via the translation');
+			holds(str_contains($err, 'Skipped line 2 (' . I18n::t('reason.target') . '): ' . $rewriteRelative), 'stderr names the relative RewriteRule skip');
+			holds(str_contains($err, 'Skipped line 3 (' . I18n::t('reason.target') . '): ' . $matchAbsolute), 'stderr names the absolute RedirectMatch skip');
+			holds(str_contains($err, 'Skipped line 4 (' . I18n::t('reason.target') . '): ' . $matchRelative), 'stderr names the relative RedirectMatch skip');
+			holds(str_contains($err, '2 entries converted, 4 lines skipped.'), 'backslash targets → convert summary counts the skips');
 		} finally {
 			cv_remove($dir);
 		}

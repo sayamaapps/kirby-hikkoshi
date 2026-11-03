@@ -20,7 +20,7 @@
 	<!-- Default threshold. Methods that branch on purpose carry @SuppressWarnings with their reason in the docblock. -->
 	<rule ref="rulesets/codesize.xml/CyclomaticComplexity" />
 	<rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
-		<!-- Htaccess holds the whole RewriteRule conversion in one class (overall complexity 130, default 80). Splitting it is a follow-up. -->
+		<!-- Htaccess holds the whole RewriteRule conversion in one class (overall complexity 136, default 80); the predicates for what Apache changes are in HtaccessGuard already. Splitting it further is a follow-up. -->
 		<properties>
 			<property name="maximum" value="140" />
 		</properties>
