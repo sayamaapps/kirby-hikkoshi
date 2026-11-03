@@ -477,9 +477,12 @@ Flags of a redirect (R/G), case-insensitive: `QSD`/`QSDISCARD` → `query drop`
 the target drops too, and so does an external target with a query of its own
 (`https://…?x=1`) in RewriteRule, Redirect and RedirectMatch: Apache replaces the
 request's query with the target's. In a RewriteRule, `QSA`/`QSAPPEND` keeps the
-request's query (appended: `keep`); with QSD the drop wins. `L LAST END NC NOCASE
+request's query (appended: `keep`); with QSD the drop wins. A target with `#`
+(redirect, not 410) without `NE`/`NOESCAPE` → `target`: Apache escapes the
+substitution and sends `%23`, not a fragment; with `NE` it is converted as
+written. `L LAST END NC NOCASE
 NE NOESCAPE E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
-PASSTHROUGH` are ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
+PASSTHROUGH` are otherwise ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
 unknown) → `flag`. Rules without R/G are not judged by their flags.
 Pattern: literal only and starting with `^`, anchored with `$` or else
 `partial`, like RedirectMatch, plus these exact WordPress forms (anchored) →

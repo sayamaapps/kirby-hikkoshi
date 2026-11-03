@@ -191,6 +191,16 @@ class Htaccess
 		return $result;
 	}
 
+	/**
+	 * Does Apache change a `#` of the RewriteRule target? Without NE (`noescape`) it escapes
+	 * the substitution, so the Location carries `%23` (a path segment) where the file reads
+	 * a fragment. With NE the target is sent as written. Other characters are not judged.
+	 */
+	private static function escapesHash(string $target, string $flags): bool
+	{
+		return str_contains($target, '#') && !self::hasFlag($flags, 'NE') && !self::hasFlag($flags, 'NOESCAPE');
+	}
+
 	/** The value of flag NAME (`R` or `R=301`): '' for a bare flag, null when absent. */
 	private static function flagValue(string $flags, string $name): string|null
 	{
@@ -501,7 +511,7 @@ class Htaccess
 			$value = 410;
 		} else {
 			$destination = self::destination($target);
-			if ($destination === null) {
+			if ($destination === null || self::escapesHash($target, $flags)) {
 				self::skip($state, $line, $body, 'target');
 				return;
 			}

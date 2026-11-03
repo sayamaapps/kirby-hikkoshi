@@ -132,7 +132,7 @@ vendor/bin/hikkoshi convert FILE [--lang=en|de]
 ```
 
 - `check` validates the list without booting Kirby. `FILE` defaults to the list file. `--allow-host` accepts an external host and can be repeated; `--strict` also fails on warnings.
-- `convert` turns Apache `Redirect`, `RedirectMatch` and `RewriteRule` lines into entries, prints PHP to standard output and writes no file. Regular expressions are skipped, and prefix rules convert for the exact path only. Review the result, then run `check`:
+- `convert` turns Apache `Redirect`, `RedirectMatch` and `RewriteRule` lines into entries, prints PHP to standard output and writes no file. Regular expressions are skipped, and prefix rules convert for the exact path only. A `RewriteRule` target with `#` is imported only with `NE`, because without it Apache sends the `#` encoded as `%23`. Review the result, then run `check`:
 
 ```sh
 vendor/bin/hikkoshi convert public/.htaccess > site/config/hikkoshi.php

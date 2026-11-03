@@ -127,6 +127,28 @@ final class ConvertCommandTest extends TestCase
 			cv_remove($dir);
 		}
 
+		// A `#` in a RewriteRule target without NE: Apache sends %23, so the line is reported, not imported
+		$dir = cv_tmp();
+
+		try {
+			$rule = 'RewriteRule ^plain-anchor$ https://target.example/team#section [R=301,L]';
+			file_put_contents($dir . '/hash.htaccess', "RewriteRule ^first\$ /one [R=301,L]\n$rule\n");
+			[$code, $out, $err] = cv_run(['hash.htaccess'], $dir);
+			expect(1, $code, 'a # target without NE → exit 1');
+			expect(['first' => 'one'], cv_eval($out), 'a # target without NE is not in the list, its neighbour is');
+			holds(str_contains($err, 'Skipped line 2 (' . I18n::t('reason.target') . '): ' . $rule), 'stderr names the # skip via the translation');
+			holds(str_contains($err, '1 entries converted, 1 lines skipped.'), 'a # target without NE → convert summary counts the skip');
+			expect(2, substr_count($err, "\n"), 'stderr has two lines (skipped, summary)');
+
+			file_put_contents($dir . '/hash-ne.htaccess', "RewriteRule ^plain-anchor\$ https://target.example/team#section [NE,R=301,L]\n");
+			[$code, $out, $err] = cv_run(['hash-ne.htaccess'], $dir);
+			expect(0, $code, 'a # target with NE → exit 0');
+			expect(['plain-anchor' => 'https://target.example/team#section'], cv_eval($out), 'a # target with NE is imported with its fragment');
+			holds(!str_contains($err, 'Skipped'), 'a # target with NE → nothing skipped');
+		} finally {
+			cv_remove($dir);
+		}
+
 		/* ------------------------------------------------------------------------
 		 * Hostile file names and lines: no code from the path, no escape sequences
 		 * --------------------------------------------------------------------- */
