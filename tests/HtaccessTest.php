@@ -513,6 +513,77 @@ final class HtaccessTest extends TestCase
 		// The same text in a mod_alias target does not go through that expansion
 		expect(['alt' => 'https://target.example/space%20name'], Htaccess::convert('Redirect 301 /alt https://target.example/space%20name')['entries'], 'Redirect keeps %20 (Apache sends it as written)');
 
+		// Apache 2.4 escapes the path of a RedirectMatch target once more: `%` becomes `%25`, so `%20` is
+		// sent as `%2520` and `%C3%A9` as `%25C3%25A9`. (Its query and fragment stay as written.) Plain
+		// Redirect sends the target as written. The list has no such escaping, so a RedirectMatch target
+		// with a `%` is reported, not imported; where the `%` sits is not judged.
+		foreach ([
+			'RedirectMatch 301 ^/a$ /target/space%20name' => 'encoded space',
+			'RedirectMatch 301 ^/b$ /target/caf%C3%A9' => 'encoded UTF-8',
+			'RedirectMatch 301 ^/c$ /target/a%2Fb' => 'encoded slash',
+			'RedirectMatch 301 ^/d$ /target/percent%25sign' => 'encoded %',
+			'RedirectMatch 301 ^/e$ /target/100%' => 'bare %',
+			'RedirectMatch 301 ^/f$ https://target.example/target/space%20name' => 'encoded space, absolute target',
+			'RedirectMatch 301 ^/g$ https://target.example/target/caf%C3%A9' => 'encoded UTF-8, absolute target',
+			'RedirectMatch 301 ^/h$ https://target.example/target/caf%C3%A9?fixed=yes' => 'encoded UTF-8 and a query',
+			'RedirectMatch 301 ^/i$ https://target.example/target/x?q=a%26b' => 'encoded query only (Apache leaves it, the importer does not judge where the % sits)',
+			'RedirectMatch 301 ^/j$ /target/caf%C3%A9?' => 'encoded UTF-8 and a trailing ?',
+			'RedirectMatch 302 ^/k$ /target/space%20name' => 'encoded space, 302',
+			'RedirectMatch ^/l$ /target/space%20name' => 'encoded space, no status',
+			'RedirectMatch temp ^/m$ /target/space%20name' => 'encoded space, status word',
+			'RedirectMatch 301 ^/n/?$ /target/space%20name' => 'encoded space, regex with /?',
+			'RedirectMatch 301 ^/o /target/space%20name' => 'encoded space, regex without $ (no partial note either)',
+		] as $rule => $label) {
+			$r = Htaccess::convert($rule);
+			expect([], $r['entries'], "$label → no entry");
+			expect([['line' => 1, 'text' => $rule, 'reason' => 'target']], $r['skipped'], "$label → skipped target");
+			expect([], $r['partial'], "$label → no partial note");
+		}
+
+		// Controls: Redirect sends a `%` as written, so it is imported as before (also all three forms of the target)
+		foreach ([
+			'Redirect 301 /a /target/space%20name' => ['a' => 'target/space%20name'],
+			'Redirect 301 /b /target/caf%C3%A9' => ['b' => 'target/caf%C3%A9'],
+			'Redirect 301 /c https://target.example/target/x?q=a%26b' => ['c' => ['to' => 'https://target.example/target/x?q=a%26b', 'query' => 'drop']],
+			'RedirectPermanent /d /target/caf%C3%A9' => ['d' => 'target/caf%C3%A9'],
+			'RedirectTemp /e /target/space%20name' => ['e' => ['to' => 'target/space%20name', 'status' => 302]],
+		] as $rule => $expected) {
+			$r = Htaccess::convert($rule);
+			expect($expected, $r['entries'], "$rule → imported as written");
+			expect([], $r['skipped'], "$rule → nothing skipped");
+		}
+
+		// Controls: a RedirectMatch target without a `%` is imported as before, and 410 has no target to judge
+		foreach ([
+			'RedirectMatch 301 ^/a$ /target/plain' => ['a' => 'target/plain'],
+			'RedirectMatch 301 ^/b$ https://target.example/target/plain?fixed=yes' => ['b' => ['to' => 'https://target.example/target/plain?fixed=yes', 'query' => 'drop']],
+			'RedirectMatch 302 ^/c$ /target/plain-name_1.html' => ['c' => ['to' => 'target/plain-name_1.html', 'status' => 302]],
+			'RedirectMatch gone ^/d$' => ['d' => 410],
+			'RedirectMatch 410 ^/e$ /target/space%20name' => ['e' => 410],
+		] as $rule => $expected) {
+			$r = Htaccess::convert($rule);
+			expect($expected, $r['entries'], "$rule → imported");
+			expect([[], []], [$r['skipped'], $r['partial']], "$rule → nothing skipped, no partial note");
+		}
+
+		$r = Htaccess::convert(
+			"RedirectMatch 301 ^/first\$ /one\n"
+			. "RedirectMatch 301 ^/old-space\$ /target/space%20name\n"
+			. "Redirect 301 /kept /target/space%20name\n"
+			. 'RedirectMatch 301 ^/last$ /two'
+		);
+
+		expect(['first' => 'one', 'kept' => 'target/space%20name', 'last' => 'two'], $r['entries'], 'a skipped RedirectMatch % line does not drop its neighbours');
+
+		expect([['line' => 2, 'text' => 'RedirectMatch 301 ^/old-space$ /target/space%20name', 'reason' => 'target']], $r['skipped'], 'the skipped RedirectMatch line is reported with its line number');
+
+		foreach ([
+			'RedirectMatch 301 ^/old/(.*)$ /target/space%20name' => 'pattern',
+			'RedirectMatch 303 ^/old$ /target/space%20name' => 'status',
+		] as $rule => $reason) {
+			expect($reason, Htaccess::convert($rule)['skipped'][0]['reason'] ?? '', "$rule → the earlier guard keeps the reason $reason");
+		}
+
 		// `$0`–`$9` are backreferences of RedirectMatch too (the existing guard knew only $1)
 		foreach ([
 			'RedirectMatch 301 ^/old$ /target/$2' => 'RedirectMatch $2',

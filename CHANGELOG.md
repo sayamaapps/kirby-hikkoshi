@@ -8,6 +8,12 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [1.3.4] — 2026-11-03
+
+### Fixed
+
+- **`convert` reports a `RedirectMatch` target with a `%`, instead of importing it as written.** 1.3.3 left `RedirectMatch` targets with a `%` unchanged. Apache 2.4 escapes the path of a `RedirectMatch` target once more (its query and fragment stay as written): `RedirectMatch 301 ^/old$ /target/space%20name` answers with `…/target/space%2520name`, and `…/target/caf%C3%A9` with `…/target/caf%25C3%25A9`. The converter imported the text as written, a different address, and reported nothing. Such a line is now skipped (`target`) on standard error with exit code 1, for site-relative and absolute targets, wherever the `%` sits. `Redirect`, `RedirectPermanent` and `RedirectTemp` send the target as written and are imported as before; so are `RedirectMatch` lines with a plain ASCII target, or with `gone` or `410` (no target). Lists converted earlier are not changed: convert the rules again.
+
 ## [1.3.3] — 2026-11-03
 
 ### Fixed
