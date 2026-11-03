@@ -491,7 +491,13 @@ request's query with the target's. In a RewriteRule, `QSA`/`QSAPPEND` keeps the
 request's query (appended: `keep`); with QSD the drop wins. A target with `#`
 (redirect, not 410) without `NE`/`NOESCAPE` → `target`: Apache escapes the
 substitution and sends `%23`, not a fragment; with `NE` it is converted as
-written. `L LAST END NC NOCASE
+written. A target with a `%` or `${` (redirect, not 410) → `target`, with or
+without `NE`: Apache replaces `%0`–`%9` (backreferences of the last
+`RewriteCond`: `%20` becomes `%2` filled in plus `0`), `%{VAR}` (server
+variable) and `${map:key}` (RewriteMap) even with `NE`, and without `NE` it
+escapes every other `%` to `%25` (`caf%C3%A9` is sent as `caf%25C3%25A9`). The
+list has none of this and the outcome depends on text, flags and conditions,
+so the rule is reported, not judged further. `L LAST END NC NOCASE
 NE NOESCAPE E ENV B BNP BCTLS BNE DPI DISCARDPATH NS NOSUBREQ PT
 PASSTHROUGH` are otherwise ignored; any other flag (`CO`, `C`, `S`, `N`, `P`, `T`, `H`,
 unknown) → `flag`. Rules without R/G are not judged by their flags.
@@ -506,8 +512,10 @@ cannot be a source). Target rules below; `-` → `target`. Entries in file order
 accepts no query in a page id); a trailing
 `?` (`/ueber-uns?`, `/?`) means Apache dropped the query → `query drop`;
 `http://…` or `https://…` → external, verbatim (the Validator decides whether
-the host is allowed; a trailing `?` is removed and means drop); contains `$1`
-or `%1`, or does not start with `/` or `http` → `target`.
+the host is allowed; a trailing `?` is removed and means drop); contains `$0`
+to `$9` or `%1` (a backreference that Apache fills in), or does not start with
+`/` or `http` → `target`. A RewriteRule target is also `target` when it contains
+`%` or `${` (see RewriteRule).
 
 **Value shape** of `entries[key]`: 410 → `410`; status 301 and no drop →
 `'id'` (string); otherwise `['to' => 'id']` plus `'status' => n` when
@@ -980,7 +988,12 @@ property of the instance). Use a `withSite()` wrapper with try/finally, as in te
   302 array form; `[L]` (no R) → nothing, not even skipped; `^(.*)$ index.php [L]`
   → nothing; `RewriteRule ^alt$ - [R=410]` → `['alt' => 410]`... (`-` with
   `R=410` is gone; `-` with R=301 → `target`); `^alt$ /neu/$1 [R=301]` →
-  `target`; `^(index\.php)?$ /neu [R=301]` without conds → `pattern`; `[NC,R=301,L]`
+  `target`; `^alt$ /neu/$2 [R=301]` → `target`; targets with `%` or `${`
+  (`/a%20b`, `https://x.example/caf%C3%A9`, with and without `NE`; `/%2`;
+  `https://%{HTTP_HOST}/new`; `/${lc:Key}`) → `target`, a plain ASCII target
+  stays; `^alt$ /a%20b [R=410]` → `['alt' => 410]`; `RedirectMatch` and
+  `Redirect` with `$2` in the target → `target`;
+  `^(index\.php)?$ /neu [R=301]` without conds → `pattern`; `[NC,R=301,L]`
   flag order irrelevant; `^alt /neu [R=301]` and `^alt/ /neu [R=301]` → entry
   `alt` plus `partial`; `alt /neu [R=301]` and `alt$ /neu [R]` → `pattern`; `[R=301,QSD,L]` → `['to' => 'neu', 'query' => 'drop']`;
   `/neu? [R=301,QSA]` → `['alt' => 'neu']` (keep), with `QSD` → drop; `^alt\/?$` → `['alt' => 'neu']`;
