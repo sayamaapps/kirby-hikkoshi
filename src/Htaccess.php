@@ -577,6 +577,12 @@ class Htaccess
 	}
 }
 
+// HtaccessGuard came in 1.3.5. A 1.x caller that requires this file alone has no loader for it;
+// with an autoloader, class_exists() lets that load it, so the file is never declared twice.
+if (class_exists(HtaccessGuard::class) === false) {
+	require_once __DIR__ . '/HtaccessGuard.php';
+}
+
 // 1.x name for sites that load this file directly, without the plugin (legacy.php).
 if (class_exists('Hikkoshi\\Htaccess', false) === false) {
 	class_alias(Htaccess::class, 'Hikkoshi\\Htaccess');

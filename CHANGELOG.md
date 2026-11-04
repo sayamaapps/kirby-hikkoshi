@@ -8,6 +8,12 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
+## [1.3.6] — 2026-11-04
+
+### Fixed
+
+- **`src/Htaccess.php` works again when it is required on its own.** 1.3.5 moved its checks into `HtaccessGuard`, and a site that loads `src/` directly without the plugin or a class map (as the README allows for 1.x code) got `Class "Sayamaapps\Hikkoshi\HtaccessGuard" not found` on `Htaccess::convert()`. The file now loads `HtaccessGuard.php` itself when no autoloader provides it.
+
 ## [1.3.5] — 2026-11-03
 
 ### Fixed

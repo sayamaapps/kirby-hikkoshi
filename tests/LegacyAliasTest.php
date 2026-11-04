@@ -55,4 +55,21 @@ final class LegacyAliasTest extends TestCase
 		$this->assertSame(0, $status, 'the plugin file loads');
 		$this->assertSame("instanceof ok\ncatch ok", implode("\n", $output), 'no 1.x name is missing, and instanceof and catch match with the 1.x name');
 	}
+
+	/**
+	 * 1.x sites required src/Htaccess.php alone and called convert(). Its helper
+	 * class HtaccessGuard (1.3.5) has to come with it.
+	 */
+	public function testHtaccessConvertsWhenItsFileIsLoadedAlone(): void
+	{
+		$file = dirname(__DIR__) . '/src/Htaccess.php';
+		$code = 'require ' . var_export($file, true) . ';'
+			. ' echo json_encode(Hikkoshi\\Htaccess::convert("RedirectMatch 301 ^/old$ /new")["entries"]);';
+
+		$output = [];
+		exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code) . ' 2>&1', $output, $status);
+
+		$this->assertSame(0, $status, implode("\n", $output));
+		$this->assertSame('{"old":"new"}', implode("\n", $output));
+	}
 }
