@@ -14,7 +14,7 @@ Checked redirects for [Kirby CMS](https://getkirby.com) after a site has moved.
 
 ## Requirements
 
-Kirby 5 · PHP 8.2 to 8.5 · `mbstring` extension
+Kirby 5 or 6 · PHP 8.2 to 8.5 (Kirby 6 needs PHP 8.3 or newer) · `mbstring` extension
 
 The `intl` extension is optional: with it, umlauts in paths are compared in their normalised form.
 
