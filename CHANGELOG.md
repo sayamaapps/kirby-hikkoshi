@@ -8,7 +8,7 @@ All notable changes to this project are documented here. Versions follow
   paths, the order of the passes) **is a major version**: a site would
   redirect other addresses after a routine update.
 
-## [Unreleased]
+## [1.4.0] — 2026-11-27
 
 ### Added
 
